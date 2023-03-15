@@ -1,0 +1,30 @@
+#include <gst/gst.h>
+
+#include "plugin.h"
+#include "filter1/filter1.h"
+
+static gboolean
+plugin_init(GstPlugin* plugin)
+{
+  gboolean ret = FALSE;
+
+  ret |= gst_element_register (plugin, "filter1", GST_RANK_NONE,
+      GST_TYPE_FILTER1); 
+  
+  return ret;
+}
+
+#define GST_API_VERSION "1.0"
+#define GST_LICENSE "LGPL"
+#define GST_PACKAGE_NAME "GStreamer ToF Plugin"
+#define GST_PACKAGE_ORIGIN "dinsight.ai"
+//rename this to the folder name that contain this plugin
+#define PACKAGE "gst-tofplugin"
+#define PACKAGE_VERSION "0.1"
+
+GST_PLUGIN_DEFINE (GST_VERSION_MAJOR,
+    GST_VERSION_MINOR,
+    tofplugin,
+    "Gstreamer Plugin for TCT",
+    plugin_init,
+    PACKAGE_VERSION, GST_LICENSE, GST_PACKAGE_NAME, GST_PACKAGE_ORIGIN)
