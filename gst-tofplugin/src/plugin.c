@@ -2,6 +2,8 @@
 
 #include "plugin.h"
 #include "filter1/filter1.h"
+#include "filesource/filesource.h"
+#include "filesource/tofparser.h"
 
 static gboolean
 plugin_init(GstPlugin* plugin)
@@ -10,7 +12,11 @@ plugin_init(GstPlugin* plugin)
 
   ret |= gst_element_register (plugin, "filter1", GST_RANK_NONE,
       GST_TYPE_FILTER1); 
-  
+  ret |= gst_element_register (plugin, "filesource", GST_RANK_NONE,
+      GST_TYPE_FILESOURCE); 
+  ret |= gst_element_register (plugin, "tofparser", GST_RANK_NONE,
+      GST_TYPE_TOFPARSER); 
+
   return ret;
 }
 
