@@ -1,5 +1,5 @@
 /* GStreamer
- * Copyright (C) 2023 FIXME <fixme@example.com>
+ * Copyright (C) 2023 Deep In Sight <lnlinh93@dinsight.ai>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -19,14 +19,21 @@
 /**
  * SECTION:element-gsttofparser
  *
- * The tofparser element does FIXME stuff.
+ * The tofparser element receives (small) buffers from upstream (likely 
+ * a filesrc), scan for file header and (or) frame headers, then output 
+ * (big) frame buffers to donwstream. It also attach some metadata to 
+ * each frame buffer.
+ * 
+ * TODO: actually parse file header and frame header
  *
  * <refsect2>
  * <title>Example launch line</title>
  * |[
- * gst-launch-1.0 -v fakesrc ! tofparser ! FIXME ! fakesink
+ * gst-launch-1.0 filesrc location=/dev/random blocksize=65536 num-buffers=100 \
+ *  ! tofparser ! filesink location=./testdatasink
  * ]|
- * FIXME Describe what the pipeline does.
+ * The above pipeline read random data, send to tofparser. The parser read the 
+ * the buffers, remove headers and save the extracted frames into a file.
  * </refsect2>
  */
 
@@ -200,8 +207,13 @@ gst_tofparser_handle_frame (GstBaseParse * parse, GstBaseParseFrame * frame,
     return GST_FLOW_OK;
   }
   
-  // simply transfer the sized chunk of data to downstream
+  // simply remove header and transfer frame to downstream
   // parse the frame header and add meta to the frame->out_buffer later
+  frame->out_buffer = gst_buffer_copy_region(frame->buffer, 
+    GST_BUFFER_COPY_MEMORY, HEADER_SIZE, FRAME_SIZE);
+  // GST_BUFFER_PTS(frame->out_buffer) = next_pts(tofparser);
+  // gst_buffer_add_meta(fram->out_buffer, info, params);
+
   gst_base_parse_finish_frame(parse, frame, flush_size);
   
   return GST_FLOW_OK;
