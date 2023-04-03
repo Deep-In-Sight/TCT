@@ -36,7 +36,7 @@
 
 #include <gst/gst.h>
 #include <gst/base/gstbasetransform.h>
-#include "filter1/filter1.h"
+#include "filter1.h"
 
 GST_DEBUG_CATEGORY_STATIC (gst_filter1_debug_category);
 #define GST_CAT_DEFAULT gst_filter1_debug_category

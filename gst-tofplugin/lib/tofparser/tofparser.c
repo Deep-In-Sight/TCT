@@ -43,7 +43,7 @@
 
 #include <gst/gst.h>
 #include <gst/base/gstbaseparse.h>
-#include "filesource/tofparser.h"
+#include "tofparser.h"
 
 GST_DEBUG_CATEGORY_STATIC (gst_tofparser_debug_category);
 #define GST_CAT_DEFAULT gst_tofparser_debug_category
