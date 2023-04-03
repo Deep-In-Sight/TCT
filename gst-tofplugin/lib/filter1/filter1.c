@@ -36,7 +36,7 @@
 
 #include <gst/gst.h>
 #include <gst/base/gstbasetransform.h>
-#include "filter1/filter1.h"
+#include "filter1.h"
 
 GST_DEBUG_CATEGORY_STATIC (gst_filter1_debug_category);
 #define GST_CAT_DEFAULT gst_filter1_debug_category
@@ -464,37 +464,3 @@ gst_filter1_transform_ip (GstBaseTransform * trans, GstBuffer * buf)
 
   return GST_FLOW_OK;
 }
-
-// static gboolean
-// plugin_init (GstPlugin * plugin)
-// {
-
-//   /* FIXME Remember to set the rank if it's an element that is meant
-//      to be autoplugged by decodebin. */
-//   return gst_element_register (plugin, "filter1", GST_RANK_NONE,
-//       GST_TYPE_FILTER1);
-// }
-
-// /* FIXME: these are normally defined by the GStreamer build system.
-//    If you are creating an element to be included in gst-plugins-*,
-//    remove these, as they're always defined.  Otherwise, edit as
-//    appropriate for your external plugin package. */
-// #ifndef VERSION
-// #define VERSION "0.0.FIXME"
-// #endif
-// #ifndef PACKAGE
-// #define PACKAGE "FIXME_package"
-// #endif
-// #ifndef PACKAGE_NAME
-// #define PACKAGE_NAME "FIXME_package_name"
-// #endif
-// #ifndef GST_PACKAGE_ORIGIN
-// #define GST_PACKAGE_ORIGIN "http://FIXME.org/"
-// #endif
-
-// GST_PLUGIN_DEFINE (GST_VERSION_MAJOR,
-//     GST_VERSION_MINOR,
-//     filter1,
-//     "FIXME plugin description",
-//     plugin_init, VERSION, "LGPL", PACKAGE_NAME, GST_PACKAGE_ORIGIN)
-
