@@ -1,8 +1,8 @@
 #include <gst/gst.h>
 
-#include "plugin.h"
-#include "filter1/filter1.h"
-#include "tofparser/tofparser.h"
+#include <lib/common/plugin.h>
+#include <lib/filter1/filter1.h>
+#include <lib/tofparser/tofparser.h>
 
 static gboolean
 plugin_init(GstPlugin* plugin)
