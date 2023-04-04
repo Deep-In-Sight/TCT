@@ -43,7 +43,7 @@
 
 #include <gst/gst.h>
 #include <gst/base/gstbaseparse.h>
-#include "tofparser.h"
+#include <lib/tofparser/tofparser.h>
 
 GST_DEBUG_CATEGORY_STATIC (gst_tofparser_debug_category);
 #define GST_CAT_DEFAULT gst_tofparser_debug_category
@@ -55,8 +55,6 @@ static gboolean gst_tofparser_start (GstBaseParse * parse);
 static gboolean gst_tofparser_stop (GstBaseParse * parse);
 static GstFlowReturn gst_tofparser_handle_frame (GstBaseParse * parse,
     GstBaseParseFrame * frame, gint * skipsize);
-static GstFlowReturn gst_tofparser_detect (GstBaseParse * parse,
-    GstBuffer * buffer);
 void tofparser_parse_file_header(GstBaseParse* parse, GstBuffer* buffer);
 
 enum
@@ -64,8 +62,6 @@ enum
   PROP_0
 };
 
-// #define FRAME_SIZE (640*480*2*4)
-// #define HEADER_SIZE (512)
 #define FRAME_SIZE (640*480*2*4)
 #define HEADER_SIZE (16)
 #define FILEHEADER_SIZE (64)
@@ -107,8 +103,9 @@ gst_tofparser_class_init (GstTofparserClass * klass)
       &gst_tofparser_sink_template);
 
   gst_element_class_set_static_metadata (GST_ELEMENT_CLASS(klass),
-      "tofparser", "Generic", "Parse a stream of tof data. It reads a ",
-      "FIXME <fixme@example.com>");
+      "tofparser", "Generic", "Parse a stream of tof data, remove header"
+      "and push frame buffer downstream",
+      "Le Ngoc Linh <lnlinh93@dinsight.ai>");
 
   gobject_class->dispose = gst_tofparser_dispose;
   gobject_class->finalize = gst_tofparser_finalize;
@@ -216,23 +213,6 @@ gst_tofparser_handle_frame (GstBaseParse * parse, GstBaseParseFrame * frame,
 
   gst_base_parse_finish_frame(parse, frame, flush_size);
   
-  return GST_FLOW_OK;
-}
-
-static GstFlowReturn
-gst_tofparser_detect (GstBaseParse * parse, GstBuffer * buffer)
-{
-  GstTofparser *tofparser = GST_TOFPARSER (parse);
-
-  GST_DEBUG_OBJECT (tofparser, "detect");
-
-  // pretend to read the first buffer and setup the video type here
-  tofparser->video_type = 1;
-  tofparser->frame_size = FRAME_SIZE;
-  tofparser->header_size = HEADER_SIZE;
-  tofparser->file_header_size = FILEHEADER_SIZE;
-  tofparser->is_first_frame = TRUE;
-
   return GST_FLOW_OK;
 }
 
