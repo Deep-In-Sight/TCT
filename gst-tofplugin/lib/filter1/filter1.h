@@ -24,27 +24,28 @@
 
 G_BEGIN_DECLS
 
-#define GST_TYPE_FILTER1   (gst_filter1_get_type())
-#define GST_FILTER1(obj)   (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_FILTER1,GstFilter1))
-#define GST_FILTER1_CLASS(klass)   (G_TYPE_CHECK_CLASS_CAST((klass),GST_TYPE_FILTER1,GstFilter1Class))
-#define GST_IS_FILTER1(obj)   (G_TYPE_CHECK_INSTANCE_TYPE((obj),GST_TYPE_FILTER1))
-#define GST_IS_FILTER1_CLASS(obj)   (G_TYPE_CHECK_CLASS_TYPE((klass),GST_TYPE_FILTER1))
+#define GST_TYPE_FILTER1 (gst_filter1_get_type())
+#define GST_FILTER1(obj) \
+  (G_TYPE_CHECK_INSTANCE_CAST((obj), GST_TYPE_FILTER1, GstFilter1))
+#define GST_FILTER1_CLASS(klass) \
+  (G_TYPE_CHECK_CLASS_CAST((klass), GST_TYPE_FILTER1, GstFilter1Class))
+#define GST_IS_FILTER1(obj) \
+  (G_TYPE_CHECK_INSTANCE_TYPE((obj), GST_TYPE_FILTER1))
+#define GST_IS_FILTER1_CLASS(obj) \
+  (G_TYPE_CHECK_CLASS_TYPE((klass), GST_TYPE_FILTER1))
 
 typedef struct _GstFilter1 GstFilter1;
 typedef struct _GstFilter1Class GstFilter1Class;
 
-struct _GstFilter1
-{
+struct _GstFilter1 {
   GstBaseTransform base_filter1;
-
 };
 
-struct _GstFilter1Class
-{
+struct _GstFilter1Class {
   GstBaseTransformClass base_filter1_class;
 };
 
-GType gst_filter1_get_type (void);
+GType gst_filter1_get_type(void);
 
 G_END_DECLS
 

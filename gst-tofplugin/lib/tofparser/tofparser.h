@@ -24,11 +24,15 @@
 
 G_BEGIN_DECLS
 
-#define GST_TYPE_TOFPARSER   (gst_tofparser_get_type())
-#define GST_TOFPARSER(obj)   (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_TOFPARSER,GstTofparser))
-#define GST_TOFPARSER_CLASS(klass)   (G_TYPE_CHECK_CLASS_CAST((klass),GST_TYPE_TOFPARSER,GstTofparserClass))
-#define GST_IS_TOFPARSER(obj)   (G_TYPE_CHECK_INSTANCE_TYPE((obj),GST_TYPE_TOFPARSER))
-#define GST_IS_TOFPARSER_CLASS(obj)   (G_TYPE_CHECK_CLASS_TYPE((klass),GST_TYPE_TOFPARSER))
+#define GST_TYPE_TOFPARSER (gst_tofparser_get_type())
+#define GST_TOFPARSER(obj) \
+  (G_TYPE_CHECK_INSTANCE_CAST((obj), GST_TYPE_TOFPARSER, GstTofparser))
+#define GST_TOFPARSER_CLASS(klass) \
+  (G_TYPE_CHECK_CLASS_CAST((klass), GST_TYPE_TOFPARSER, GstTofparserClass))
+#define GST_IS_TOFPARSER(obj) \
+  (G_TYPE_CHECK_INSTANCE_TYPE((obj), GST_TYPE_TOFPARSER))
+#define GST_IS_TOFPARSER_CLASS(obj) \
+  (G_TYPE_CHECK_CLASS_TYPE((klass), GST_TYPE_TOFPARSER))
 
 typedef struct _GstTofparser GstTofparser;
 typedef struct _GstTofparserClass GstTofparserClass;
@@ -47,21 +51,19 @@ struct _StreamHeader {
   // guint32 others;
 };
 
-struct _GstTofparser
-{
+struct _GstTofparser {
   GstBaseParse base_tofparser;
   gboolean is_first_frame;
-  
-  //stream format
+
+  // stream format
   StreamHeader sh;
 };
 
-struct _GstTofparserClass
-{
+struct _GstTofparserClass {
   GstBaseParseClass base_tofparser_class;
 };
 
-GType gst_tofparser_get_type (void);
+GType gst_tofparser_get_type(void);
 
 G_END_DECLS
 
