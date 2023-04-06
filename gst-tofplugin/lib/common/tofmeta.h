@@ -39,12 +39,8 @@ struct _GstMetaTof {
   guint32 sensor_temperature;
   guint32 rngchk_low;
   guint32 rngchk_high;
-  // lens meta
-  // gfloat cx;
-  // gfloat cy;
-  // gfloat fx;
-  // gfloat fy;
-  // ...
+  guint32 subframe_id;
+  guint32 depthframe_id;
 };
 
 GType gst_meta_tof_api_get_type(void);
