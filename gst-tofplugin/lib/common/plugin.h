@@ -5,8 +5,6 @@
 
 G_BEGIN_DECLS
 
-
-
 G_END_DECLS
 
 #endif /* __GST_DUMMY_PLUGIN_H__*/

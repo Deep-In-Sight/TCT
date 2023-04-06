@@ -19,39 +19,46 @@
 
 #include <lib/common/tofmeta.h>
 
-//get the registered api type
+// get the registered api type
 GType gst_meta_tof_api_get_type(void) {
   static GType type;
-  static const gchar *tags[] = { NULL };
+  static const gchar* tags[] = {NULL};
 
   if (g_once_init_enter(&type)) {
     GType _type = gst_meta_api_type_register("GstMetaTofApi", tags);
     g_once_init_leave(&type, _type);
   }
-  
+
   return type;
 }
 
-static gboolean 
-gst_meta_tof_init(GstMetaTof *meta, gpointer params, GstBuffer* buf) {
-  meta->width = meta->height = 0;
-  meta->modulation_frequency = 0;
+static gboolean gst_meta_tof_init(GstMetaTof* meta, gpointer params,
+                                  GstBuffer* buf) {
+  guint32* tmp;
 
+  if (params == NULL) {
+    goto init_done;
+  }
+
+  tmp = (guint32*)params;
+  meta->modulation_frequency = *tmp++;
+  meta->sensor_temperature = *tmp++;
+  meta->rngchk_low = *tmp++;
+  meta->rngchk_high = *tmp;
+
+init_done:
   return TRUE;
 }
 
-//get the actual implementation of the api
+// get the actual implementation of the api
 const GstMetaInfo* gst_meta_tof_get_info(void) {
   static const GstMetaInfo* meta_info = NULL;
 
   if (g_once_init_enter(&meta_info)) {
-    const GstMetaInfo* _meta_info = 
-      gst_meta_register(gst_meta_tof_api_get_type(),
-        "GstMetaTof", sizeof(GstMetaTof),
-        (GstMetaInitFunction) gst_meta_tof_init,
-        (GstMetaFreeFunction) NULL,
-        (GstMetaTransformFunction) NULL
-      );
+    const GstMetaInfo* _meta_info = gst_meta_register(
+        gst_meta_tof_api_get_type(), "GstMetaTof", sizeof(GstMetaTof),
+        (GstMetaInitFunction)gst_meta_tof_init, (GstMetaFreeFunction)NULL,
+        (GstMetaTransformFunction)NULL);
     g_once_init_leave(&meta_info, _meta_info);
   }
 

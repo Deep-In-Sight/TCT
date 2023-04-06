@@ -1,5 +1,6 @@
 tests = [
   'common/tofmeta.c',
+  'tofparser/tofparser.c'
 ]
 
 gst_check_dep = dependency('gstreamer-check-1.0', version : '>=1.19',
@@ -16,10 +17,11 @@ foreach t : tests
     dependencies : [gst_dep, gstbase_dep, gst_check_dep]
   )
 
-    # env = environment()
-    # gst_plugin_path = env.get('GST_PLUGIN_PATH')
-    # env.set('GST_PLUGIN_PATH', gst_plugin_path + ':' + meson.project_build_root() + '/')
+  env = environment()
+  tofplugin_path = join_paths(meson.project_build_root(), 'gst-tofplugin/lib')
+  env.append('GST_PLUGIN_PATH', tofplugin_path)
+  # env.set('GST_DEBUG', '2,baseparse:6,tofparser:6')
 
-  test(test_name, exe, timeout : 3 * 60)
+  test(test_name, exe, env:env, timeout : 1)
 
 endforeach

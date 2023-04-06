@@ -23,17 +23,22 @@
 #include <glib.h>
 #include <gst/gst.h>
 
-#define META_TOF_ADD(b) ((GstMetaTof*)gst_buffer_add_meta(b, gst_meta_tof_get_info(), NULL))
-#define META_TOF_GET(b) ((GstMetaTof*)gst_buffer_get_meta(b, gst_meta_tof_api_get_type()))
+#define META_TOF_ADD(buffer) \
+  ((GstMetaTof*)gst_buffer_add_meta(buffer, gst_meta_tof_get_info(), NULL))
+#define META_TOF_ADD_PARAMS(buffer, params) \
+  ((GstMetaTof*)gst_buffer_add_meta(buffer, gst_meta_tof_get_info(), params))
+#define META_TOF_GET(buffer) \
+  ((GstMetaTof*)gst_buffer_get_meta(buffer, gst_meta_tof_api_get_type()))
 
 typedef struct _GstMetaTof GstMetaTof;
 
 struct _GstMetaTof {
   GstMeta meta;
   // sensor meta
-  guint32 width;
-  guint32 height;
   guint32 modulation_frequency;
+  guint32 sensor_temperature;
+  guint32 rngchk_low;
+  guint32 rngchk_high;
   // lens meta
   // gfloat cx;
   // gfloat cy;
@@ -42,7 +47,7 @@ struct _GstMetaTof {
   // ...
 };
 
-GType gst_meta_tof_api_get_type (void);
-const GstMetaInfo * gst_meta_tof_get_info (void);
+GType gst_meta_tof_api_get_type(void);
+const GstMetaInfo* gst_meta_tof_get_info(void);
 
 #endif
