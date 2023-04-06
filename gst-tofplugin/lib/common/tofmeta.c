@@ -34,9 +34,19 @@ GType gst_meta_tof_api_get_type(void) {
 
 static gboolean 
 gst_meta_tof_init(GstMetaTof *meta, gpointer params, GstBuffer* buf) {
-  meta->width = meta->height = 0;
-  meta->modulation_frequency = 0;
+  guint32* tmp;
+  
+  if (params == NULL) {
+    goto init_done;
+  }
 
+  tmp = (guint32*) params;
+  meta->modulation_frequency = *tmp++;
+  meta->sensor_temperature = *tmp++;
+  meta->rngchk_low = *tmp++;
+  meta->rngchk_high = *tmp;
+
+init_done:
   return TRUE;
 }
 

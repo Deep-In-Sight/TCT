@@ -19,21 +19,51 @@
 /**
  * SECTION:element-gsttofparser
  *
- * The tofparser element receives (small) buffers from upstream (likely 
- * a filesrc), scan for file header and (or) frame headers, then output 
- * (big) frame buffers to donwstream. It also attach some metadata to 
- * each frame buffer.
+ * The tofparser element receives buffers from upstream (a filesrc),
+ * scan for file header and (or) frame headers, then output frame 
+ * buffers to donwstream. 
  * 
- * TODO: actually parse file header and frame header
+ * The ToF sensor raw data file format is as follow:
+ *         ------------------------------------------------
+ *  File:  | file_header | frame0 | frame1 | ... | frameN |
+ *         ------------------------------------------------
+ *                   ___/          \_________________
+ *                  /                                \
+ *                 -----------------------------------
+ *  Depth Frame:   |subframe0|subframe1|...|subframeK|  (K=1/3/7)
+ *                 -----------------------------------
+ *                        __/           \_________________
+ *                       /                                \
+ *  Sub- depth frame     ----------------------------------
+ * (phase frame):        |subframe_header| pixel data     |
+ *                       ----------------------------------
+ * 
+ * File header contains stream infomation: frame size, frame rate. These
+ * go to the caps string
+ * 
+ * Subframe header contains sensor information: pixel range check, sensor
+ * temperature, etc. These go to the frame buffer metadatas.
+ * 
+ * The tofparser produces GstBuffer with following content:
+ *  Frame Buffer
+ *  |--memory: 
+ *  |      |--subframe0 pixeldata
+ *  |      |--subframe1 pixeldata
+ *  |      |--...
+ *  |      |--subframeK pixeldata
+ *  |--meta0: parse from subframe0 header
+ *  |--meta1: parse from subframe1 header
+ *  |--..
+ *  |--metaK: parse from subframeK header
  *
+ * TODO: design a good header semantic.
+ *  
  * <refsect2>
  * <title>Example launch line</title>
  * |[
- * gst-launch-1.0 filesrc location=/dev/random blocksize=65536 num-buffers=100 \
- *  ! tofparser ! filesink location=./testdatasink
+ * gst-launch-1.0 filesrc location=video1.ek640raw ! tofparser ! fakesink
  * ]|
- * The above pipeline read random data, send to tofparser. The parser read the 
- * the buffers, remove headers and save the extracted frames into a file.
+ * The above pipeline read from raw file, parse it, then discard the buffers.
  * </refsect2>
  */
 
@@ -44,6 +74,7 @@
 #include <gst/gst.h>
 #include <gst/base/gstbaseparse.h>
 #include <lib/tofparser/tofparser.h>
+#include <lib/common/tofmeta.h>
 
 GST_DEBUG_CATEGORY_STATIC (gst_tofparser_debug_category);
 #define GST_CAT_DEFAULT gst_tofparser_debug_category
@@ -56,15 +87,14 @@ static gboolean gst_tofparser_stop (GstBaseParse * parse);
 static GstFlowReturn gst_tofparser_handle_frame (GstBaseParse * parse,
     GstBaseParseFrame * frame, gint * skipsize);
 void tofparser_parse_file_header(GstBaseParse* parse, GstBuffer* buffer);
+void tofparser_parse_frame_header(GstBaseParse *parse, GstBuffer* buffer, GstMetaTof* meta);
 
 enum
 {
   PROP_0
 };
 
-#define FRAME_SIZE (640*480*2*4)
-#define HEADER_SIZE (16)
-#define FILEHEADER_SIZE (64)
+#define FILEHEADER_SIZE_MAX (1<<10)
 
 /* pad templates */
 
@@ -103,7 +133,7 @@ gst_tofparser_class_init (GstTofparserClass * klass)
       &gst_tofparser_sink_template);
 
   gst_element_class_set_static_metadata (GST_ELEMENT_CLASS(klass),
-      "tofparser", "Generic", "Parse a stream of tof data, remove header"
+      "tofparser", "Generic", "Parse a stream of tof data, remove header "
       "and push frame buffer downstream",
       "Le Ngoc Linh <lnlinh93@dinsight.ai>");
 
@@ -120,10 +150,15 @@ static void
 gst_tofparser_init (GstTofparser *tofparser)
 {
   tofparser->is_first_frame = TRUE;
-  tofparser->video_type = -1;
-  tofparser->file_header_size = -1;
-  tofparser->header_size = -1;
-  tofparser->frame_size = -1;
+  tofparser->sh.container_header_size = 0;
+  tofparser->sh.subframe_header_size = 0;
+  tofparser->sh.frame_width = 0;
+  tofparser->sh.frame_height = 0;
+  tofparser->sh.framerate_num = 0;
+  tofparser->sh.framerate_den = 0;
+  tofparser->sh.pixel_size = 0;
+  tofparser->sh.num_subframes = 0;
+  tofparser->sh.num_frames = 0;
 }
 
 void
@@ -157,7 +192,7 @@ gst_tofparser_start (GstBaseParse * parse)
 
   GST_DEBUG_OBJECT (tofparser, "start");
 
-  gst_base_parse_set_min_frame_size(parse, FILEHEADER_SIZE);
+  gst_base_parse_set_min_frame_size(parse, FILEHEADER_SIZE_MAX);
 
   return TRUE;
 }
@@ -177,7 +212,16 @@ gst_tofparser_handle_frame (GstBaseParse * parse, GstBaseParseFrame * frame,
     gint * skipsize)
 {
   GstTofparser *tofparser = GST_TOFPARSER (parse);
-  gssize flush_size, buffer_size, buffer_offset;
+  gsize buffer_size, buffer_offset;
+  gsize df_size;
+  gsize sf_header_offset, sf_header_size;
+  gsize sf_payload_offset, sf_payload_size;
+  gsize sf_size;
+  StreamHeader* sh;
+  GstMapInfo mapinfo;
+  guint8* data;
+  GstMetaTof* meta;
+
 
   buffer_size = gst_buffer_get_size(frame->buffer);
   buffer_offset = GST_BUFFER_OFFSET(frame->buffer);
@@ -187,45 +231,90 @@ gst_tofparser_handle_frame (GstBaseParse * parse, GstBaseParseFrame * frame,
     ", offset %" G_GSIZE_FORMAT,
     buffer_size,
     buffer_offset);
+
+  sh = &(tofparser->sh);
   
   if (tofparser->is_first_frame) {
     tofparser->is_first_frame = FALSE;
     tofparser_parse_file_header(parse, frame->buffer);
-    *skipsize = FILEHEADER_SIZE;
+    gst_base_parse_set_frame_rate(parse, tofparser->sh.framerate_num,
+                            tofparser->sh.framerate_den, 0, 0);
+    /*TODO: set caps from the parsed data above*/
+    GstCaps* src_caps = gst_caps_from_string("something");
+    gst_pad_set_caps(GST_BASE_PARSE_SRC_PAD(parse), src_caps);
+    gst_caps_unref(src_caps);    
+    *skipsize = sh->container_header_size;
   } else {
     *skipsize = 0;
   }
 
-  flush_size = HEADER_SIZE + FRAME_SIZE;
-  gst_base_parse_set_min_frame_size(parse, flush_size);
+  sf_header_size = sh->subframe_header_size;
+  sf_payload_size = sh->frame_width * sh->frame_height * sh->pixel_size;
+  sf_size = sf_header_size + sf_payload_size;
+  df_size = sh->num_subframes * sf_size;
+
+  //next time only handle full depth frame buffer
+  gst_base_parse_set_min_frame_size(parse, df_size);
 
   //first frame only guaranteed to has complete file header
-  if (buffer_size < flush_size) {
+  if (buffer_size < df_size) {
     return GST_FLOW_OK;
   }
   
-  // simply remove header and transfer frame to downstream
-  // parse the frame header and add meta to the frame->out_buffer later
-  frame->out_buffer = gst_buffer_copy_region(frame->buffer, 
-    GST_BUFFER_COPY_MEMORY, HEADER_SIZE, FRAME_SIZE);
-  // GST_BUFFER_PTS(frame->out_buffer) = next_pts(tofparser);
-  // gst_buffer_add_meta(fram->out_buffer, info, params);
+  gst_buffer_map (frame->buffer, &mapinfo, GST_MAP_READ);
+  data = mapinfo.data;
+  frame->out_buffer = gst_buffer_new();
+  for (int sf = 0; sf < sh->num_subframes; sf++) {
+    sf_header_offset = sf * sf_size;
+    sf_payload_offset = sf_header_offset + sf_header_size;
+    //gstreamer's magic: no new memory allocated
+    gst_buffer_copy_into(frame->out_buffer, frame->buffer, 
+      GST_BUFFER_COPY_MEMORY, sf_payload_offset, sf_payload_size);
 
-  gst_base_parse_finish_frame(parse, frame, flush_size);
+    guint8* sf_header = data + sf_header_offset;
+    meta = META_TOF_ADD_PARAMS(frame->out_buffer, (gpointer)sf_header);
+    GST_DEBUG_OBJECT (tofparser, 
+      "meta initialized: %d %d %d %d",
+      meta->modulation_frequency,
+      meta->sensor_temperature,
+      meta->rngchk_low,
+      meta->rngchk_high);
+  }
+  
+  gst_buffer_unmap(frame->buffer, &mapinfo);
+
+  GST_DEBUG_OBJECT (tofparser, 
+    "sending off out_buffer with size %" G_GSIZE_FORMAT,
+    gst_buffer_get_size(frame->out_buffer));
+  
+  gst_base_parse_finish_frame(parse, frame, df_size);
   
   return GST_FLOW_OK;
 }
 
+guint32 parse_next_guint32(guint8** data) {
+  guint32* tmp = (guint32*)(*data);
+  *data += sizeof(guint32);
+  return *tmp;
+}
+
 void tofparser_parse_file_header(GstBaseParse* parse, GstBuffer* buffer) {
   GstTofparser *tofparser = GST_TOFPARSER (parse);
+  GstMapInfo mapinfo;
+  guint8* data;
 
-  //hard code for now, parse file header buffer later
-  tofparser->video_type = 1;
-  tofparser->frame_size = FRAME_SIZE;
-  tofparser->header_size = HEADER_SIZE;
-  tofparser->file_header_size = FILEHEADER_SIZE;
+  gst_buffer_map(buffer, &mapinfo, GST_MAP_READ);
   
-  GstCaps* src_caps = gst_caps_from_string("something");
-  gst_pad_set_caps(GST_BASE_PARSE_SRC_PAD(parse), src_caps);
-  gst_caps_unref(src_caps);
+  data = mapinfo.data;
+  tofparser->sh.container_header_size = parse_next_guint32(&data);
+  tofparser->sh.subframe_header_size = parse_next_guint32(&data);
+  tofparser->sh.frame_width = parse_next_guint32(&data);
+  tofparser->sh.frame_height = parse_next_guint32(&data);
+  tofparser->sh.framerate_num = parse_next_guint32(&data);
+  tofparser->sh.framerate_den = parse_next_guint32(&data);
+  tofparser->sh.pixel_size = parse_next_guint32(&data);
+  tofparser->sh.num_subframes = parse_next_guint32(&data);
+  tofparser->sh.num_frames = parse_next_guint32(&data);
+
+  gst_buffer_unmap(buffer, &mapinfo);
 }

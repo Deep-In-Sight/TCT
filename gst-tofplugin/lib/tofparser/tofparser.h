@@ -32,16 +32,28 @@ G_BEGIN_DECLS
 
 typedef struct _GstTofparser GstTofparser;
 typedef struct _GstTofparserClass GstTofparserClass;
+typedef struct _StreamHeader StreamHeader;
+
+struct _StreamHeader {
+  guint32 container_header_size;
+  guint32 subframe_header_size;
+  guint32 frame_width;
+  guint32 frame_height;
+  guint32 framerate_num;
+  guint32 framerate_den;
+  guint32 pixel_size;
+  guint32 num_subframes;
+  guint32 num_frames;
+  // guint32 others;
+};
 
 struct _GstTofparser
 {
   GstBaseParse base_tofparser;
   gboolean is_first_frame;
-  guint8 video_type;
-  gssize frame_size;
-  gssize header_size;
-  gssize file_header_size;
-  gssize next_flush;
+  
+  //stream format
+  StreamHeader sh;
 };
 
 struct _GstTofparserClass
