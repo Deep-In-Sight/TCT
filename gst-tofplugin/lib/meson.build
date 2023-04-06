@@ -1,9 +1,9 @@
 # TOF Plugin
 plugin_sources = [
-   'filter1/filter1.c',
-   'tofparser/tofparser.c',
-   'common/tofmeta.c',
-   'common/plugin.c'
+  'common/tofmeta.c',
+  'tofparser/tofparser.c',
+  'raw2depth/raw2depth.c',
+  'common/plugin.c'
 ]
 
 tof_plugin = library('tofplugin',
