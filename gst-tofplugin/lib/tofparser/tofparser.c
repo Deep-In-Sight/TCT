@@ -90,6 +90,7 @@ static GstFlowReturn gst_tofparser_handle_frame(GstBaseParse* parse,
 void tofparser_parse_file_header(GstBaseParse* parse, GstBuffer* buffer);
 void tofparser_parse_frame_header(GstBaseParse* parse, GstBuffer* buffer,
                                   GstMetaTof* meta);
+void tofparser_set_src_pad_caps(GstBaseParse* parse);
 
 enum { PROP_0 };
 
@@ -218,10 +219,8 @@ static GstFlowReturn gst_tofparser_handle_frame(GstBaseParse* parse,
     tofparser_parse_file_header(parse, frame->buffer);
     gst_base_parse_set_frame_rate(parse, tofparser->sh.framerate_num,
                                   tofparser->sh.framerate_den, 0, 0);
-    /*TODO: set caps from the parsed data above*/
-    GstCaps* src_caps = gst_caps_from_string("something");
-    gst_pad_set_caps(GST_BASE_PARSE_SRC_PAD(parse), src_caps);
-    gst_caps_unref(src_caps);
+    
+    tofparser_set_src_pad_caps(parse);
     *skipsize = sh->container_header_size;
   } else {
     *skipsize = 0;
@@ -294,4 +293,25 @@ void tofparser_parse_file_header(GstBaseParse* parse, GstBuffer* buffer) {
   tofparser->sh.num_frames = parse_next_guint32(&data);
 
   gst_buffer_unmap(buffer, &mapinfo);
+}
+
+void tofparser_set_src_pad_caps(GstBaseParse* parse) {
+  GstTofparser* tofparser = GST_TOFPARSER(parse);
+
+  GString *caps_str = g_string_new(NULL);
+  g_string_printf(caps_str, 
+    "video/tof, format=(string)ek640raw, width=(int)%d, height=(int)%d, "
+    "pixel_size=(int)%d, num_subframes=(int)%d, framerate=(fraction)%d/%d",
+    tofparser->sh.frame_width,
+    tofparser->sh.frame_height,
+    tofparser->sh.pixel_size,
+    tofparser->sh.num_subframes,
+    tofparser->sh.framerate_num,
+    tofparser->sh.framerate_den);
+
+  GstCaps* src_caps;
+  src_caps = gst_caps_from_string(caps_str->str);
+  gst_pad_set_caps(GST_BASE_PARSE_SRC_PAD(parse), src_caps);
+  gst_caps_unref(src_caps);
+  g_string_free(caps_str, TRUE);
 }

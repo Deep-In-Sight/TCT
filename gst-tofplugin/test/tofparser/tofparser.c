@@ -8,17 +8,18 @@
 
 StreamHeader aheader = {.container_header_size = 1024,
                         .subframe_header_size = 1024,
-                        .frame_width = 10,
-                        .frame_height = 4,
+                        .frame_width = 640,
+                        .frame_height = 480,
                         .framerate_num = 30,
                         .framerate_den = 1,
                         .pixel_size = 2,
-                        .num_subframes = 2,
-                        .num_frames = 2};
+                        .num_subframes = 4,
+                        .num_frames = 30};
 
 static guint32 sf_header[6] = {1, 2, 3, 4, 5, 6};
 
 void *raw_data;
+gsize bs = 4096;
 gsize raw_data_size;
 gsize sf_payload_size;
 gsize sf_size, df_size;
@@ -88,9 +89,40 @@ void feed_buffer(GstHarness *h, guint8 *data, gsize datasize, gsize blocksize) {
               "cannot end stream");
 }
 
+GST_START_TEST(test_caps) {
+  GstHarness *h;
+  gsize blocksize = bs;
+
+  setup_data();
+
+  h = gst_harness_new("tofparser");
+  fail_unless(h != NULL, "cannot create harness");
+
+  GString *caps_str = g_string_new(NULL);
+  g_string_printf(caps_str, 
+    "video/tof, format=(string)ek640raw, width=(int)%d, height=(int)%d, "
+    "pixel_size=(int)%d, num_subframes=(int)%d, framerate=(fraction)%d/%d",
+    aheader.frame_width,
+    aheader.frame_height,
+    aheader.pixel_size,
+    aheader.num_subframes,
+    aheader.framerate_num,
+    aheader.framerate_den);
+
+  gst_harness_set_sink_caps_str(h, caps_str->str);
+
+  feed_buffer(h, raw_data, raw_data_size, blocksize);
+
+  fail_unless(gst_harness_buffers_in_queue(h) == aheader.num_frames,
+              "received wrong number of frames");
+
+  cleanup_data();
+}
+GST_END_TEST;
+
 GST_START_TEST(test_frame_count) {
   GstHarness *h;
-  gsize blocksize = 128;
+  gsize blocksize = bs;
 
   setup_data();
 
@@ -109,7 +141,7 @@ GST_END_TEST;
 GST_START_TEST(test_frame_meta) {
   GstHarness *h;
   GstBuffer *outbuf;
-  gsize blocksize = 128;
+  gsize blocksize = bs;
   gsize outbuf_size, expected_size;
   GstMetaTof *meta;
   gpointer state;
@@ -137,7 +169,7 @@ GST_START_TEST(test_frame_meta) {
       meta_count++;
     }
     fail_unless(meta_count == aheader.num_subframes,
-                "frame buffer not wrong meta count");
+                "frame buffer has wrong meta count");
   }
   cleanup_data();
 }
@@ -149,6 +181,7 @@ static Suite *tofparser_suite(void) {
   TCase *tc_chain = tcase_create("general");
 
   suite_add_tcase(s, tc_chain);
+  tcase_add_test(tc_chain, test_caps);
   tcase_add_test(tc_chain, test_frame_count);
   tcase_add_test(tc_chain, test_frame_meta);
 

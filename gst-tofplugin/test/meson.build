@@ -20,8 +20,8 @@ foreach t : tests
   env = environment()
   tofplugin_path = join_paths(meson.project_build_root(), 'gst-tofplugin/lib')
   env.append('GST_PLUGIN_PATH', tofplugin_path)
-  env.set('GST_DEBUG', '2,baseparse:6,tofparser:6')
+  # env.set('GST_DEBUG', '2,baseparse:6,tofparser:6')
 
-  test(test_name, exe, env:env, timeout : 3 * 60)
+  test(test_name, exe, env:env, timeout : 1)
 
 endforeach
