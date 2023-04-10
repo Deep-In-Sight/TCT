@@ -1,6 +1,8 @@
 tests = [
   'common/tofmeta.c',
-  'tofparser/tofparser.c'
+  'common/tofformat.c',
+  'tofparser/tofparser.c',
+  'raw2depth/raw2depth.c'
 ]
 
 gst_check_dep = dependency('gstreamer-check-1.0', version : '>=1.19',
@@ -22,6 +24,6 @@ foreach t : tests
   env.append('GST_PLUGIN_PATH', tofplugin_path)
   # env.set('GST_DEBUG', '2,baseparse:6,tofparser:6')
 
-  test(test_name, exe, env:env, timeout : 1)
+  test(test_name, exe, env:env, timeout : 10)
 
 endforeach

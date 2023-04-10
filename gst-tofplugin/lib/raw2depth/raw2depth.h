@@ -1,5 +1,6 @@
 /* GStreamer
- * Copyright (C) 2023 FIXME <fixme@example.com>
+ * Copyright (C) 2023 Deep In Sight
+ * Author: Le Ngoc Linh <lnlinh93@dinsight.ai>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -24,27 +25,28 @@
 
 G_BEGIN_DECLS
 
-#define GST_TYPE_RAW2DEPTH   (gst_raw2depth_get_type())
-#define GST_RAW2DEPTH(obj)   (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_RAW2DEPTH,GstRaw2depth))
-#define GST_RAW2DEPTH_CLASS(klass)   (G_TYPE_CHECK_CLASS_CAST((klass),GST_TYPE_RAW2DEPTH,GstRaw2depthClass))
-#define GST_IS_RAW2DEPTH(obj)   (G_TYPE_CHECK_INSTANCE_TYPE((obj),GST_TYPE_RAW2DEPTH))
-#define GST_IS_RAW2DEPTH_CLASS(obj)   (G_TYPE_CHECK_CLASS_TYPE((klass),GST_TYPE_RAW2DEPTH))
+#define GST_TYPE_RAW2DEPTH (gst_raw2depth_get_type())
+#define GST_RAW2DEPTH(obj) \
+  (G_TYPE_CHECK_INSTANCE_CAST((obj), GST_TYPE_RAW2DEPTH, GstRaw2depth))
+#define GST_RAW2DEPTH_CLASS(klass) \
+  (G_TYPE_CHECK_CLASS_CAST((klass), GST_TYPE_RAW2DEPTH, GstRaw2depthClass))
+#define GST_IS_RAW2DEPTH(obj) \
+  (G_TYPE_CHECK_INSTANCE_TYPE((obj), GST_TYPE_RAW2DEPTH))
+#define GST_IS_RAW2DEPTH_CLASS(obj) \
+  (G_TYPE_CHECK_CLASS_TYPE((klass), GST_TYPE_RAW2DEPTH))
 
 typedef struct _GstRaw2depth GstRaw2depth;
 typedef struct _GstRaw2depthClass GstRaw2depthClass;
 
-struct _GstRaw2depth
-{
+struct _GstRaw2depth {
   GstBaseTransform base_raw2depth;
-
 };
 
-struct _GstRaw2depthClass
-{
+struct _GstRaw2depthClass {
   GstBaseTransformClass base_raw2depth_class;
 };
 
-GType gst_raw2depth_get_type (void);
+GType gst_raw2depth_get_type(void);
 
 G_END_DECLS
 

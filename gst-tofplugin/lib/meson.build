@@ -1,6 +1,7 @@
 # TOF Plugin
 plugin_sources = [
   'common/tofmeta.c',
+  'common/tofformat.c',
   'tofparser/tofparser.c',
   'raw2depth/raw2depth.c',
   'common/plugin.c'

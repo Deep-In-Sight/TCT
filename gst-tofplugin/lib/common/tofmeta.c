@@ -1,5 +1,6 @@
 /* GStreamer
- * Copyright (C) 2023 Deep In Sight <lnlinh93@dinsight.ai>
+ * Copyright (C) 2023 Deep In Sight
+ * Author: Le Ngoc Linh <lnlinh93@dinsight.ai>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
