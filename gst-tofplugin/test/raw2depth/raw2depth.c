@@ -112,7 +112,8 @@ gsize calculate_buf_size(GstCaps *caps) {
 GST_START_TEST(test_transform_buffer) {
   GstHarness *h;
   GstBuffer *inbuf = NULL;
-  GstBuffer *outbuf = NULL;
+  GstBuffer *outbuf1 = NULL;
+  GstBuffer *outbuf2 = NULL;
   GstFlowReturn ret;
   gsize insize, outsize;
 
@@ -141,15 +142,62 @@ GST_START_TEST(test_transform_buffer) {
 
   fail_unless(ret == GST_FLOW_OK, "cannot push buffer in");
 
-  outbuf = gst_harness_pull(h);
+  outbuf1 = gst_harness_pull(h);
 
-  fail_unless(outbuf != NULL, "did not receive out buffer");
-  fail_unless(gst_buffer_get_size(outbuf) == outsize,
+  fail_unless(outbuf1 != NULL, "did not receive out buffer");
+  fail_unless(gst_buffer_get_size(outbuf1) == outsize,
               "wrong output buffer size");
+
+  gst_buffer_unref(outbuf1);
+
+  inbuf = gst_harness_create_buffer(h, insize);
+  ret = gst_harness_push(h, inbuf);
+  outbuf2 = gst_harness_pull(h);
+
+  fail_unless(outbuf2 != NULL, "cannot pull outbuf2");
+
+  fail_unless(outbuf1 == outbuf2, "didn't reuse buffer");
+
+  gst_buffer_unref(outbuf2);
 }
 GST_END_TEST;
 
-GST_START_TEST(test_metadata) {}
+GST_START_TEST(test_buffer_pool) {
+  GstBufferPool *pool;
+  GstStructure *config;
+  GstBuffer *buffer1, *buffer2;
+  GstCaps *some_caps;
+  GstFlowReturn ret;
+
+  pool = gst_buffer_pool_new();
+  config = gst_buffer_pool_get_config(pool);
+  some_caps = gst_caps_from_string("somecaps");
+
+  gst_buffer_pool_config_set_params(config, some_caps, 1024, 1, 0);
+
+  gst_buffer_pool_set_config(pool, config);
+
+  gst_buffer_pool_set_active(pool, TRUE);
+
+  ret = gst_buffer_pool_acquire_buffer(pool, &buffer1, NULL);
+  fail_unless(ret == GST_FLOW_OK, " cannot acquire buff");
+  gst_buffer_unref(buffer1);
+
+  ret = gst_buffer_pool_acquire_buffer(pool, &buffer2, NULL);
+  fail_unless(ret == GST_FLOW_OK, " cannot acquire buff");
+  fail_unless(buffer1 == buffer2, "not getting same buffer");
+  gst_buffer_unref(buffer2);
+
+  ret = gst_buffer_pool_acquire_buffer(pool, &buffer1, NULL);
+  fail_unless(ret == GST_FLOW_OK, " cannot acquire buff");
+  ret = gst_buffer_pool_acquire_buffer(pool, &buffer2, NULL);
+  fail_unless(ret == GST_FLOW_OK, " cannot acquire buff");
+  fail_unless(buffer1 != buffer2, "not getting different buffer");
+
+  gst_buffer_pool_set_active(pool, FALSE);
+  gst_caps_unref(some_caps);
+  g_object_unref(pool);
+}
 GST_END_TEST;
 
 static Suite *raw2depth_suite(void) {
@@ -162,7 +210,7 @@ static Suite *raw2depth_suite(void) {
   tcase_add_test(tc_chain, test_caps_nego_pass);
   tcase_add_test(tc_chain, test_caps_nego_fail);
   tcase_add_test(tc_chain, test_transform_buffer);
-  tcase_add_test(tc_chain, test_metadata);
+  tcase_add_test(tc_chain, test_buffer_pool);
 
   return s;
 }

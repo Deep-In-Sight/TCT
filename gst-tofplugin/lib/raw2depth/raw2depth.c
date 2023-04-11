@@ -63,8 +63,8 @@ static GstCaps *gst_raw2depth_transform_caps(GstBaseTransform *trans,
                                              GstPadDirection direction,
                                              GstCaps *caps, GstCaps *filter);
 
-static gboolean gst_raw2depth_get_unit_size(GstBaseTransform *trans,
-                                            GstCaps *caps, gsize *size);
+gboolean get_output_buffer_size(GstBaseTransform *trans, GstCaps *caps,
+                                gsize *size);
 // static gboolean gst_raw2depth_start(GstBaseTransform *trans);
 // static gboolean gst_raw2depth_stop(GstBaseTransform *trans);
 
@@ -74,6 +74,8 @@ static gboolean gst_raw2depth_get_unit_size(GstBaseTransform *trans,
 // static gboolean gst_raw2depth_transform_meta(GstBaseTransform *trans,
 //                                              GstBuffer *outbuf, GstMeta
 //                                              *meta, GstBuffer *inbuf);
+static GstFlowReturn gst_raw2depth_prepare_output_buffer(
+    GstBaseTransform *trans, GstBuffer *inbuf, GstBuffer **outbuf);
 static GstFlowReturn gst_raw2depth_transform(GstBaseTransform *trans,
                                              GstBuffer *inbuf,
                                              GstBuffer *outbuf);
@@ -83,13 +85,14 @@ enum { PROP_0 };
 /* pad templates */
 
 static GstStaticPadTemplate gst_raw2depth_src_template =
-    GST_STATIC_PAD_TEMPLATE("src", GST_PAD_SRC, GST_PAD_ALWAYS,
-                            GST_STATIC_CAPS("video/tof, "
-                                            "format=(string){DA_F32}, "
-                                            "width=(int)[1,1920], "
-                                            "height=(int)[1,1080], "
-                                            "framerate=(fraction)[0/1, "
-                                            "30/1]"));
+    GST_STATIC_PAD_TEMPLATE(
+        "src", GST_PAD_SRC, GST_PAD_ALWAYS,
+        GST_STATIC_CAPS("video/tof, "
+                        "format=(string){DA_F16, DA_F32, D_F16, D_F32}, "
+                        "width=(int)[1,1920], "
+                        "height=(int)[1,1080], "
+                        "framerate=(fraction)[0/1, "
+                        "30/1]"));
 
 static GstStaticPadTemplate gst_raw2depth_sink_template =
     GST_STATIC_PAD_TEMPLATE("sink", GST_PAD_SINK, GST_PAD_ALWAYS,
@@ -121,8 +124,9 @@ static void gst_raw2depth_class_init(GstRaw2depthClass *klass) {
                                             &gst_raw2depth_sink_template);
 
   gst_element_class_set_static_metadata(
-      GST_ELEMENT_CLASS(klass), "FIXME Long name", "Generic",
-      "FIXME Description", "FIXME <fixme@example.com>");
+      GST_ELEMENT_CLASS(klass), "raw2depth", "Generic",
+      "Convert ToF Raw data to Depth and Amplitude data",
+      "Le Ngoc Linh <lnlinh93@dinsight.ai>");
 
   // gobject_class->set_property = gst_raw2depth_set_property;
   // gobject_class->get_property = gst_raw2depth_get_property;
@@ -131,20 +135,18 @@ static void gst_raw2depth_class_init(GstRaw2depthClass *klass) {
   base_transform_class->transform_caps =
       GST_DEBUG_FUNCPTR(gst_raw2depth_transform_caps);
 
-  base_transform_class->get_unit_size =
-      GST_DEBUG_FUNCPTR(gst_raw2depth_get_unit_size);
-  // base_transform_class->start = GST_DEBUG_FUNCPTR(gst_raw2depth_start);
-  // base_transform_class->stop = GST_DEBUG_FUNCPTR(gst_raw2depth_stop);
-
   // base_transform_class->copy_metadata =
   //     GST_DEBUG_FUNCPTR(gst_raw2depth_copy_metadata);
   // base_transform_class->transform_meta =
   //     GST_DEBUG_FUNCPTR(gst_raw2depth_transform_meta);
-
+  base_transform_class->prepare_output_buffer =
+      GST_DEBUG_FUNCPTR(gst_raw2depth_prepare_output_buffer);
   base_transform_class->transform = GST_DEBUG_FUNCPTR(gst_raw2depth_transform);
 }
 
-static void gst_raw2depth_init(GstRaw2depth *raw2depth) {}
+static void gst_raw2depth_init(GstRaw2depth *raw2depth) {
+  raw2depth->pool = NULL;
+}
 
 // void gst_raw2depth_set_property(GObject *object, guint property_id,
 //                                 const GValue *value, GParamSpec *pspec) {
@@ -174,10 +176,18 @@ static void gst_raw2depth_init(GstRaw2depth *raw2depth) {}
 
 void gst_raw2depth_dispose(GObject *object) {
   GstRaw2depth *raw2depth = GST_RAW2DEPTH(object);
+  GstBufferPool *pool = raw2depth->pool;
 
   GST_DEBUG_OBJECT(raw2depth, "dispose");
 
   /* clean up as possible.  may be called multiple times */
+  if (pool) {
+    if (gst_buffer_pool_is_active(pool)) {
+      gst_buffer_pool_set_active(pool, FALSE);
+    }
+    gst_object_unref(pool);
+    raw2depth->pool = NULL;
+  }
 
   G_OBJECT_CLASS(gst_raw2depth_parent_class)->dispose(object);
 }
@@ -230,14 +240,14 @@ static GstCaps *gst_raw2depth_transform_caps(GstBaseTransform *trans,
   }
 }
 
-static gboolean gst_raw2depth_get_unit_size(GstBaseTransform *trans,
-                                            GstCaps *caps, gsize *size) {
+gboolean get_output_buffer_size(GstBaseTransform *trans, GstCaps *caps,
+                                gsize *size) {
   GstRaw2depth *raw2depth = GST_RAW2DEPTH(trans);
   const GstStructure *caps_struct;
   const gchar *fmt;
-  gint width, height, pixel_size, num_subframes;
+  gint width, height;
 
-  GST_DEBUG_OBJECT(raw2depth, "get_unit_size");
+  GST_DEBUG_OBJECT(raw2depth, "get_output_buffer_size");
 
   if (gst_caps_get_size(caps) != 1) {
     goto fail;
@@ -258,11 +268,7 @@ static gboolean gst_raw2depth_get_unit_size(GstBaseTransform *trans,
   gst_structure_get_int(caps_struct, "width", &width);
   gst_structure_get_int(caps_struct, "height", &height);
 
-  if (g_strcmp0(fmt, "ek640raw") == 0) {
-    gst_structure_get_int(caps_struct, "pixel_size", &pixel_size);
-    gst_structure_get_int(caps_struct, "num_subframes", &num_subframes);
-    *size = width * height * pixel_size * num_subframes;
-  } else if (g_strcmp0(fmt, "DA_F32") == 0) {
+  if (g_strcmp0(fmt, "DA_F32") == 0) {
     *size = width * height * sizeof(gfloat) * 2;
   } else if (g_strcmp0(fmt, "D_F32") == 0) {
     *size = width * height * sizeof(gfloat);
@@ -279,23 +285,6 @@ static gboolean gst_raw2depth_get_unit_size(GstBaseTransform *trans,
 fail:
   return FALSE;
 }
-
-/* states */
-// static gboolean gst_raw2depth_start(GstBaseTransform *trans) {
-//   GstRaw2depth *raw2depth = GST_RAW2DEPTH(trans);
-
-//   GST_DEBUG_OBJECT(raw2depth, "start");
-
-//   return TRUE;
-// }
-
-// static gboolean gst_raw2depth_stop(GstBaseTransform *trans) {
-//   GstRaw2depth *raw2depth = GST_RAW2DEPTH(trans);
-
-//   GST_DEBUG_OBJECT(raw2depth, "stop");
-
-//   return TRUE;
-// }
 
 /* metadata */
 // static gboolean gst_raw2depth_copy_metadata(GstBaseTransform *trans,
@@ -317,6 +306,90 @@ fail:
 
 //   return TRUE;
 // }
+
+static GstFlowReturn gst_raw2depth_prepare_output_buffer(
+    GstBaseTransform *trans, GstBuffer *inbuf, GstBuffer **outbuf) {
+  GstRaw2depth *raw2depth = GST_RAW2DEPTH(trans);
+  GstBaseTransformClass *bclass = GST_BASE_TRANSFORM_GET_CLASS(trans);
+  GstBufferPool *pool = raw2depth->pool;
+  GstStructure *config;
+  gsize outsize;
+  GstFlowReturn ret;
+  GstPad *src_pad;
+  GstCaps *src_caps;
+
+  if (!pool) {
+    GST_DEBUG_OBJECT(trans, "Creating new buffer pool");
+    pool = gst_buffer_pool_new();
+
+    src_pad = GST_BASE_TRANSFORM_SRC_PAD(trans);
+    src_caps = gst_pad_get_current_caps(src_pad);
+    if (src_caps == NULL) {
+      goto no_outcaps;
+    }
+
+    config = gst_buffer_pool_get_config(pool);
+    if (!get_output_buffer_size(trans, src_caps, &outsize)) {
+      GST_DEBUG_OBJECT(trans, "cannot get output buffer size");
+      goto config_failed;
+    }
+    gst_buffer_pool_config_set_params(config, src_caps, outsize, 1, 0);
+    if (!gst_buffer_pool_set_config(pool, config)) {
+      goto config_failed;
+    }
+    raw2depth->pool = pool;
+  }
+
+  if (!gst_buffer_pool_is_active(pool)) {
+    GST_DEBUG_OBJECT(trans, "setting pool %p active", pool);
+    if (!gst_buffer_pool_set_active(pool, TRUE)) {
+      goto activate_failed;
+    }
+  }
+
+  GST_DEBUG_OBJECT(raw2depth, "using pool alloc");
+  ret = gst_buffer_pool_acquire_buffer(pool, outbuf, NULL);
+  if (ret != GST_FLOW_OK) {
+    goto alloc_failed;
+  }
+  GST_DEBUG_OBJECT(raw2depth, "acquired buffer %p with size %" G_GSIZE_FORMAT,
+                   *outbuf, gst_buffer_get_size(*outbuf));
+
+  /* copy the metadata */
+  if (bclass->copy_metadata) {
+    if (!bclass->copy_metadata(trans, inbuf, *outbuf)) {
+      /* something failed, post a warning */
+      GST_ELEMENT_WARNING(trans, STREAM, NOT_IMPLEMENTED,
+                          ("could not copy metadata"), (NULL));
+    }
+  }
+  return GST_FLOW_OK;
+
+  /* ERRORS */
+activate_failed : {
+  GST_ELEMENT_ERROR(trans, RESOURCE, SETTINGS,
+                    ("failed to activate bufferpool"),
+                    ("failed to activate bufferpool"));
+  return GST_FLOW_ERROR;
+}
+
+alloc_failed : {
+  GST_DEBUG_OBJECT(trans, "could not allocate buffer from pool");
+  return ret;
+}
+
+no_outcaps : {
+  GST_DEBUG_OBJECT(trans, "no output caps, source pad has been deactivated");
+  return GST_FLOW_FLUSHING;
+}
+
+config_failed : {
+  if (pool) {
+    gst_object_unref(pool);
+  }
+  return GST_FLOW_ERROR;
+}
+}
 
 /* transform */
 static GstFlowReturn gst_raw2depth_transform(GstBaseTransform *trans,

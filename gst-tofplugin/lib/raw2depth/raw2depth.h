@@ -40,6 +40,8 @@ typedef struct _GstRaw2depthClass GstRaw2depthClass;
 
 struct _GstRaw2depth {
   GstBaseTransform base_raw2depth;
+
+  GstBufferPool *pool;
 };
 
 struct _GstRaw2depthClass {
