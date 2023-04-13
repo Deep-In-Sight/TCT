@@ -10,6 +10,6 @@ plugin_sources = [
 tof_plugin = library('tofplugin',
   plugin_sources,
   include_directories : [incdir],
-  dependencies : [gst_dep, gstbase_dep],
+  dependencies : [gst_dep, gstbase_dep, math_dep],
   install : false
 )

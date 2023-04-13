@@ -16,7 +16,7 @@ foreach t : tests
   exe = executable(test_name, fname,
     include_directories : [incdir],
     link_with : [tof_plugin],
-    dependencies : [gst_dep, gstbase_dep, gst_check_dep]
+    dependencies : [gst_dep, gstbase_dep, gst_check_dep, math_dep]
   )
 
   env = environment()

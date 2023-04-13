@@ -45,7 +45,9 @@
 
 #include <gst/base/gstbasetransform.h>
 #include <gst/gst.h>
+#include <lib/common/tofmeta.h>
 #include <lib/raw2depth/raw2depth.h>
+#include <math.h>
 
 GST_DEBUG_CATEGORY_STATIC(gst_raw2depth_debug_category);
 #define GST_CAT_DEFAULT gst_raw2depth_debug_category
@@ -62,7 +64,8 @@ static void gst_raw2depth_finalize(GObject *object);
 static GstCaps *gst_raw2depth_transform_caps(GstBaseTransform *trans,
                                              GstPadDirection direction,
                                              GstCaps *caps, GstCaps *filter);
-
+static gboolean gst_raw2depth_set_caps(GstBaseTransform *trans, GstCaps *incaps,
+                                       GstCaps *outcaps);
 gboolean get_output_buffer_size(GstBaseTransform *trans, GstCaps *caps,
                                 gsize *size);
 // static gboolean gst_raw2depth_start(GstBaseTransform *trans);
@@ -128,17 +131,11 @@ static void gst_raw2depth_class_init(GstRaw2depthClass *klass) {
       "Convert ToF Raw data to Depth and Amplitude data",
       "Le Ngoc Linh <lnlinh93@dinsight.ai>");
 
-  // gobject_class->set_property = gst_raw2depth_set_property;
-  // gobject_class->get_property = gst_raw2depth_get_property;
   gobject_class->dispose = gst_raw2depth_dispose;
   gobject_class->finalize = gst_raw2depth_finalize;
   base_transform_class->transform_caps =
       GST_DEBUG_FUNCPTR(gst_raw2depth_transform_caps);
-
-  // base_transform_class->copy_metadata =
-  //     GST_DEBUG_FUNCPTR(gst_raw2depth_copy_metadata);
-  // base_transform_class->transform_meta =
-  //     GST_DEBUG_FUNCPTR(gst_raw2depth_transform_meta);
+  base_transform_class->set_caps = GST_DEBUG_FUNCPTR(gst_raw2depth_set_caps);
   base_transform_class->prepare_output_buffer =
       GST_DEBUG_FUNCPTR(gst_raw2depth_prepare_output_buffer);
   base_transform_class->transform = GST_DEBUG_FUNCPTR(gst_raw2depth_transform);
@@ -147,32 +144,6 @@ static void gst_raw2depth_class_init(GstRaw2depthClass *klass) {
 static void gst_raw2depth_init(GstRaw2depth *raw2depth) {
   raw2depth->pool = NULL;
 }
-
-// void gst_raw2depth_set_property(GObject *object, guint property_id,
-//                                 const GValue *value, GParamSpec *pspec) {
-//   GstRaw2depth *raw2depth = GST_RAW2DEPTH(object);
-
-//   GST_DEBUG_OBJECT(raw2depth, "set_property");
-
-//   switch (property_id) {
-//     default:
-//       G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
-//       break;
-//   }
-// }
-
-// void gst_raw2depth_get_property(GObject *object, guint property_id,
-//                                 GValue *value, GParamSpec *pspec) {
-//   GstRaw2depth *raw2depth = GST_RAW2DEPTH(object);
-
-//   GST_DEBUG_OBJECT(raw2depth, "get_property");
-
-//   switch (property_id) {
-//     default:
-//       G_OBJECT_WARN_INVALID_PROPERTY_ID(object, property_id, pspec);
-//       break;
-//   }
-// }
 
 void gst_raw2depth_dispose(GObject *object) {
   GstRaw2depth *raw2depth = GST_RAW2DEPTH(object);
@@ -240,6 +211,82 @@ static GstCaps *gst_raw2depth_transform_caps(GstBaseTransform *trans,
   }
 }
 
+static GstFlowReturn gst_raw2depth_ek640raw_to_DA_F32(GstBaseTransform *trans,
+                                                      GstBuffer *in,
+                                                      GstBuffer *out) {
+  GstRaw2depth *raw2depth = GST_RAW2DEPTH(trans);
+  GstMetaTof *meta;
+  GstMapInfo map_in, map_out;
+  int nr_pixels;
+  float depth_scale;
+  float mod_freq;
+
+  GST_DEBUG_OBJECT(raw2depth, "gst_raw2depth_ek640raw_to_DA_F32");
+
+  meta = META_TOF_GET(in);
+  GST_DEBUG_OBJECT(raw2depth, "found meta at %p", meta);
+  mod_freq = meta->modulation_frequency;
+  GST_DEBUG_OBJECT(raw2depth, "mod freq = %f", mod_freq);
+  nr_pixels = raw2depth->width * raw2depth->height;
+  gst_buffer_map(in, &map_in, GST_MAP_READ);
+  gst_buffer_map(out, &map_out, GST_MAP_WRITE);
+
+  gshort *phase0, *phase2, *phase1, *phase3;
+  gfloat *depth, *amplitude;
+
+  phase0 = (gshort *)map_in.data;
+  phase2 = phase0 + nr_pixels;
+  phase1 = phase2 + nr_pixels;
+  phase3 = phase1 + nr_pixels;
+
+  depth = (gfloat *)map_out.data;
+  amplitude = depth + nr_pixels;
+
+  depth_scale = 3e8 / mod_freq / (4 * M_PI);
+
+  for (int pixel = 0; pixel < nr_pixels; pixel++) {
+    float Q = phase3[pixel] - phase1[pixel];
+    float I = phase2[pixel] - phase0[pixel];
+    amplitude[pixel] = 0.5 * sqrt(Q * Q + I * I);
+    float phase_diff = M_PI + atan2(Q, I);
+    depth[pixel] = depth_scale * phase_diff;
+  }
+
+  gst_buffer_unmap(in, &map_in);
+  gst_buffer_unmap(out, &map_out);
+
+  return GST_FLOW_OK;
+}
+
+/* caps negotiation success, now configure subclass accordingly */
+static gboolean gst_raw2depth_set_caps(GstBaseTransform *trans, GstCaps *incaps,
+                                       GstCaps *outcaps) {
+  GstRaw2depth *raw2depth = GST_RAW2DEPTH(trans);
+  GstStructure *in_struct = gst_caps_get_structure(incaps, 0);
+  GstStructure *out_struct = gst_caps_get_structure(outcaps, 0);
+  int width, height;
+
+  GST_DEBUG_OBJECT(raw2depth, "set_caps");
+  const gchar *sink_fmt = gst_structure_get_string(in_struct, "format");
+  const gchar *src_fmt = gst_structure_get_string(out_struct, "format");
+
+  GST_DEBUG_OBJECT(raw2depth, "chosing converter for %s (src) and %s (sink)",
+                   src_fmt, sink_fmt);
+  if (g_strcmp0(sink_fmt, "ek640raw") == 0 &&
+      g_strcmp0(src_fmt, "DA_F32") == 0) {
+    raw2depth->convert = gst_raw2depth_ek640raw_to_DA_F32;
+  } else {
+    GST_DEBUG_OBJECT(raw2depth, "unsupported format");
+  }
+
+  gst_structure_get_int(in_struct, "width", &width);
+  gst_structure_get_int(in_struct, "height", &height);
+  raw2depth->width = width;
+  raw2depth->height = height;
+
+  return TRUE;
+}
+
 gboolean get_output_buffer_size(GstBaseTransform *trans, GstCaps *caps,
                                 gsize *size) {
   GstRaw2depth *raw2depth = GST_RAW2DEPTH(trans);
@@ -285,27 +332,6 @@ gboolean get_output_buffer_size(GstBaseTransform *trans, GstCaps *caps,
 fail:
   return FALSE;
 }
-
-/* metadata */
-// static gboolean gst_raw2depth_copy_metadata(GstBaseTransform *trans,
-//                                             GstBuffer *input,
-//                                             GstBuffer *outbuf) {
-//   GstRaw2depth *raw2depth = GST_RAW2DEPTH(trans);
-
-//   GST_DEBUG_OBJECT(raw2depth, "copy_metadata");
-
-//   return TRUE;
-// }
-
-// static gboolean gst_raw2depth_transform_meta(GstBaseTransform *trans,
-//                                              GstBuffer *outbuf, GstMeta
-//                                              *meta, GstBuffer *inbuf) {
-//   GstRaw2depth *raw2depth = GST_RAW2DEPTH(trans);
-
-//   GST_DEBUG_OBJECT(raw2depth, "transform_meta");
-
-//   return TRUE;
-// }
 
 static GstFlowReturn gst_raw2depth_prepare_output_buffer(
     GstBaseTransform *trans, GstBuffer *inbuf, GstBuffer **outbuf) {
@@ -396,8 +422,11 @@ static GstFlowReturn gst_raw2depth_transform(GstBaseTransform *trans,
                                              GstBuffer *inbuf,
                                              GstBuffer *outbuf) {
   GstRaw2depth *raw2depth = GST_RAW2DEPTH(trans);
+  GstFlowReturn ret;
 
   GST_DEBUG_OBJECT(raw2depth, "transform");
 
-  return GST_FLOW_OK;
+  ret = raw2depth->convert(trans, inbuf, outbuf);
+
+  return ret;
 }
