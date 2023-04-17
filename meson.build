@@ -8,4 +8,6 @@ gst_dep = dependency('gstreamer-1.0', version : '>=1.19',
 gstbase_dep = dependency('gstreamer-base-1.0', version : '>=1.19',
   fallback : ['gstreamer', 'gst_base_dep'])
 
+math_dep = cc.find_library('m', required : true)
+
 subdir('gst-tofplugin')

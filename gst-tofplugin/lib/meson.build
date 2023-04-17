@@ -1,14 +1,15 @@
 # TOF Plugin
 plugin_sources = [
-   'filter1/filter1.c',
-   'tofparser/tofparser.c',
-   'common/tofmeta.c',
-   'common/plugin.c'
+  'common/tofmeta.c',
+  'common/tofformat.c',
+  'tofparser/tofparser.c',
+  'raw2depth/raw2depth.c',
+  'common/plugin.c'
 ]
 
 tof_plugin = library('tofplugin',
   plugin_sources,
   include_directories : [incdir],
-  dependencies : [gst_dep, gstbase_dep],
+  dependencies : [gst_dep, gstbase_dep, math_dep],
   install : false
 )

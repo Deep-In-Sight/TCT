@@ -1,5 +1,6 @@
 /* GStreamer
- * Copyright (C) 2023 Deep In Sight <lnlinh93@dinsight.ai>
+ * Copyright (C) 2023 Deep In Sight
+ * Author: Le Ngoc Linh <lnlinh93@dinsight.ai>
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -17,7 +18,7 @@
  * Boston, MA 02110-1335, USA.
  */
 /**
- * SECTION:element-gsttofparser
+ * SECTION:element-tofparser
  *
  * The tofparser element receives buffers from upstream (a filesrc),
  * scan for file header and (or) frame headers, then output frame
@@ -219,7 +220,7 @@ static GstFlowReturn gst_tofparser_handle_frame(GstBaseParse* parse,
     tofparser_parse_file_header(parse, frame->buffer);
     gst_base_parse_set_frame_rate(parse, tofparser->sh.framerate_num,
                                   tofparser->sh.framerate_den, 0, 0);
-    
+
     tofparser_set_src_pad_caps(parse);
     *skipsize = sh->container_header_size;
   } else {
@@ -298,16 +299,14 @@ void tofparser_parse_file_header(GstBaseParse* parse, GstBuffer* buffer) {
 void tofparser_set_src_pad_caps(GstBaseParse* parse) {
   GstTofparser* tofparser = GST_TOFPARSER(parse);
 
-  GString *caps_str = g_string_new(NULL);
-  g_string_printf(caps_str, 
-    "video/tof, format=(string)ek640raw, width=(int)%d, height=(int)%d, "
-    "pixel_size=(int)%d, num_subframes=(int)%d, framerate=(fraction)%d/%d",
-    tofparser->sh.frame_width,
-    tofparser->sh.frame_height,
-    tofparser->sh.pixel_size,
-    tofparser->sh.num_subframes,
-    tofparser->sh.framerate_num,
-    tofparser->sh.framerate_den);
+  GString* caps_str = g_string_new(NULL);
+  g_string_printf(
+      caps_str,
+      "video/tof, format=(string)ek640raw, width=(int)%d, height=(int)%d, "
+      "pixel_size=(int)%d, num_subframes=(int)%d, framerate=(fraction)%d/%d",
+      tofparser->sh.frame_width, tofparser->sh.frame_height,
+      tofparser->sh.pixel_size, tofparser->sh.num_subframes,
+      tofparser->sh.framerate_num, tofparser->sh.framerate_den);
 
   GstCaps* src_caps;
   src_caps = gst_caps_from_string(caps_str->str);

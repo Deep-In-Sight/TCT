@@ -18,33 +18,14 @@
  * Boston, MA 02110-1301, USA.
  */
 
-#ifndef __TOFMETA_H__
-#define __TOFMETA_H__
+#ifndef __TOFFORMAT_H__
+#define __TOFFORMAT_H__
 
-#include <glib.h>
 #include <gst/gst.h>
 
-#define META_TOF_ADD(buffer) \
-  ((GstMetaTof*)gst_buffer_add_meta(buffer, gst_meta_tof_get_info(), NULL))
-#define META_TOF_ADD_PARAMS(buffer, params) \
-  ((GstMetaTof*)gst_buffer_add_meta(buffer, gst_meta_tof_get_info(), params))
-#define META_TOF_GET(buffer) \
-  ((GstMetaTof*)gst_buffer_get_meta(buffer, gst_meta_tof_api_get_type()))
-
-typedef struct _GstMetaTof GstMetaTof;
-
-struct _GstMetaTof {
-  GstMeta meta;
-  // sensor meta
-  guint32 modulation_frequency;
-  guint32 sensor_temperature;
-  guint32 rngchk_low;
-  guint32 rngchk_high;
-  guint32 subframe_id;
-  guint32 depthframe_id;
-};
-
-GType gst_meta_tof_api_get_type(void);
-const GstMetaInfo* gst_meta_tof_get_info(void);
+GValue* tofformat_get_raw_fmts(void);
+GValue* tofformat_get_depth_fmts(void);
+gsize tofformat_get_num_raw_fmts(void);
+gsize tofformat_get_num_depth_fmts(void);
 
 #endif

@@ -51,8 +51,8 @@ GST_START_TEST(test_add_multi_metas) {
   GstBuffer *buffer;
   GstMetaTof *meta_set, *meta_get;
   guint32 freq = 10;
-  guint32 params1[] = {0, 1, 2, 3, 4};
-  guint32 params2[] = {5, 6, 7, 8, 9};
+  guint32 params1[10] = {0, 1, 2, 3, 4, 5, 6};
+  guint32 params2[10] = {5, 6, 7, 8, 9, 10, 11};
   gpointer state;
 
   buffer = gst_buffer_new();

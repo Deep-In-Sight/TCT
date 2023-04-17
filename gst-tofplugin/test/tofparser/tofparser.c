@@ -99,15 +99,12 @@ GST_START_TEST(test_caps) {
   fail_unless(h != NULL, "cannot create harness");
 
   GString *caps_str = g_string_new(NULL);
-  g_string_printf(caps_str, 
-    "video/tof, format=(string)ek640raw, width=(int)%d, height=(int)%d, "
-    "pixel_size=(int)%d, num_subframes=(int)%d, framerate=(fraction)%d/%d",
-    aheader.frame_width,
-    aheader.frame_height,
-    aheader.pixel_size,
-    aheader.num_subframes,
-    aheader.framerate_num,
-    aheader.framerate_den);
+  g_string_printf(
+      caps_str,
+      "video/tof, format=(string)ek640raw, width=(int)%d, height=(int)%d, "
+      "pixel_size=(int)%d, num_subframes=(int)%d, framerate=(fraction)%d/%d",
+      aheader.frame_width, aheader.frame_height, aheader.pixel_size,
+      aheader.num_subframes, aheader.framerate_num, aheader.framerate_den);
 
   gst_harness_set_sink_caps_str(h, caps_str->str);
 
@@ -115,6 +112,9 @@ GST_START_TEST(test_caps) {
 
   fail_unless(gst_harness_buffers_in_queue(h) == aheader.num_frames,
               "received wrong number of frames");
+
+  gst_harness_teardown(h);
+  g_string_free(caps_str, TRUE);
 
   cleanup_data();
 }
@@ -133,6 +133,8 @@ GST_START_TEST(test_frame_count) {
 
   fail_unless(gst_harness_buffers_in_queue(h) == aheader.num_frames,
               "received wrong number of frames");
+
+  gst_harness_teardown(h);
 
   cleanup_data();
 }
@@ -171,6 +173,10 @@ GST_START_TEST(test_frame_meta) {
     fail_unless(meta_count == aheader.num_subframes,
                 "frame buffer has wrong meta count");
   }
+
+  gst_buffer_unref(outbuf);
+  gst_harness_teardown(h);
+
   cleanup_data();
 }
 
