@@ -147,7 +147,7 @@ void prepare_test_data(void *in_data, void *out_data, int size,
 }
 
 gboolean compare_data(gchar *data, gchar *expect, gsize size) {
-  for (int c = 0; c < size; c++) {
+  for (gsize c = 0; c < size; c++) {
     if (data[c] != expect[c]) {
       return FALSE;
     }
@@ -201,9 +201,10 @@ GST_START_TEST(test_transform_buffer) {
 
   outbuf_expect = gst_harness_create_buffer(h, outsize);
 
-  gst_buffer_map(inbuf, &in_mapinfo, GST_MAP_READ | GST_MAP_WRITE);
+  gst_buffer_map(inbuf, &in_mapinfo,
+                 (GstMapFlags)(GST_MAP_READ | GST_MAP_WRITE));
   gst_buffer_map(outbuf_expect, &out_expect_mapinfo,
-                 GST_MAP_READ | GST_MAP_WRITE);
+                 (GstMapFlags)(GST_MAP_READ | GST_MAP_WRITE));
 
   prepare_test_data(in_mapinfo.data, out_expect_mapinfo.data, width * height,
                     meta->modulation_frequency);
@@ -275,14 +276,12 @@ static Suite *raw2depth_suite(void) {
   TCase *tc_chain = tcase_create("general");
 
   suite_add_tcase(s, tc_chain);
-  // tcase_add_test(tc_chain, test_create_element);
+  tcase_add_test(tc_chain, test_create_element);
   /* TODO: add (supposedly) fail test cases */
-  // tcase_add_test(tc_chain, test_caps_nego_pass);
-  // tcase_add_test(tc_chain, test_caps_nego_fail);
-  for (int i = 0; i < 100; i++) {
-    tcase_add_test(tc_chain, test_transform_buffer);
-  }
-  // tcase_add_test(tc_chain, test_buffer_pool);
+  tcase_add_test(tc_chain, test_caps_nego_pass);
+  tcase_add_test(tc_chain, test_caps_nego_fail);
+  tcase_add_test(tc_chain, test_transform_buffer);
+  tcase_add_test(tc_chain, test_buffer_pool);
 
   return s;
 }

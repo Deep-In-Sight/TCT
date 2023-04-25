@@ -243,7 +243,7 @@ static GstFlowReturn gst_tofparser_handle_frame(GstBaseParse* parse,
   gst_buffer_map(frame->buffer, &mapinfo, GST_MAP_READ);
   data = mapinfo.data;
   frame->out_buffer = gst_buffer_new();
-  for (int sf = 0; sf < sh->num_subframes; sf++) {
+  for (gsize sf = 0; sf < sh->num_subframes; sf++) {
     sf_header_offset = sf * sf_size;
     sf_payload_offset = sf_header_offset + sf_header_size;
     // gstreamer's magic: no new memory allocated
