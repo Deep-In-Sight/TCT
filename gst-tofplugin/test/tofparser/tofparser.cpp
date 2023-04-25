@@ -39,8 +39,8 @@ void setup_data(void) {
   memcpy(raw_data_cur, &aheader, sizeof(aheader));
   raw_data_cur += aheader.container_header_size;  // jump to first subframe
 
-  for (int df = 0; df < aheader.num_frames; df++) {
-    for (int sf = 0; sf < aheader.num_subframes; sf++) {
+  for (gsize df = 0; df < aheader.num_frames; df++) {
+    for (gsize sf = 0; sf < aheader.num_subframes; sf++) {
       memcpy(raw_data_cur, sf_header, sizeof(sf_header));
       raw_data_cur += sf_size;  // jump to next subframe
     }
@@ -58,7 +58,7 @@ gboolean meta_check(GstMetaTof *meta) {
 }
 
 // split data into blocksize buffers, and send to harness
-void feed_buffer(GstHarness *h, guint8 *data, gsize datasize, gsize blocksize) {
+void feed_buffer(GstHarness *h, void *data, gsize datasize, gsize blocksize) {
   GstBuffer *inbuf;
   gsize buffer_offset, buffer_size;
   GstSegment segment;
@@ -73,14 +73,14 @@ void feed_buffer(GstHarness *h, guint8 *data, gsize datasize, gsize blocksize) {
   fail_unless(gst_harness_push_event(h, gst_event_new_segment(&segment)),
               "cannot push segment event");
 
-  for (int block = 0; block < num_buffer; block++) {
+  for (gsize block = 0; block < num_buffer; block++) {
     buffer_offset = block * blocksize;
     if (buffer_offset + blocksize < datasize) {
       buffer_size = blocksize;
     } else {
       buffer_size = datasize - buffer_offset;
     }
-    inbuf = gst_buffer_new_memdup(data + buffer_offset, buffer_size);
+    inbuf = gst_buffer_new_memdup((char *)data + buffer_offset, buffer_size);
     fail_unless(gst_harness_push(h, inbuf) == GST_FLOW_OK,
                 "push buffer failed");
   }
@@ -147,7 +147,7 @@ GST_START_TEST(test_frame_meta) {
   gsize outbuf_size, expected_size;
   GstMetaTof *meta;
   gpointer state;
-  int meta_count;
+  gsize meta_count;
 
   setup_data();
 
@@ -158,7 +158,7 @@ GST_START_TEST(test_frame_meta) {
 
   expected_size = sf_payload_size * aheader.num_subframes;
 
-  for (int df = 0; df < aheader.num_frames; df++) {
+  for (gsize df = 0; df < aheader.num_frames; df++) {
     outbuf = gst_harness_pull(h);
     fail_unless(outbuf != NULL, "cannot pull buffer out");
     outbuf_size = gst_buffer_get_size(outbuf);

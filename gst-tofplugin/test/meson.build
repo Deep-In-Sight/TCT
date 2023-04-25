@@ -1,8 +1,8 @@
 tests = [
-  'common/tofmeta.c',
-  'common/tofformat.c',
-  'tofparser/tofparser.c',
-  'raw2depth/raw2depth.c'
+  'common/tofmeta.cpp',
+  'common/tofformat.cpp',
+  'tofparser/tofparser.cpp',
+  'raw2depth/raw2depth.cpp'
 ]
 
 gst_check_dep = dependency('gstreamer-check-1.0', version : '>=1.19',

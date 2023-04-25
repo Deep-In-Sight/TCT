@@ -20,10 +20,10 @@
 
 #include <lib/common/tofformat.h>
 
-gchar* raw_fmts_str[] = {"ek640raw"};
+const gchar* raw_fmts_str[] = {"ek640raw"};
 int num_raw_fmts = sizeof(raw_fmts_str) / sizeof(raw_fmts_str[0]);
 
-gchar* depth_fmts_str[] = {
+const gchar* depth_fmts_str[] = {
     // "D_F16",
     "D_F32",
     // "DA_F16",
