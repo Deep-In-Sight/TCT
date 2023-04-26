@@ -50,8 +50,6 @@ GValue* tofformat_get_raw_fmts(void) {
   return va;
 }
 
-#include <stdio.h>
-
 GValue* tofformat_get_depth_fmts(void) {
   static GValue* va = NULL;
 
