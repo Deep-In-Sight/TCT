@@ -32,3 +32,5 @@
 *.app
 
 */build
+subprojects/googletest*
+subprojects/packagecache

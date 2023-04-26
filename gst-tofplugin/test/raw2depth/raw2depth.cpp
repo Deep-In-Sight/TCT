@@ -1,22 +1,21 @@
-#include <gst/check/gstcheck.h>
 #include <gst/check/gstharness.h>
+#include <gtest/gtest.h>
 #include <lib/common/tofmeta.h>
 #include <lib/raw2depth/raw2depth.h>
 #include <math.h>
 #include <stdlib.h>
 
-GST_START_TEST(test_create_element) {
+TEST(RawToDepthTestSuite, TestCreateElement) {
   GstHarness *h;
 
   h = gst_harness_new("raw2depth");
 
-  fail_unless(h != NULL, "cannot create element");
+  EXPECT_TRUE(h != NULL) << "cannot create element";
 
   gst_harness_teardown(h);
 }
-GST_END_TEST;
 
-GST_START_TEST(test_caps_nego_pass) {
+TEST(RawToDepthTestSuite, TestCapsNegoPass) {
   GstHarness *h;
   GstEvent *e;
   gboolean negotiated;
@@ -36,7 +35,7 @@ GST_START_TEST(test_caps_nego_pass) {
 
   h = gst_harness_new("raw2depth");
 
-  fail_unless(h != NULL, "cannot create harness");
+  EXPECT_TRUE(h != NULL) << "cannot create harness";
 
   negotiated = FALSE;
 
@@ -49,11 +48,10 @@ GST_START_TEST(test_caps_nego_pass) {
     gst_event_unref(e);
   }
 
-  fail_unless(negotiated, "Caps negotiation failed");
+  EXPECT_TRUE(negotiated) << "Caps negotiation failed";
 }
-GST_END_TEST;
 
-GST_START_TEST(test_caps_nego_fail) {
+TEST(RawToDepthTestSuite, TestCapsNegoFailed) {
   GstHarness *h;
   GstEvent *e;
   gboolean negotiated;
@@ -73,7 +71,7 @@ GST_START_TEST(test_caps_nego_fail) {
 
   h = gst_harness_new("raw2depth");
 
-  fail_unless(h != NULL, "cannot create harness");
+  EXPECT_TRUE(h != NULL) << "cannot create harness";
 
   negotiated = FALSE;
 
@@ -86,9 +84,8 @@ GST_START_TEST(test_caps_nego_fail) {
     gst_event_unref(e);
   }
 
-  fail_unless(!negotiated, "Caps negotiation not failed");
+  EXPECT_TRUE(!negotiated) << "Caps negotiation not failed";
 }
-GST_END_TEST;
 
 gsize calculate_buf_size(GstCaps *caps) {
   const gchar *fmt;
@@ -155,7 +152,7 @@ gboolean compare_data(gchar *data, gchar *expect, gsize size) {
   return TRUE;
 }
 
-GST_START_TEST(test_transform_buffer) {
+TEST(RawToDepthTestSuite, TestTransformBuffer) {
   GstHarness *h;
   GstBuffer *inbuf = NULL;
   GstBuffer *outbuf = NULL;
@@ -213,17 +210,17 @@ GST_START_TEST(test_transform_buffer) {
 
   ret = gst_harness_push(h, inbuf);
 
-  fail_unless(ret == GST_FLOW_OK, "cannot push buffer in");
+  EXPECT_TRUE(ret == GST_FLOW_OK) << "cannot push buffer in";
 
   outbuf = gst_harness_pull(h);
 
-  fail_unless(outbuf != NULL, "did not receive out buffer");
+  EXPECT_TRUE(outbuf != NULL) << "did not receive out buffer";
 
   gst_buffer_map(outbuf, &out_mapinfo, GST_MAP_READ);
   compare_ret = compare_data((gchar *)out_mapinfo.data,
                              (gchar *)out_expect_mapinfo.data, outsize);
 
-  fail_unless(compare_ret == TRUE, "raw to depth calculation failed");
+  EXPECT_TRUE(compare_ret == TRUE) << "raw to depth calculation failed";
 
   gst_buffer_unmap(outbuf, &out_mapinfo);
   gst_buffer_unmap(outbuf_expect, &out_expect_mapinfo);
@@ -231,9 +228,8 @@ GST_START_TEST(test_transform_buffer) {
   gst_buffer_unref(outbuf);
   gst_buffer_unref(outbuf_expect);
 }
-GST_END_TEST;
 
-GST_START_TEST(test_buffer_pool) {
+TEST(RawToDepthTestSuite, test_buffer_pool) {
   GstBufferPool *pool;
   GstStructure *config;
   GstBuffer *buffer1, *buffer2;
@@ -251,39 +247,21 @@ GST_START_TEST(test_buffer_pool) {
   gst_buffer_pool_set_active(pool, TRUE);
 
   ret = gst_buffer_pool_acquire_buffer(pool, &buffer1, NULL);
-  fail_unless(ret == GST_FLOW_OK, " cannot acquire buff");
+  EXPECT_TRUE(ret == GST_FLOW_OK) << " cannot acquire buff";
   gst_buffer_unref(buffer1);
 
   ret = gst_buffer_pool_acquire_buffer(pool, &buffer2, NULL);
-  fail_unless(ret == GST_FLOW_OK, " cannot acquire buff");
-  fail_unless(buffer1 == buffer2, "not getting same buffer");
+  EXPECT_TRUE(ret == GST_FLOW_OK) << " cannot acquire buff";
+  EXPECT_TRUE(buffer1 == buffer2) << "not getting same buffer";
   gst_buffer_unref(buffer2);
 
   ret = gst_buffer_pool_acquire_buffer(pool, &buffer1, NULL);
-  fail_unless(ret == GST_FLOW_OK, " cannot acquire buff");
+  EXPECT_TRUE(ret == GST_FLOW_OK) << " cannot acquire buff";
   ret = gst_buffer_pool_acquire_buffer(pool, &buffer2, NULL);
-  fail_unless(ret == GST_FLOW_OK, " cannot acquire buff");
-  fail_unless(buffer1 != buffer2, "not getting different buffer");
+  EXPECT_TRUE(ret == GST_FLOW_OK) << " cannot acquire buff";
+  EXPECT_TRUE(buffer1 != buffer2) << "not getting different buffer";
 
   gst_buffer_pool_set_active(pool, FALSE);
   gst_caps_unref(some_caps);
   g_object_unref(pool);
 }
-GST_END_TEST;
-
-static Suite *raw2depth_suite(void) {
-  Suite *s = suite_create("raw2depth");
-  TCase *tc_chain = tcase_create("general");
-
-  suite_add_tcase(s, tc_chain);
-  tcase_add_test(tc_chain, test_create_element);
-  /* TODO: add (supposedly) fail test cases */
-  tcase_add_test(tc_chain, test_caps_nego_pass);
-  tcase_add_test(tc_chain, test_caps_nego_fail);
-  tcase_add_test(tc_chain, test_transform_buffer);
-  tcase_add_test(tc_chain, test_buffer_pool);
-
-  return s;
-}
-
-GST_CHECK_MAIN(raw2depth);

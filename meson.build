@@ -10,4 +10,9 @@ gstbase_dep = dependency('gstreamer-base-1.0', version : '>=1.19',
 
 math_dep = cxx.find_library('m', required : true)
 
+gtest_proj = subproject('gtest')
+gtest_dep = gtest_proj.get_variable('gtest_dep')
+gmock_dep = gtest_proj.get_variable('gmock_dep')
+gtest_main_dep = gtest_proj.get_variable('gtest_main_dep')
+
 subdir('gst-tofplugin')

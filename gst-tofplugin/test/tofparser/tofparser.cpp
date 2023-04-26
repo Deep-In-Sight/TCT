@@ -1,5 +1,5 @@
-#include <gst/check/gstcheck.h>
 #include <gst/check/gstharness.h>
+#include <gtest/gtest.h>
 #include <lib/common/tofmeta.h>
 #include <lib/tofparser/tofparser.h>
 #include <string.h>
@@ -70,8 +70,8 @@ void feed_buffer(GstHarness *h, void *data, gsize datasize, gsize blocksize) {
 
   gst_segment_init(&segment, GST_FORMAT_TIME);
 
-  fail_unless(gst_harness_push_event(h, gst_event_new_segment(&segment)),
-              "cannot push segment event");
+  EXPECT_TRUE(gst_harness_push_event(h, gst_event_new_segment(&segment)))
+      << "cannot push segment event";
 
   for (gsize block = 0; block < num_buffer; block++) {
     buffer_offset = block * blocksize;
@@ -81,22 +81,22 @@ void feed_buffer(GstHarness *h, void *data, gsize datasize, gsize blocksize) {
       buffer_size = datasize - buffer_offset;
     }
     inbuf = gst_buffer_new_memdup((char *)data + buffer_offset, buffer_size);
-    fail_unless(gst_harness_push(h, inbuf) == GST_FLOW_OK,
-                "push buffer failed");
+    EXPECT_TRUE(gst_harness_push(h, inbuf) == GST_FLOW_OK)
+        << "push buffer failed";
   }
 
-  fail_unless(gst_harness_push_event(h, gst_event_new_eos()),
-              "cannot end stream");
+  EXPECT_TRUE(gst_harness_push_event(h, gst_event_new_eos()))
+      << "cannot end stream";
 }
 
-GST_START_TEST(test_caps) {
+TEST(TofParserTestSuite, TestCaps) {
   GstHarness *h;
   gsize blocksize = bs;
 
   setup_data();
 
   h = gst_harness_new("tofparser");
-  fail_unless(h != NULL, "cannot create harness");
+  EXPECT_TRUE(h != NULL) << "cannot create harness";
 
   GString *caps_str = g_string_new(NULL);
   g_string_printf(
@@ -110,37 +110,35 @@ GST_START_TEST(test_caps) {
 
   feed_buffer(h, raw_data, raw_data_size, blocksize);
 
-  fail_unless(gst_harness_buffers_in_queue(h) == aheader.num_frames,
-              "received wrong number of frames");
+  EXPECT_TRUE(gst_harness_buffers_in_queue(h) == aheader.num_frames)
+      << "received wrong number of frames";
 
   gst_harness_teardown(h);
   g_string_free(caps_str, TRUE);
 
   cleanup_data();
 }
-GST_END_TEST;
 
-GST_START_TEST(test_frame_count) {
+TEST(TofParserTestSuite, TestFrameCount) {
   GstHarness *h;
   gsize blocksize = bs;
 
   setup_data();
 
   h = gst_harness_new("tofparser");
-  fail_unless(h != NULL, "cannot create harness");
+  EXPECT_TRUE(h != NULL) << "cannot create harness";
 
   feed_buffer(h, raw_data, raw_data_size, blocksize);
 
-  fail_unless(gst_harness_buffers_in_queue(h) == aheader.num_frames,
-              "received wrong number of frames");
+  EXPECT_TRUE(gst_harness_buffers_in_queue(h) == aheader.num_frames)
+      << "received wrong number of frames";
 
   gst_harness_teardown(h);
 
   cleanup_data();
 }
-GST_END_TEST;
 
-GST_START_TEST(test_frame_meta) {
+TEST(TofParserTestSuite, TestFrameMeta) {
   GstHarness *h;
   GstBuffer *outbuf;
   gsize blocksize = bs;
@@ -152,7 +150,7 @@ GST_START_TEST(test_frame_meta) {
   setup_data();
 
   h = gst_harness_new("tofparser");
-  fail_unless(h != NULL, "cannot create harness");
+  EXPECT_TRUE(h != NULL) << "cannot create harness";
 
   feed_buffer(h, raw_data, raw_data_size, blocksize);
 
@@ -160,18 +158,18 @@ GST_START_TEST(test_frame_meta) {
 
   for (gsize df = 0; df < aheader.num_frames; df++) {
     outbuf = gst_harness_pull(h);
-    fail_unless(outbuf != NULL, "cannot pull buffer out");
+    EXPECT_TRUE(outbuf != NULL) << "cannot pull buffer out";
     outbuf_size = gst_buffer_get_size(outbuf);
-    fail_unless(outbuf_size == expected_size,
-                "frame received has incorrect size");
+    EXPECT_TRUE(outbuf_size == expected_size)
+        << "frame received has incorrect size";
     meta_count = 0;
     state = NULL;
     while ((meta = (GstMetaTof *)gst_buffer_iterate_meta(outbuf, &state))) {
-      fail_unless(meta_check(meta), "framebuffer has wrong meta value");
+      EXPECT_TRUE(meta_check(meta)) << "framebuffer has wrong meta value";
       meta_count++;
     }
-    fail_unless(meta_count == aheader.num_subframes,
-                "frame buffer has wrong meta count");
+    EXPECT_TRUE(meta_count == aheader.num_subframes)
+        << "frame buffer has wrong meta count";
   }
 
   gst_buffer_unref(outbuf);
@@ -179,19 +177,3 @@ GST_START_TEST(test_frame_meta) {
 
   cleanup_data();
 }
-
-GST_END_TEST;
-
-static Suite *tofparser_suite(void) {
-  Suite *s = suite_create("tofparser");
-  TCase *tc_chain = tcase_create("general");
-
-  suite_add_tcase(s, tc_chain);
-  tcase_add_test(tc_chain, test_caps);
-  tcase_add_test(tc_chain, test_frame_count);
-  tcase_add_test(tc_chain, test_frame_meta);
-
-  return s;
-}
-
-GST_CHECK_MAIN(tofparser);
