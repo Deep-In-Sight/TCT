@@ -3,6 +3,7 @@ tests = [
   'common/tofformat.cpp',
   'tofparser/tofparser.cpp',
   'raw2depth/raw2depth.cpp',
+  'inspector/inspector.cpp',
   'gtest-main.cpp'
 ]
 
