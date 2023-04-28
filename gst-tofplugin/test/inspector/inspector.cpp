@@ -34,6 +34,7 @@ class InspectorTestSuite : public ::testing::Test {
  protected:
   void SetUp() override {
     test_pad = gst_pad_new(NULL, GST_PAD_SRC);
+    gst_pad_activate_mode(test_pad, GST_PAD_MODE_PUSH, TRUE);
     test_inspector = new Inspector("inspect1");
     const char* window_names[] = {"hscanner0", "hscanner1", "vscanner0",
                                   "tracker0", "histogram0"};
@@ -61,10 +62,11 @@ TEST_F(InspectorTestSuite, TestAttachToPad) {
 
   probe_id = test_inspector->attach(test_pad);
 
-  EXPECT_EQ(probe_id, 0) << "First probe should return 0";
+  EXPECT_NE(probe_id, 0) << "Should not return 0";
 }
 
 TEST_F(InspectorTestSuite, TestDetachFromPad) {
+  test_inspector->attach(test_pad);
   test_inspector->detach();
 
   /* don't really know how to verify this op,
@@ -83,8 +85,12 @@ TEST_F(InspectorTestSuite, TestAddSubscribers) {
 
 TEST_F(InspectorTestSuite, TestBufferQueued) {
   int num_sample;
+
+  test_inspector->attach(test_pad);
+
   GstBuffer* b = gst_buffer_new();
   gst_pad_push(test_pad, b);
+
   num_sample = test_inspector->get_num_samples();
   EXPECT_EQ(num_sample, 1) << "buffer not queued";
 }
@@ -97,5 +103,5 @@ TEST_F(InspectorTestSuite, TestWindowUpdated) {
   gst_pad_push(test_pad, b);
   /* wait a lil bit because the update method is called from different
    * thread??!! */
-  std::this_thread::sleep_for(10ms);
+  // std::this_thread::sleep_for(10ms);
 }

@@ -24,14 +24,43 @@
  */
 #include <lib/inspector/inspector.h>
 
-Inspector::Inspector(const std::string name) { ; }
+#include <iostream>
+
+Inspector::Inspector(const std::string name) { this->name = name; }
 
 Inspector::~Inspector() { ; }
 
-int Inspector::attach(GstPad* pad) { return -1; }
+int Inspector::attach(GstPad* pad) {
+  int probe_id;
+  probe_id = gst_pad_add_probe(pad, GST_PAD_PROBE_TYPE_BUFFER,
+                               Inspector::QueueBuffer, this, NULL);
+  this->probe_id = probe_id;
+  this->pad = pad;
+  return probe_id;
+}
 
-void Inspector::detach() { ; }
+void Inspector::detach() { gst_pad_remove_probe(this->pad, this->probe_id); }
 
-int Inspector::add_subscriber(InspectorClient* client) { return -1; }
+int Inspector::add_subscriber(InspectorClient* client) {
+  int num_samples;
+  subscribers.push_back(client);
+  num_samples = subscribers.size();
+  return num_samples;
+}
 
-size_t Inspector::get_num_samples() { return -1; }
+size_t Inspector::get_num_samples() {
+  size_t num_samples;
+  num_samples = buffers.size();
+  return num_samples;
+}
+
+GstPadProbeReturn Inspector::QueueBuffer(GstPad* pad, GstPadProbeInfo* info,
+                                         gpointer user_data) {
+  Inspector* inspector = (Inspector*)user_data;
+  GstBuffer* buffer = gst_pad_probe_info_get_buffer(info);
+  buffer = gst_buffer_ref(buffer);
+  inspector->buffers.push(buffer);
+  /*wake up update loop*/
+
+  return GST_PAD_PROBE_OK;
+}

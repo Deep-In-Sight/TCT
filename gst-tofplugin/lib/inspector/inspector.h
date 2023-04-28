@@ -22,6 +22,8 @@
 #include <gst/gst.h>
 
 #include <string>
+#include <vector>
+#include <queue>
 
 class InspectorClient {
  protected:
@@ -37,6 +39,17 @@ class Inspector {
   void detach();
   int add_subscriber(InspectorClient* client);
   size_t get_num_samples();
+
+ private:
+  std::string name;
+
+  int probe_id;
+  GstPad* pad;
+  std::vector<InspectorClient*> subscribers;
+  std::queue<GstBuffer*> buffers;
+
+  static GstPadProbeReturn QueueBuffer(GstPad* pad, GstPadProbeInfo* info,
+                                       gpointer user_data);
 };
 
 #endif  //__INSPECTOR_H__
