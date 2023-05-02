@@ -21,13 +21,13 @@
 
 #include <gst/gst.h>
 
+#include <queue>
 #include <string>
 #include <vector>
-#include <queue>
 
 class InspectorClient {
  protected:
-  virtual void update(void* data, size_t size) = 0;
+  virtual void Update(void* data, size_t size) = 0;
 };
 
 class Inspector {
@@ -35,10 +35,10 @@ class Inspector {
   Inspector(const std::string name);
   ~Inspector();
 
-  int attach(GstPad* pad);
-  void detach();
-  int add_subscriber(InspectorClient* client);
-  size_t get_num_samples();
+  int Attach(GstPad* pad);
+  void Detach();
+  int AddSubscriber(InspectorClient* client);
+  size_t GetNumSamples();
 
  private:
   std::string name;

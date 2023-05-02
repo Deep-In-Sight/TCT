@@ -30,25 +30,25 @@ Inspector::Inspector(const std::string name) { this->name = name; }
 
 Inspector::~Inspector() { ; }
 
-int Inspector::attach(GstPad* pad) {
+int Inspector::Attach(GstPad* pad) {
   int probe_id;
   probe_id = gst_pad_add_probe(pad, GST_PAD_PROBE_TYPE_BUFFER,
-                               Inspector::QueueBuffer, this, NULL);
+                               &Inspector::QueueBuffer, this, NULL);
   this->probe_id = probe_id;
   this->pad = pad;
   return probe_id;
 }
 
-void Inspector::detach() { gst_pad_remove_probe(this->pad, this->probe_id); }
+void Inspector::Detach() { gst_pad_remove_probe(this->pad, this->probe_id); }
 
-int Inspector::add_subscriber(InspectorClient* client) {
+int Inspector::AddSubscriber(InspectorClient* client) {
   int num_samples;
   subscribers.push_back(client);
   num_samples = subscribers.size();
   return num_samples;
 }
 
-size_t Inspector::get_num_samples() {
+size_t Inspector::GetNumSamples() {
   size_t num_samples;
   num_samples = buffers.size();
   return num_samples;
