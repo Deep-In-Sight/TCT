@@ -15,8 +15,7 @@ class Window : public InspectorClient {
   virtual ~Window(){};
 
  protected:
-  virtual void Update(GstBuffer* buffer) {}
-  virtual void render(){};
+  virtual void paint(){};
 };
 
 /*TODO: change this mock_method when changing the InspectorClient interface */
@@ -108,18 +107,53 @@ TEST_F(InspectorTestSuite, TestWindowUpdated) {
 
   for (auto window : test_windows) {
     test_inspector->AddClient(window);
-  }
-
-  for (auto window : test_windows) {
     EXPECT_CALL(*window, Update).Times(num_buffers);
   }
 
-  GstBuffer* b;
+  GstBuffer* buffer;
   for (int count = 0; count < num_buffers; count++) {
-    b = gst_buffer_new();
-    gst_pad_push(test_pad, b);
+    buffer = gst_buffer_new();
+    gst_pad_push(test_pad, buffer);
   }
   /* wait a lil bit because the update method is called from different
    * thread??!! */
   std::this_thread::sleep_for(30ms);
+}
+
+TEST_F(InspectorTestSuite, TestSetCaps) {
+  int num_events = 1;
+
+  test_inspector->Attach(test_pad);
+
+  for (auto window : test_windows) {
+    test_inspector->AddClient(window);
+  }
+  char caps_str[128];
+  int width = 640;
+  int height = 480;
+  const char* format = "DA_F32";
+
+  for (int i = 0; i < num_events; i++) {
+    snprintf(caps_str, sizeof(caps_str),
+             "video/tof, "
+             "format=(string)%s, "
+             "width=(int)%d, "
+             "height=(int)%d",
+             format, width, height);
+    GstCaps* caps = gst_caps_from_string(caps_str);
+    GstEvent* event = gst_event_new_caps(caps);
+
+    gst_pad_push_event(test_pad, event);
+
+    /*TODO: something still owns these events/caps that make it raise a
+     * CRITICAL assertion 'GST_MINI_OBJECT_REFCOUNT_VALUE(mini_object) > 0'
+     * failed after these unrefs*/
+    gst_event_unref(event);
+    gst_caps_unref(caps);
+    int actual_width, actual_height;
+    auto window = test_windows[0];
+    window->GetFrameSize(actual_width, actual_height);
+    EXPECT_EQ(actual_width, width);
+    EXPECT_EQ(actual_height, height);
+  }
 }

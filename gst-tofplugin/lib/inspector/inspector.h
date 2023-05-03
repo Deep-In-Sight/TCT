@@ -20,6 +20,7 @@
 #define __INSPECTOR_H__
 
 #include <gst/gst.h>
+#include <lib/inspector/inspector-client.h>
 
 #include <condition_variable>
 #include <list>
@@ -28,9 +29,37 @@
 #include <string>
 #include <thread>
 
-class InspectorClient {
+class InspectorHScanner : public InspectorClient {
  public:
-  virtual void Update(GstBuffer* buffer) = 0;
+  void SetRange(int x, int y, int x2);
+
+ protected:
+  virtual void RenderResult(std::vector<float>& row);
+};
+
+class InspectorVScanner : public InspectorClient {
+ public:
+  void SetRange(int x, int y, int y2);
+
+ protected:
+  virtual void RenderResult(std::vector<float>& col);
+};
+
+class InspectorTracker : public InspectorClient {
+ public:
+  void SetRange(int x, int y);
+
+ protected:
+  virtual void RenderResult(float point);
+};
+
+class InspectorHistogram : public InspectorClient {
+ public:
+  void SetRange(int x, int y, int x2, int y2);
+
+ protected:
+  virtual void RenderResult(std::vector<float>& count,
+                            std::vector<float>& edges);
 };
 
 class Inspector {
@@ -49,13 +78,15 @@ class Inspector {
  private:
   std::string name;
 
-  int probe_id;
+  std::vector<int> probe_ids;
   GstPad* pad;
   std::list<InspectorClient*> clients;
   std::queue<GstBuffer*> buffers;
 
-  static GstPadProbeReturn QueueBuffer(GstPad* pad, GstPadProbeInfo* info,
-                                       gpointer user_data);
+  static GstPadProbeReturn NewBufferCallback(GstPad* pad, GstPadProbeInfo* info,
+                                             gpointer user_data);
+  static GstPadProbeReturn NewEventCallback(GstPad* pad, GstPadProbeInfo* info,
+                                            gpointer user_data);
 
   std::thread* t;
   std::mutex mutex;

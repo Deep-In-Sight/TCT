@@ -31,7 +31,6 @@ Inspector::Inspector(const std::string name) {
   stop_inspecting = false;
   t = new std::thread(&Inspector::UpdateClients, this);
   this->pad = NULL;
-  this->probe_id = -1;
 }
 
 Inspector::~Inspector() {
@@ -52,17 +51,22 @@ Inspector::~Inspector() {
 int Inspector::Attach(GstPad* pad) {
   int probe_id;
   probe_id = gst_pad_add_probe(pad, GST_PAD_PROBE_TYPE_BUFFER,
-                               &Inspector::QueueBuffer, this, NULL);
-  this->probe_id = probe_id;
+                               &Inspector::NewBufferCallback, this, NULL);
+  this->probe_ids.push_back(probe_id);
+  probe_id = gst_pad_add_probe(pad, GST_PAD_PROBE_TYPE_EVENT_BOTH,
+                               &Inspector::NewEventCallback, this, NULL);
+  this->probe_ids.push_back(probe_id);
+
   this->pad = pad;
   return probe_id;
 }
 
 void Inspector::Detach() {
   if (this->pad) {
-    gst_pad_remove_probe(this->pad, this->probe_id);
+    for (auto id : probe_ids) {
+      gst_pad_remove_probe(this->pad, id);
+    }
     this->pad = NULL;
-    this->probe_id = -1;
   }
 }
 
@@ -87,8 +91,9 @@ size_t Inspector::GetNumClients() {
   return num_subscribers;
 }
 
-GstPadProbeReturn Inspector::QueueBuffer(GstPad* pad, GstPadProbeInfo* info,
-                                         gpointer user_data) {
+GstPadProbeReturn Inspector::NewBufferCallback(GstPad* pad,
+                                               GstPadProbeInfo* info,
+                                               gpointer user_data) {
   Inspector* inspector = (Inspector*)user_data;
   GstBuffer* buffer = gst_pad_probe_info_get_buffer(info);
   buffer = gst_buffer_ref(buffer);
@@ -98,6 +103,29 @@ GstPadProbeReturn Inspector::QueueBuffer(GstPad* pad, GstPadProbeInfo* info,
   }
   /*wake up update loop*/
   inspector->condvar.notify_one();
+  return GST_PAD_PROBE_OK;
+}
+
+/* event handler consume the event and caps, unless it forwards to others */
+GstPadProbeReturn Inspector::NewEventCallback(GstPad* pad,
+                                              GstPadProbeInfo* info,
+                                              gpointer user_data) {
+  Inspector* inspector = (Inspector*)user_data;
+  GstEvent* event = gst_pad_probe_info_get_event(info);
+  GstCaps* caps = NULL;
+
+  switch (GST_EVENT_TYPE(event)) {
+    case GST_EVENT_CAPS:
+      gst_event_parse_caps(event, &caps);
+
+      for (auto client : inspector->clients) {
+        client->SetCaps(caps);
+      }
+      break;
+    default:
+      break;
+  }
+
   return GST_PAD_PROBE_OK;
 }
 

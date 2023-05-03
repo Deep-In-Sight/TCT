@@ -5,6 +5,7 @@ plugin_sources = [
   'tofparser/tofparser.cpp',
   'raw2depth/raw2depth.cpp',
   'inspector/inspector.cpp',
+  'inspector/inspector-client.cpp',
   'common/plugin.cpp'
 ]
 
