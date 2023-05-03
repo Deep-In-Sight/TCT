@@ -9,6 +9,7 @@ gstbase_dep = dependency('gstreamer-base-1.0', version : '>=1.19',
   fallback : ['gstreamer', 'gst_base_dep'])
 
 math_dep = cxx.find_library('m', required : true)
+thread_dep = cxx.find_library('pthread', required: true)
 
 gtest_proj = subproject('gtest')
 gtest_dep = gtest_proj.get_variable('gtest_dep')

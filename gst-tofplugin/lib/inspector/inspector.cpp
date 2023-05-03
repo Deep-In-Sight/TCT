@@ -26,9 +26,28 @@
 
 #include <iostream>
 
-Inspector::Inspector(const std::string name) { this->name = name; }
+Inspector::Inspector(const std::string name) {
+  this->name = name;
+  stop_inspecting = false;
+  t = new std::thread(&Inspector::UpdateClients, this);
+  this->pad = NULL;
+  this->probe_id = -1;
+}
 
-Inspector::~Inspector() { ; }
+Inspector::~Inspector() {
+  stop_inspecting = true;
+  condvar.notify_one();
+  t->join();
+
+  /* flush all remaining buffers */
+  while (!buffers.empty()) {
+    GstBuffer* buf = buffers.front();
+    buffers.pop();
+    gst_buffer_unref(buf);
+  }
+
+  Detach();
+}
 
 int Inspector::Attach(GstPad* pad) {
   int probe_id;
@@ -39,19 +58,33 @@ int Inspector::Attach(GstPad* pad) {
   return probe_id;
 }
 
-void Inspector::Detach() { gst_pad_remove_probe(this->pad, this->probe_id); }
+void Inspector::Detach() {
+  if (this->pad) {
+    gst_pad_remove_probe(this->pad, this->probe_id);
+    this->pad = NULL;
+    this->probe_id = -1;
+  }
+}
 
-int Inspector::AddSubscriber(InspectorClient* client) {
-  int num_samples;
-  subscribers.push_back(client);
-  num_samples = subscribers.size();
-  return num_samples;
+void Inspector::AddClient(InspectorClient* client) {
+  clients.push_back(client);
+}
+
+void Inspector::RemoveClient(InspectorClient* client) {
+  clients.remove(client);
 }
 
 size_t Inspector::GetNumSamples() {
   size_t num_samples;
+  std::lock_guard<std::mutex> lock(mutex);
   num_samples = buffers.size();
   return num_samples;
+}
+
+size_t Inspector::GetNumClients() {
+  size_t num_subscribers;
+  num_subscribers = clients.size();
+  return num_subscribers;
 }
 
 GstPadProbeReturn Inspector::QueueBuffer(GstPad* pad, GstPadProbeInfo* info,
@@ -59,8 +92,36 @@ GstPadProbeReturn Inspector::QueueBuffer(GstPad* pad, GstPadProbeInfo* info,
   Inspector* inspector = (Inspector*)user_data;
   GstBuffer* buffer = gst_pad_probe_info_get_buffer(info);
   buffer = gst_buffer_ref(buffer);
-  inspector->buffers.push(buffer);
+  {
+    std::lock_guard<std::mutex> lock(inspector->mutex);
+    inspector->buffers.push(buffer);
+  }
   /*wake up update loop*/
-
+  inspector->condvar.notify_one();
   return GST_PAD_PROBE_OK;
+}
+
+void Inspector::UpdateClients() {
+  GstBuffer* buffer;
+  while (!stop_inspecting) {
+    {
+      std::unique_lock<std::mutex> lock(mutex);
+      /* check to prevent spurious wake */
+      condvar.wait(lock, [&] { return stop_inspecting || !buffers.empty(); });
+
+      if (stop_inspecting) {
+        break;
+      }
+
+      buffer = buffers.front();
+      buffers.pop();
+    }
+
+    for (auto client : clients) {
+      /* do something time comsuming with the buffer */
+      client->Update(buffer);
+    }
+
+    gst_buffer_unref(buffer);
+  }
 }

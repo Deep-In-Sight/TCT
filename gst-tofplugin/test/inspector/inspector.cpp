@@ -15,6 +15,7 @@ class Window : public InspectorClient {
   virtual ~Window(){};
 
  protected:
+  virtual void Update(GstBuffer* buffer) {}
   virtual void render(){};
 };
 
@@ -24,7 +25,7 @@ class WindowMock : public Window {
   WindowMock(const std::string w_name) : Window(w_name){};
 
  public:
-  MOCK_METHOD(void, Update, (void*, size_t), (override));
+  MOCK_METHOD(void, Update, (GstBuffer*), (override));
 };
 
 class InspectorTestSuite : public ::testing::Test {
@@ -43,10 +44,11 @@ class InspectorTestSuite : public ::testing::Test {
   }
 
   void TearDown() override {
-    gst_object_unref(test_pad);
     for (auto window : test_windows) {
       delete window;
     }
+    delete test_inspector;
+    gst_object_unref(test_pad);
   }
 
   Inspector* test_inspector;
@@ -72,12 +74,19 @@ TEST_F(InspectorTestSuite, TestDetachFromPad) {
   SUCCEED();
 }
 
-TEST_F(InspectorTestSuite, TestAddSubscribers) {
-  int subs_id;
+TEST_F(InspectorTestSuite, TestAddClients) {
   for (auto window : test_windows) {
-    subs_id = test_inspector->AddSubscriber(window);
+    test_inspector->AddClient(window);
   }
-  EXPECT_EQ(subs_id, test_windows.size()) << "couldn't add all subs";
+  EXPECT_EQ(test_inspector->GetNumClients(), test_windows.size())
+      << "couldn't add all subs";
+}
+
+TEST_F(InspectorTestSuite, TestRemoveClient) {
+  test_inspector->AddClient(test_windows[0]);
+  EXPECT_EQ(test_inspector->GetNumClients(), 1);
+  test_inspector->RemoveClient(test_windows[0]);
+  EXPECT_EQ(test_inspector->GetNumClients(), 0);
 }
 
 TEST_F(InspectorTestSuite, TestBufferQueued) {
@@ -93,12 +102,24 @@ TEST_F(InspectorTestSuite, TestBufferQueued) {
 }
 
 TEST_F(InspectorTestSuite, TestWindowUpdated) {
+  int num_buffers = 20;
+  // how to test a single function without setting all these attach/subscribe?
+  test_inspector->Attach(test_pad);
+
   for (auto window : test_windows) {
-    EXPECT_CALL(*window, Update);
+    test_inspector->AddClient(window);
   }
-  GstBuffer* b = gst_buffer_new();
-  gst_pad_push(test_pad, b);
+
+  for (auto window : test_windows) {
+    EXPECT_CALL(*window, Update).Times(num_buffers);
+  }
+
+  GstBuffer* b;
+  for (int count = 0; count < num_buffers; count++) {
+    b = gst_buffer_new();
+    gst_pad_push(test_pad, b);
+  }
   /* wait a lil bit because the update method is called from different
    * thread??!! */
-  // std::this_thread::sleep_for(10ms);
+  std::this_thread::sleep_for(30ms);
 }

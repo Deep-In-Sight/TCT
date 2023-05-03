@@ -21,13 +21,16 @@
 
 #include <gst/gst.h>
 
+#include <condition_variable>
+#include <list>
+#include <mutex>
 #include <queue>
 #include <string>
-#include <vector>
+#include <thread>
 
 class InspectorClient {
- protected:
-  virtual void Update(void* data, size_t size) = 0;
+ public:
+  virtual void Update(GstBuffer* buffer) = 0;
 };
 
 class Inspector {
@@ -37,19 +40,30 @@ class Inspector {
 
   int Attach(GstPad* pad);
   void Detach();
-  int AddSubscriber(InspectorClient* client);
+  void AddClient(InspectorClient* client);
+  void RemoveClient(InspectorClient* client);
+
   size_t GetNumSamples();
+  size_t GetNumClients();
 
  private:
   std::string name;
 
   int probe_id;
   GstPad* pad;
-  std::vector<InspectorClient*> subscribers;
+  std::list<InspectorClient*> clients;
   std::queue<GstBuffer*> buffers;
 
   static GstPadProbeReturn QueueBuffer(GstPad* pad, GstPadProbeInfo* info,
                                        gpointer user_data);
+
+  std::thread* t;
+  std::mutex mutex;
+  std::condition_variable condvar;
+  bool stop_inspecting;
+
+ protected:
+  void UpdateClients();
 };
 
 #endif  //__INSPECTOR_H__
