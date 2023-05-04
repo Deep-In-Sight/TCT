@@ -25,6 +25,7 @@ class WindowMock : public Window {
 
  public:
   MOCK_METHOD(void, Update, (GstBuffer*), (override));
+  MOCK_METHOD(void, SetCaps, (GstCaps*), (override));
 };
 
 class InspectorTestSuite : public ::testing::Test {
@@ -120,27 +121,18 @@ TEST_F(InspectorTestSuite, TestWindowUpdated) {
   std::this_thread::sleep_for(30ms);
 }
 
-TEST_F(InspectorTestSuite, TestSetCaps) {
+TEST_F(InspectorTestSuite, TestCapsUpdated) {
   int num_events = 1;
 
   test_inspector->Attach(test_pad);
 
   for (auto window : test_windows) {
     test_inspector->AddClient(window);
+    EXPECT_CALL(*window, SetCaps);
   }
-  char caps_str[128];
-  int width = 640;
-  int height = 480;
-  const char* format = "DA_F32";
 
   for (int i = 0; i < num_events; i++) {
-    snprintf(caps_str, sizeof(caps_str),
-             "video/tof, "
-             "format=(string)%s, "
-             "width=(int)%d, "
-             "height=(int)%d",
-             format, width, height);
-    GstCaps* caps = gst_caps_from_string(caps_str);
+    GstCaps* caps = gst_caps_from_string("somecaps");
     GstEvent* event = gst_event_new_caps(caps);
 
     gst_pad_push_event(test_pad, event);
@@ -150,10 +142,5 @@ TEST_F(InspectorTestSuite, TestSetCaps) {
      * failed after these unrefs*/
     gst_event_unref(event);
     gst_caps_unref(caps);
-    int actual_width, actual_height;
-    auto window = test_windows[0];
-    window->GetFrameSize(actual_width, actual_height);
-    EXPECT_EQ(actual_width, width);
-    EXPECT_EQ(actual_height, height);
   }
 }

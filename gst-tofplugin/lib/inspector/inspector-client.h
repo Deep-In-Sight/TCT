@@ -27,7 +27,7 @@
 class InspectorClient {
  public:
   virtual void Update(GstBuffer* buffer) = 0;
-  void SetCaps(GstCaps* caps);
+  virtual void SetCaps(GstCaps* caps);
   void SetAmplitude(bool amplitude);
   void GetFrameSize(int& width, int& height);
 
