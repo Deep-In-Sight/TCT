@@ -1,12 +1,13 @@
 # TOF Plugin
 plugin_sources = [
-  'common/tofmeta.cpp',
-  'common/tofformat.cpp',
-  'tofparser/tofparser.cpp',
-  'raw2depth/raw2depth.cpp',
-  'inspector/inspector.cpp',
-  'inspector/inspector-client.cpp',
-  'common/plugin.cpp'
+  'common/tofmeta.cc',
+  'common/tofformat.cc',
+  'tofparser/tofparser.cc',
+  'raw2depth/raw2depth.cc',
+  'inspector/inspector.cc',
+  'inspector/inspector-client.cc',
+  # 'inspector/inspector-scanner.cc',
+  'common/plugin.cc'
 ]
 
 tof_plugin = library('tofplugin',
