@@ -6,6 +6,7 @@ tests = [
   'inspector/inspector.cc',
   'inspector/inspector-client.cc',
   'inspector/inspector-scanner.cc',
+  'inspector/inspector-tracker.cc',
   'gtest-main.cc'
 ]
 
