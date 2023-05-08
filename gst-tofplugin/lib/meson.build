@@ -6,7 +6,7 @@ plugin_sources = [
   'raw2depth/raw2depth.cc',
   'inspector/inspector.cc',
   'inspector/inspector-client.cc',
-  # 'inspector/inspector-scanner.cc',
+  'inspector/inspector-scanner.cc',
   'common/plugin.cc'
 ]
 

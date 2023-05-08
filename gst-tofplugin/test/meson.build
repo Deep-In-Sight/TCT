@@ -5,6 +5,7 @@ tests = [
   'raw2depth/raw2depth.cc',
   'inspector/inspector.cc',
   'inspector/inspector-client.cc',
+  'inspector/inspector-scanner.cc',
   'gtest-main.cc'
 ]
 

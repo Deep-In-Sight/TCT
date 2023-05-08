@@ -29,22 +29,6 @@
 #include <string>
 #include <thread>
 
-class InspectorHScanner : public InspectorClient {
- public:
-  void SetRange(int x, int y, int x2);
-
- protected:
-  virtual void RenderResult(std::vector<float>& row);
-};
-
-class InspectorVScanner : public InspectorClient {
- public:
-  void SetRange(int x, int y, int y2);
-
- protected:
-  virtual void RenderResult(std::vector<float>& col);
-};
-
 class InspectorTracker : public InspectorClient {
  public:
   void SetRange(int x, int y);

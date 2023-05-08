@@ -40,3 +40,8 @@ void InspectorClient::GetFrameSize(int &width, int &height) {
   width = this->width;
   height = this->height;
 }
+
+void InspectorClient::SetFrameSize(int width, int height) {
+  this->width = width;
+  this->height = height;
+}
