@@ -56,7 +56,7 @@ class InspectorScanner : public InspectorClient {
    * @param buffer GstBuffer to collect data from
    * @return std::vector<float>& collected data
    */
-  virtual std::vector<float>& CollectRange(GstBuffer* buffer) = 0;
+  virtual const std::vector<float>& CollectRange(GstBuffer* buffer) = 0;
   /**
    * @brief not to be called from outside. This function is called by Update().
    * Implemented by child class, to render the collected data, either to a gui
@@ -64,7 +64,7 @@ class InspectorScanner : public InspectorClient {
    *
    * @param vec
    */
-  virtual void RenderResult(std::vector<float>& vec) = 0;
+  virtual void RenderResult(const std::vector<float>& vec) = 0;
   /**
    * @brief not to be called from outside. This function is called by
    * SetRange() in each child class.
@@ -83,7 +83,8 @@ class InspectorScanner : public InspectorClient {
    * @param dir scan direction
    * @return std::vector<float>& collected data
    */
-  std::vector<float>& CollectRangeImpl(GstBuffer* buffer, ScanDirection dir);
+  const std::vector<float>& CollectRangeImpl(GstBuffer* buffer,
+                                             ScanDirection dir);
 
  private:
   int start_x;
@@ -97,7 +98,7 @@ class InspectorHScanner : public InspectorScanner {
   void SetRange(int x1, int y1, int xy2) override;
 
  private:
-  std::vector<float>& CollectRange(GstBuffer* buffer) override;
+  const std::vector<float>& CollectRange(GstBuffer* buffer) override;
 };
 
 class InspectorVScanner : public InspectorScanner {
@@ -105,7 +106,7 @@ class InspectorVScanner : public InspectorScanner {
   void SetRange(int x1, int y1, int xy2) override;
 
  private:
-  std::vector<float>& CollectRange(GstBuffer* buffer) override;
+  const std::vector<float>& CollectRange(GstBuffer* buffer) override;
 };
 
 #endif  //__INSPECTOR_SCANNER_H__

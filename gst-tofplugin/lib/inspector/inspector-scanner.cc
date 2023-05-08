@@ -56,8 +56,8 @@ void InspectorScanner::SetRangeImpl(int x1, int y1, int xy2,
   }
 }
 
-std::vector<float>& InspectorScanner::CollectRangeImpl(GstBuffer* buffer,
-                                                       ScanDirection dir) {
+const std::vector<float>& InspectorScanner::CollectRangeImpl(
+    GstBuffer* buffer, ScanDirection dir) {
   GstMapInfo mapinfo;
   float* data;
   size_t stride;
@@ -94,7 +94,7 @@ void InspectorHScanner::SetRange(int x1, int y1, int xy2) {
   SetRangeImpl(x1, y1, xy2, InspectorScanner::kScanHorizontal);
 }
 
-std::vector<float>& InspectorHScanner::CollectRange(GstBuffer* buffer) {
+const std::vector<float>& InspectorHScanner::CollectRange(GstBuffer* buffer) {
   return CollectRangeImpl(buffer, InspectorScanner::kScanHorizontal);
 }
 
@@ -102,6 +102,6 @@ void InspectorVScanner::SetRange(int x1, int y1, int xy2) {
   SetRangeImpl(x1, y1, xy2, InspectorScanner::kScanVertical);
 }
 
-std::vector<float>& InspectorVScanner::CollectRange(GstBuffer* buffer) {
+const std::vector<float>& InspectorVScanner::CollectRange(GstBuffer* buffer) {
   return CollectRangeImpl(buffer, InspectorScanner::kScanVertical);
 }

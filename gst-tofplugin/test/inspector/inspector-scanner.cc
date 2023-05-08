@@ -10,18 +10,19 @@ class InspectorScannerMock : public InspectorScanner {
   virtual ~InspectorScannerMock(){};
   /* mock-away so the abstract InspectorScanner can be instantiated. */
   MOCK_METHOD(void, SetRange, (int x1, int y1, int xy2), (override));
-  MOCK_METHOD(std::vector<float>&, CollectRange, (GstBuffer*), (override));
-  MOCK_METHOD(void, RenderResult, (std::vector<float> & vec), (override));
+  MOCK_METHOD(const std::vector<float>&, CollectRange, (GstBuffer*),
+              (override));
+  MOCK_METHOD(void, RenderResult, (const std::vector<float>& vec), (override));
   void SetHRange(int x1, int y1, int xy2) {
     SetRangeImpl(x1, y1, xy2, InspectorScanner::kScanHorizontal);
   }
   void SetVRange(int x1, int y1, int xy2) {
     SetRangeImpl(x1, y1, xy2, InspectorScanner::kScanVertical);
   }
-  std::vector<float>& CollectHRange(GstBuffer* buffer) {
+  const std::vector<float>& CollectHRange(GstBuffer* buffer) {
     return CollectRangeImpl(buffer, InspectorScanner::kScanHorizontal);
   }
-  std::vector<float>& CollectVRange(GstBuffer* buffer) {
+  const std::vector<float>& CollectVRange(GstBuffer* buffer) {
     return CollectRangeImpl(buffer, InspectorScanner::kScanVertical);
   }
 };
