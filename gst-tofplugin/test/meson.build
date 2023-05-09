@@ -17,7 +17,7 @@ gst_check_dep = dependency('gstreamer-check-1.0', version : '>=1.19',
 exe = executable('gtest-main', tests,
   include_directories : [incdir],
   link_with : [tof_plugin],
-  dependencies : [gst_dep, gstbase_dep, gst_check_dep, math_dep, gtest_dep, gmock_dep]
+  dependencies : [gst_dep, gstbase_dep, gst_check_dep, math_dep, gtest_dep, gmock_dep, spdlog_dep]
 )
 
 env = environment()

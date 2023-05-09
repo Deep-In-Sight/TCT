@@ -43,6 +43,6 @@ class InspectorBitmap : public InspectorClient {
    * @param buffer
    */
   virtual void Render(float* data) = 0;
-}
+};
 
 #endif  // __INSPECTOR_BITMAP_H__
