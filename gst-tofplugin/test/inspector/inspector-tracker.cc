@@ -57,7 +57,7 @@ TEST_F(InspectorTrackerTest, TestSetLocation) {
 }
 
 TEST_F(InspectorTrackerTest, TestGetPoint) {
-  float data[100];
+  float* data = new float[100];
   for (int i = 0; i < 100; i++) {
     data[i] = i;
   }
@@ -65,4 +65,6 @@ TEST_F(InspectorTrackerTest, TestGetPoint) {
   inspector_tracker_mock_->SetLocation(1, 2);
   float value = inspector_tracker_mock_->GetPoint(buffer);
   EXPECT_EQ(value, 21);
+
+  gst_buffer_unref(buffer);
 }

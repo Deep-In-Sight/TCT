@@ -54,7 +54,7 @@ class InspectorTracker : public InspectorClient {
    * @brief Render the point value. Not to be called directly, it's called in
    * Update() function. This function is implemented in child class to render
    * the point value to either GUI window for visualizing, or text file for
-   * storing
+   * storing.
    *
    * @param value
    */

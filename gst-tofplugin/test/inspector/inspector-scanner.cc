@@ -85,7 +85,7 @@ TEST_F(InspectorScannerTest, TestSetRange) {
 
 TEST_F(InspectorScannerTest, TestCollectRange) {
   std::vector<float> vec;
-  float data[100];
+  float* data = new float[100];
   for (int i = 0; i < 100; i++) {
     data[i] = i;
   }
@@ -106,4 +106,6 @@ TEST_F(InspectorScannerTest, TestCollectRange) {
   EXPECT_EQ(vec.size(), 2);
   EXPECT_EQ(vec[0], 21);
   EXPECT_EQ(vec[1], 31);
+
+  gst_buffer_unref(buffer);
 }
