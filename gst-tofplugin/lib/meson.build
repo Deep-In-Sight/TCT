@@ -9,6 +9,7 @@ plugin_sources = [
   'inspector/inspector-scanner.cc',
   'inspector/inspector-tracker.cc',
   'inspector/inspector-histogram.cc',
+  'inspector/inspector-bitmap.cc',
   'common/plugin.cc'
 ]
 

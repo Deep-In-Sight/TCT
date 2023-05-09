@@ -35,4 +35,6 @@
 */builddir
 .vscode
 subprojects/googletest*
+subprojects/spdlog*
+!subprojects/*.wrap
 subprojects/packagecache
