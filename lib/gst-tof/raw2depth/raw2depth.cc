@@ -43,10 +43,10 @@
 #include "config.h"
 #endif
 
+#include <gst-tof/common/tofmeta.h>
+#include <gst-tof/raw2depth/raw2depth.h>
 #include <gst/base/gstbasetransform.h>
 #include <gst/gst.h>
-#include <lib/common/tofmeta.h>
-#include <lib/raw2depth/raw2depth.h>
 #include <math.h>
 
 GST_DEBUG_CATEGORY_STATIC(gst_raw2depth_debug_category);

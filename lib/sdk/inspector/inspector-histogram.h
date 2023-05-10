@@ -20,7 +20,7 @@
 #ifndef __INSPECTOR_HISTOGRAM_H__
 #define __INSPECTOR_HISTOGRAM_H__
 
-#include <lib/inspector/inspector-client.h>
+#include <sdk/inspector/inspector-client.h>
 
 #include <vector>
 

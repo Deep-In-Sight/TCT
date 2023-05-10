@@ -17,7 +17,7 @@
  * Boston, MA 02110-1335, USA.
  */
 
-#include <lib/inspector/inspector-scanner.h>
+#include <sdk/inspector/inspector-scanner.h>
 
 void InspectorScanner::GetRange(int& x1, int& y1, int& xy2) {
   x1 = start_x;

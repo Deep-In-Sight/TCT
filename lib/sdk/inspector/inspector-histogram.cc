@@ -17,7 +17,7 @@
  * Boston, MA 02110-1335, USA.
  */
 
-#include <lib/inspector/inspector-histogram.h>
+#include <sdk/inspector/inspector-histogram.h>
 
 #include <algorithm>
 #include <cmath>

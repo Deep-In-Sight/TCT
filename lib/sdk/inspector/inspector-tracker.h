@@ -20,7 +20,7 @@
 #ifndef __INSPECTOR_TRACKER_H__
 #define __INSPECTOR_TRACKER_H__
 
-#include <lib/inspector/inspector-client.h>
+#include <sdk/inspector/inspector-client.h>
 
 class InspectorTracker : public InspectorClient {
  public:

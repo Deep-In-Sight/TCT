@@ -1,7 +1,7 @@
+#include <gst-tof/common/plugin.h>
+#include <gst-tof/raw2depth/raw2depth.h>
+#include <gst-tof/tofparser/tofparser.h>
 #include <gst/gst.h>
-#include <lib/common/plugin.h>
-#include <lib/raw2depth/raw2depth.h>
-#include <lib/tofparser/tofparser.h>
 
 static gboolean plugin_init(GstPlugin* plugin) {
   gboolean ret = FALSE;

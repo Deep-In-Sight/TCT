@@ -20,7 +20,7 @@
 #define __INSPECTOR_H__
 
 #include <gst/gst.h>
-#include <lib/inspector/inspector-client.h>
+#include <sdk/inspector/inspector-client.h>
 
 #include <condition_variable>
 #include <list>
@@ -28,23 +28,6 @@
 #include <queue>
 #include <string>
 #include <thread>
-
-class InspectorTracker : public InspectorClient {
- public:
-  void SetRange(int x, int y);
-
- protected:
-  virtual void RenderResult(float point);
-};
-
-class InspectorHistogram : public InspectorClient {
- public:
-  void SetRange(int x, int y, int x2, int y2);
-
- protected:
-  virtual void RenderResult(std::vector<float>& count,
-                            std::vector<float>& edges);
-};
 
 class Inspector {
  public:

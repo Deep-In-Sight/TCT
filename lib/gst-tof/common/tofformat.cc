@@ -18,7 +18,7 @@
  * Boston, MA 02110-1301, USA.
  */
 
-#include <lib/common/tofformat.h>
+#include <gst-tof/common/tofformat.h>
 
 const gchar* raw_fmts_str[] = {"ek640raw"};
 int num_raw_fmts = sizeof(raw_fmts_str) / sizeof(raw_fmts_str[0]);

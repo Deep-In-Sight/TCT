@@ -19,7 +19,7 @@
 #ifndef __INSPECTOR_SCANNER_H__
 #define __INSPECTOR_SCANNER_H__
 
-#include <lib/inspector/inspector-client.h>
+#include <sdk/inspector/inspector-client.h>
 
 #include <vector>
 

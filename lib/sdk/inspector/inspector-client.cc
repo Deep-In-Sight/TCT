@@ -17,7 +17,7 @@
  * Boston, MA 02110-1335, USA.
  */
 
-#include <lib/inspector/inspector-client.h>
+#include <sdk/inspector/inspector-client.h>
 
 #include <iostream>
 

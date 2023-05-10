@@ -17,7 +17,7 @@
  * Boston, MA 02110-1335, USA.
  */
 
-#include <lib/inspector/inspector-tracker.h>
+#include <sdk/inspector/inspector-tracker.h>
 
 void InspectorTracker::SetLocation(int x, int y) {
   point_x = std::max(0, std::min(x, width - 1));

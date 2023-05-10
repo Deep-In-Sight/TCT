@@ -72,10 +72,10 @@
 #include "config.h"
 #endif
 
+#include <gst-tof/common/tofmeta.h>
+#include <gst-tof/tofparser/tofparser.h>
 #include <gst/base/gstbaseparse.h>
 #include <gst/gst.h>
-#include <lib/common/tofmeta.h>
-#include <lib/tofparser/tofparser.h>
 
 GST_DEBUG_CATEGORY_STATIC(gst_tofparser_debug_category);
 #define GST_CAT_DEFAULT gst_tofparser_debug_category

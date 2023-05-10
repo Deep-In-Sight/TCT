@@ -18,7 +18,7 @@
  * Boston, MA 02110-1301, USA.
  */
 
-#include <lib/common/tofmeta.h>
+#include <gst-tof/common/tofmeta.h>
 
 // get the registered api type
 GType gst_meta_tof_api_get_type(void) {

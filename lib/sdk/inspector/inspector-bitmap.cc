@@ -17,7 +17,7 @@
  * Boston, MA 02110-1335, USA.
  */
 
-#include <lib/inspector/inspector-bitmap.h>
+#include <sdk/inspector/inspector-bitmap.h>
 
 void InspectorBitmap::Update(GstBuffer* buffer) {
   GstMapInfo info;

@@ -22,7 +22,7 @@
  * Add description later
  *
  */
-#include <lib/inspector/inspector.h>
+#include <sdk/inspector/inspector.h>
 
 #include <iostream>
 

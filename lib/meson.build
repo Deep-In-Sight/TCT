@@ -1,2 +1,2 @@
-subdir('gst')
+subdir('gst-tof')
 subdir('sdk')
