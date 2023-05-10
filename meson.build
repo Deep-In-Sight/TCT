@@ -26,4 +26,6 @@ gtest_main_dep = gtest_proj.get_variable('gtest_main_dep')
 spdlog_proj = subproject('spdlog', default_options : 'tests=false')
 spdlog_dep = spdlog_proj.get_variable('spdlog_dep')
 
-subdir('gst-tofplugin')
+incdir = include_directories('lib')
+subdir('lib')
+subdir('tests')
