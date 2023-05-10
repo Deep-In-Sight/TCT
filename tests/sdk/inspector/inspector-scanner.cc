@@ -1,7 +1,7 @@
 #include <gmock/gmock.h>
 #include <gst/gst.h>
 #include <gtest/gtest.h>
-#include <lib/inspector/inspector-scanner.h>
+#include <sdk/inspector/inspector-scanner.h>
 
 #include <iostream>
 

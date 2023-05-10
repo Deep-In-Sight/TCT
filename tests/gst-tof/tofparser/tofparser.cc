@@ -1,7 +1,7 @@
+#include <gst-tof/common/tofmeta.h>
+#include <gst-tof/tofparser/tofparser.h>
 #include <gst/check/gstharness.h>
 #include <gtest/gtest.h>
-#include <lib/common/tofmeta.h>
-#include <lib/tofparser/tofparser.h>
 #include <string.h>
 
 #define FILENAME "testdata"

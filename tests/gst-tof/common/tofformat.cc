@@ -1,5 +1,5 @@
+#include <gst-tof/common/tofformat.h>
 #include <gtest/gtest.h>
-#include <lib/common/tofformat.h>
 
 TEST(TofFormatTestSuite, TestRawFormats) {
   GValue *raw_fmts = tofformat_get_raw_fmts();

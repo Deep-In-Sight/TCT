@@ -1,7 +1,7 @@
 #include <gmock/gmock.h>
 #include <gst/gst.h>
 #include <gtest/gtest.h>
-#include <lib/inspector/inspector-histogram.h>
+#include <sdk/inspector/inspector-histogram.h>
 
 #include <iostream>
 #include <limits>

@@ -1,5 +1,5 @@
+#include <gst-tof/common/tofmeta.h>
 #include <gtest/gtest.h>
-#include <lib/common/tofmeta.h>
 
 TEST(TofMetaTestSuite, TestAddMeta) {
   GstBuffer *buffer;

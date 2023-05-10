@@ -1,7 +1,7 @@
+#include <gst-tof/common/tofmeta.h>
+#include <gst-tof/raw2depth/raw2depth.h>
 #include <gst/check/gstharness.h>
 #include <gtest/gtest.h>
-#include <lib/common/tofmeta.h>
-#include <lib/raw2depth/raw2depth.h>
 #include <math.h>
 #include <stdlib.h>
 
