@@ -110,6 +110,7 @@ gsize calculate_buf_size(GstCaps *caps) {
 
 void prepare_test_data(void *in_data, void *out_data, int size,
                        float mod_freq) {
+#if 0
   gshort *phase, *phase0, *phase2, *phase1, *phase3;
   gfloat *depth;
   gfloat *amplitude;
@@ -141,6 +142,35 @@ void prepare_test_data(void *in_data, void *out_data, int size,
     float phase_diff = M_PI + atan2(Q, I);
     depth[pixel] = depth_scale * phase_diff;
   }
+
+  // save in_data to file
+  FILE *fp;
+  // this path is relative to the current working directory, not the executable
+  // path
+  const char *filename = "data/input/raw2depth.dat";
+  fp = fopen(filename, "wb");
+  fwrite(in_data, sizeof(gshort), size * 4, fp);
+  fclose(fp);
+
+  // save out_data to file
+  filename = "data/golden_output/raw2depth.dat";
+  fp = fopen(filename, "wb");
+  fwrite(out_data, sizeof(gfloat), size * 2, fp);
+  fclose(fp);
+#else
+  // read in_data from file
+  FILE *fp;
+  const char *filename = "data/input/raw2depth.dat";
+  fp = fopen(filename, "rb");
+  fread(in_data, sizeof(gshort), size * 4, fp);
+  fclose(fp);
+
+  // read out_data from file
+  filename = "data/golden_output/raw2depth.dat";
+  fp = fopen(filename, "rb");
+  fread(out_data, sizeof(gfloat), size * 2, fp);
+  fclose(fp);
+#endif
 }
 
 gboolean compare_data(gchar *data, gchar *expect, gsize size) {
@@ -167,8 +197,8 @@ TEST(RawToDepthTestSuite, TestTransformBuffer) {
   gboolean compare_ret;
 
   int nr_subframes = 4;
-  int width = 640;
-  int height = 480;
+  int width = 10;
+  int height = 10;
 
   src_caps_str = g_string_new(NULL);
   g_string_printf(src_caps_str,

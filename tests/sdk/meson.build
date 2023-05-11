@@ -21,4 +21,4 @@ tofplugin_path = join_paths(meson.project_build_root(), 'lib/gst-tof')
 env.append('GST_PLUGIN_PATH', tofplugin_path)
 # env.set('GST_DEBUG', '2,baseparse:6,tofparser:6')
 
-test('sdk_tests', exe, env:env, timeout : 10)
+test('sdk_tests', exe, env:env, timeout : 10, workdir : test_dir)
