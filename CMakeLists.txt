@@ -38,5 +38,8 @@ if(GST_CHECK_NOTFOUND)
   message(FATAL "gstreamer check not found")
 endif()
 
+# put this out here so vscode can find it
+enable_testing()
+
 add_subdirectory(lib)
 add_subdirectory(tests)
