@@ -13,6 +13,13 @@ class ElementMock : public Element {
   MOCK_METHOD(void, PushFrame, (cv::Mat & frame), (override));
 };
 
+class PadObserverMock : public PadObserver {
+ public:
+  PadObserverMock() {}
+  ~PadObserverMock() {}
+  MOCK_METHOD(void, OnNewFrame, (cv::Mat & frame), (override));
+};
+
 TEST(PadTest, TestPadContructor) {
   PadDirection direction = kPadSource;
   string name = "src";
@@ -25,9 +32,9 @@ TEST(PadTest, TestPadContructor) {
 
 TEST(PadTest, TestPadSetParent) {
   Pad pad(kPadSink, "sink");
-  Element elem1;
+  ElementMock elem1;
   EXPECT_EQ(pad.SetParent(&elem1), true);
-  Element elem2;
+  ElementMock elem2;
   EXPECT_EQ(pad.SetParent(&elem2), false);
 }
 
@@ -80,4 +87,18 @@ TEST(PadTest, TestPadPushFrame) {
   Pad pad3(kPadSink, "sink");
   pad3.SetParent(&elem2);
   pad3.PushFrame(frame);
+}
+
+TEST(PadTest, TestPadObservers) {
+  Pad pad(kPadSource, "src");
+  PadObserverMock observer1;
+  PadObserverMock observer2;
+  pad.AddObserver(&observer1);
+  pad.AddObserver(&observer2);
+  cv::Mat frame;
+  EXPECT_CALL(observer1, OnNewFrame).Times(2);
+  EXPECT_CALL(observer2, OnNewFrame).Times(1);
+  pad.PushFrame(frame);
+  pad.RemoveObserver(&observer2);
+  pad.PushFrame(frame);
 }

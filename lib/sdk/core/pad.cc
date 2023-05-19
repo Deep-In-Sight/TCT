@@ -78,6 +78,11 @@ PadLinkReturn Pad::Unlink() {
 Pad *Pad::GetPeer() { return peer_; }
 
 void Pad::PushFrame(cv::Mat &frame) {
+  // update observers
+  for (auto it = observers_.begin(); it != observers_.end(); it++) {
+    (*it)->OnNewFrame(frame);
+  }
+
   if (direction_ == kPadSource && link_status_ == kPadUnlinked) {
     return;
   }
@@ -86,12 +91,29 @@ void Pad::PushFrame(cv::Mat &frame) {
     return;
   }
 
-  // run probes
-
   // send out frame
   if (direction_ == kPadSource) {
     peer_->PushFrame(frame);
   } else {
     parent_->PushFrame(frame);
   }
+}
+
+void Pad::AddObserver(PadObserver *observer) {
+  if (observer == nullptr) {
+    return;
+  }
+  for (auto it = observers_.begin(); it != observers_.end(); it++) {
+    if (*it == observer) {
+      return;
+    }
+  }
+  observers_.push_back(observer);
+}
+
+void Pad::RemoveObserver(PadObserver *observer) {
+  if (observer == nullptr) {
+    return;
+  }
+  observers_.remove(observer);
 }

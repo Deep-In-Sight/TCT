@@ -34,5 +34,3 @@ bool Element::AddPad(Pad *pad) {
   pad->SetParent(this);
   return true;
 }
-
-void Element::PushFrame(cv::Mat &frame) {}

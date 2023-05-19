@@ -22,14 +22,14 @@ class ElementChild : public Element {
 
 TEST(ElementTest, TestElementContructor) {
   string name = "elem";
-  Element elem(name);
+  ElementChild elem(name);
   EXPECT_EQ(elem.GetName(), name);
 }
 
 TEST(ElementTest, TestAddGetPad) {
   string name = "elem";
-  Element elem(name);
-  Pad* pad = elem.GetPad("src");
+  ElementChild elem(name);
+  Pad* pad = elem.GetPad("src_nonexist");
   EXPECT_EQ(pad, nullptr);
   ElementChild elem2(name);
   EXPECT_NE(elem2.GetPad("src"), nullptr);

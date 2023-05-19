@@ -53,6 +53,11 @@ enum PadLinkReturn {
   kPadLinkAlreadyLinked
 };
 
+class PadObserver {
+ public:
+  virtual void OnNewFrame(cv::Mat &frame) = 0;
+};
+
 /**
  * @brief A Pad is a connection point between elements. It has a direction and a
  * name. A Pad can be linked to another Pad of opposite direction. A Pad can be
@@ -135,11 +140,27 @@ class Pad {
    */
   void PushFrame(cv::Mat &frame);
 
+  /**
+   * @brief Add an observer to the pad. The observer will be notified when a new
+   * frame is pushed to the pad.
+   *
+   * @param observer
+   */
+  void AddObserver(PadObserver *observer);
+
+  /**
+   * @brief Remove an observer from the pad.
+   *
+   * @param observer
+   */
+  void RemoveObserver(PadObserver *observer);
+
  private:
   PadDirection direction_;
   PadLinkStatus link_status_;
   Element *parent_;
   Pad *peer_;
+  list<PadObserver *> observers_;
   string name_;
 };
 

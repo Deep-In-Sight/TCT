@@ -53,7 +53,7 @@ class Queue : public Element {
    *
    * @param frame
    */
-  void PushFrame(cv::Mat &frame);
+  void PushFrame(cv::Mat &frame) override;
 
   /**
    * @brief Get the source pad.

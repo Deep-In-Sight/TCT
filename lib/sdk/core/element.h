@@ -70,7 +70,7 @@ class Element {
    *
    * @param frame: data from sink pad.
    */
-  virtual void PushFrame(cv::Mat &frame);
+  virtual void PushFrame(cv::Mat &frame) = 0;
 
  protected:
   /**
