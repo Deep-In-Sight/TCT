@@ -5,6 +5,9 @@ set(SDK_SRCS
     # inspector/inspector-bitmap.cc
     core/pad.cc
     core/element.cc
+    core/base-src.cc
+    core/base-sink.cc
+    core/base-transform.cc
     core/queue.cc)
 
 set(SDK_INCLUDES ${PROJECT_BINARY_DIR} ${PROJECT_SOURCE_DIR}/lib

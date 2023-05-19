@@ -34,3 +34,11 @@ bool Element::AddPad(Pad *pad) {
   pad->SetParent(this);
   return true;
 }
+
+void Element::SetSizeType(Size size, int type) {
+  for (auto it = pads_.begin(); it != pads_.end(); it++) {
+    if ((*it)->GetDirection() == kPadSource) {
+      (*it)->SetSizeType(size, type);
+    }
+  }
+}

@@ -24,6 +24,7 @@
 #include <string>
 
 using namespace std;
+using namespace cv;
 
 class Element;
 
@@ -56,6 +57,11 @@ enum PadLinkReturn {
 class PadObserver {
  public:
   virtual void OnNewFrame(cv::Mat &frame) = 0;
+  void SetSizeType(Size size, int type);
+
+ private:
+  Size mat_size_;
+  int mat_type_;
 };
 
 /**
@@ -155,6 +161,23 @@ class Pad {
    */
   void RemoveObserver(PadObserver *observer);
 
+  /**
+   * @brief Set the size and type of the data that the pad will receive. Also
+   * update all downstream pads and elements type and size.
+   *
+   * @param mat_size
+   * @param mat_type
+   */
+  void SetSizeType(Size mat_size, int mat_type);
+
+  /**
+   * @brief Get the size and type of the data that the pad will receive.
+   *
+   * @param mat_size
+   * @param mat_type
+   */
+  void GetSizeType(Size &mat_size, int &mat_type);
+
  private:
   PadDirection direction_;
   PadLinkStatus link_status_;
@@ -162,6 +185,9 @@ class Pad {
   Pad *peer_;
   list<PadObserver *> observers_;
   string name_;
+
+  Size mat_size_;
+  int mat_type_;
 };
 
 #endif /* __PAD_H__ */

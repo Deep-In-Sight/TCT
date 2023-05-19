@@ -117,3 +117,36 @@ void Pad::RemoveObserver(PadObserver *observer) {
   }
   observers_.remove(observer);
 }
+
+void Pad::SetSizeType(Size size, int type) {
+  mat_size_ = size;
+  mat_type_ = type;
+
+  if (direction_ == kPadSource && link_status_ == kPadUnlinked) {
+    return;
+  }
+
+  if (direction_ == kPadSink && parent_ == nullptr) {
+    return;
+  }
+
+  if (direction_ == kPadSource) {
+    peer_->SetSizeType(size, type);
+  } else {
+    parent_->SetSizeType(size, type);
+  }
+
+  for (auto it = observers_.begin(); it != observers_.end(); it++) {
+    (*it)->SetSizeType(size, type);
+  }
+}
+
+void Pad::GetSizeType(Size &size, int &type) {
+  size = mat_size_;
+  type = mat_type_;
+}
+
+void PadObserver::SetSizeType(Size size, int type) {
+  mat_size_ = size;
+  mat_type_ = type;
+}
