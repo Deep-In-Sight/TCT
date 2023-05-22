@@ -18,11 +18,25 @@
  */
 
 #include <sdk/inspector/inspector-bitmap.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/spdlog.h>
 
-void InspectorBitmap::Update(GstBuffer* buffer) {
-  GstMapInfo info;
-  gst_buffer_map(buffer, &info, GST_MAP_READ);
-  float* data = reinterpret_cast<float*>(info.data);
-  Render(data);
-  gst_buffer_unmap(buffer, &info);
+using namespace spdlog;
+static logger* logger_ = stdout_color_mt("InspectorBitmap").get();
+
+void InspectorBitmap::OnNewFrame(Mat& frame) {
+  frame_ = frame;
+  Render(frame);
+}
+
+Vec2f InspectorBitmap::GetDepthAmplitude(int x, int y) {
+  if (x < 0 || x >= frame_.cols || y < 0 || y >= frame_.rows) {
+    throw std::runtime_error("out of frame");
+  }
+
+  if (mat_type_ == CV_32FC1) {
+    return Vec2f(frame_.at<float>(y, x), nanf(""));
+  } else {
+    return frame_.at<Vec2f>(y, x);
+  }
 }

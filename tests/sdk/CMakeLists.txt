@@ -1,7 +1,7 @@
 set(SDK_TEST_SRCS
     gtest-main.cc
     inspector/inspector-queue.cc
-    # inspector/inspector-client.cc inspector/inspector-scanner.cc
+    inspector/inspector-scanner.cc
     inspector/inspector-tracker.cc
     # inspector/inspector-histogram.cc
     core/pad.cc

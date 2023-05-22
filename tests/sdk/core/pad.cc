@@ -132,7 +132,7 @@ TEST(PadTest, TestSetSizeTypeChain) {
   EXPECT_EQ(type, CV_8UC3);
 }
 
-TEST(PadTest, TestPadObserverSetChannel) {
+TEST(PadTest, TestPadObserverSelectChannel) {
   Pad p(kPadSource, "src");
   PadObserverMock observer;
   p.AddObserver(&observer);

@@ -1,8 +1,9 @@
 set(SDK_SRCS
     inspector/inspector-queue.cc
-    # inspector/inspector-client.cc inspector/inspector-scanner.cc
+    inspector/inspector-scanner.cc
     inspector/inspector-tracker.cc
-    # inspector/inspector-histogram.cc inspector/inspector-bitmap.cc
+    # inspector/inspector-histogram.cc
+    inspector/inspector-bitmap.cc
     core/pad.cc
     core/element.cc
     core/base-src.cc
