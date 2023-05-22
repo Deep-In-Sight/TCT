@@ -28,6 +28,8 @@
 #include <queue>
 #include <thread>
 
+#define DEFAULT_QUEUE_DEPTH 30
+
 using namespace std;
 
 /**
@@ -45,6 +47,21 @@ class Queue : public Element {
    */
   Queue(const string &name = "");
   ~Queue();
+
+  /**
+   * @brief Set the queue maximum depth. Drop the oldest frames if the queue
+   * is full.
+   *
+   * @param max_queue_depth
+   */
+  void SetMaxQueueDepth(int max_queue_depth);
+
+  /**
+   * @brief Get current number of frames in queue.
+   *
+   * @return int
+   */
+  int GetQueueDepth();
 
   /**
    * @brief Receive a frame from sink pad and put to Queue.
@@ -74,6 +91,7 @@ class Queue : public Element {
   condition_variable condvar_;
   bool stop_thread_;
   queue<cv::Mat> queue_;
+  int max_queue_depth_;
   Pad *src_;
   Pad *sink_;
 

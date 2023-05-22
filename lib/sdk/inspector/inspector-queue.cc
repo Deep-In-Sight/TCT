@@ -23,8 +23,13 @@
  *
  */
 #include <sdk/inspector/inspector-queue.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/spdlog.h>
 
 #include <iostream>
+
+using namespace spdlog;
+static logger* logger_ = stdout_color_mt("InspectorQueue").get();
 
 InspectorQueue::InspectorQueue(const std::string name) : name_(name) {}
 
@@ -40,4 +45,16 @@ void InspectorQueue::RemoveInspector(PadObserver* inspector) {
   pad->RemoveObserver(inspector);
 }
 
-void InspectorQueue::OnNewFrame(cv::Mat& frame) { queue_.PushFrame(frame); }
+void InspectorQueue::OnNewFrame(cv::Mat& frame) {
+  // avoid wasting queue memory if no observer
+  Pad* pad = queue_.GetSourcePad();
+  if (pad->GetObserverCount() == 0) {
+    return;
+  }
+  queue_.PushFrame(frame);
+}
+
+void InspectorQueue::SetSizeType(Size size, int type) {
+  // notify other observers
+  queue_.SetSizeType(size, type);
+}

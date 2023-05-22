@@ -56,6 +56,14 @@ class Element {
    * @return const string&
    */
   const string &GetName();
+
+  /**
+   * @brief Set the Name of the element.
+   *
+   * @param name
+   */
+  void SetName(const string &name);
+
   /**
    * @brief Get the pad with name. Return nullptr if not found.
    *

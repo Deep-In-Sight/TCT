@@ -11,6 +11,7 @@ Queue::Queue(const string& name) : Element(name) {
   sink_ = new Pad(kPadSink, "sink");
   AddPad(src_);
   AddPad(sink_);
+  max_queue_depth_ = DEFAULT_QUEUE_DEPTH;
   thread_ = new thread(&Queue::WaitFrame, this);
 }
 
@@ -26,6 +27,12 @@ Queue::~Queue() {
   delete sink_;
 }
 
+void Queue::SetMaxQueueDepth(int max_queue_depth) {
+  max_queue_depth_ = max_queue_depth;
+}
+
+int Queue::GetQueueDepth() { return queue_.size(); }
+
 Pad* Queue::GetSourcePad() { return src_; }
 
 Pad* Queue::GetSinkPad() { return sink_; }
@@ -33,6 +40,10 @@ Pad* Queue::GetSinkPad() { return sink_; }
 void Queue::PushFrame(cv::Mat& frame) {
   {
     lock_guard<mutex> lock(mutex_);
+    if (queue_.size() == max_queue_depth_) {
+      logger_->warn("Queue is full, drop first frame.");
+      queue_.pop();
+    }
     queue_.push(frame);
   }
   condvar_.notify_one();

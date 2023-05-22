@@ -45,7 +45,9 @@ class BaseSink : public Element {
    *
    * @param frame: data from sink pad.
    */
-  void PushFrame(Mat &frame);
+  void PushFrame(Mat &frame) override;
+
+  Pad *GetSinkPad();
 
  protected:
   /**
@@ -55,8 +57,6 @@ class BaseSink : public Element {
    * @param frame
    */
   virtual void SinkFrame(Mat &frame) = 0;
-
-  Pad *GetSinkPad();
 
  protected:
   Pad *sink_pad_;

@@ -14,6 +14,8 @@ Element::~Element() {}
 
 const string &Element::GetName() { return name_; }
 
+void Element::SetName(const string &name) { name_ = name; }
+
 Pad *Element::GetPad(const string &name) {
   for (auto it = pads_.begin(); it != pads_.end(); it++) {
     if ((*it)->GetName() == name) {

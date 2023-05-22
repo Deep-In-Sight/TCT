@@ -18,10 +18,15 @@
  */
 
 #include <sdk/inspector/inspector-tracker.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/spdlog.h>
+
+using namespace spdlog;
+static logger* logger_ = stdout_color_mt("InspectorTracker").get();
 
 void InspectorTracker::SetLocation(int x, int y) {
-  point_x = std::max(0, std::min(x, width - 1));
-  point_y = std::max(0, std::min(y, height - 1));
+  point_x = std::max(0, std::min(x, mat_size_.width - 1));
+  point_y = std::max(0, std::min(y, mat_size_.height - 1));
 }
 
 void InspectorTracker::GetLocation(int& x, int& y) {
@@ -29,19 +34,19 @@ void InspectorTracker::GetLocation(int& x, int& y) {
   y = point_y;
 }
 
-void InspectorTracker::Update(GstBuffer* buffer) {
-  point_val = GetPoint(buffer);
+void InspectorTracker::OnNewFrame(Mat& frame) {
+  point_val = GetPoint(frame);
   RenderPoint(point_val);
 }
 
-float InspectorTracker::GetPoint(GstBuffer* buffer) {
-  GstMapInfo mapinfo;
-  gst_buffer_map(buffer, &mapinfo, GST_MAP_READ);
-  float* data = reinterpret_cast<float*>(mapinfo.data);
-
-  int index = point_y * width + point_x;
-  float value = data[index];
-
-  gst_buffer_unmap(buffer, &mapinfo);
+float InspectorTracker::GetPoint(Mat& frame) {
+  float value;
+  if (mat_type_ == CV_32FC1) {
+    value = frame.at<float>(point_y, point_x);
+  } else if (channel_ == kDepthChannel) {
+    value = frame.at<Vec2f>(point_y, point_x)[0];
+  } else {
+    value = frame.at<Vec2f>(point_y, point_x)[1];
+  }
   return value;
 }

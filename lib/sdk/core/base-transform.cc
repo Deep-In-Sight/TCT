@@ -21,6 +21,10 @@ BaseTransform::~BaseTransform() {
   delete sink_pad_;
 }
 
+void BaseTransform::PushFrame(Mat &frame) { TransformFrame(frame); }
+
+void BaseTransform::TransformFrame(Mat &frame) { sink_pad_->PushFrame(frame); }
+
 Pad *BaseTransform::GetSinkPad() { return sink_pad_; }
 
 Pad *BaseTransform::GetSourcePad() { return source_pad_; }

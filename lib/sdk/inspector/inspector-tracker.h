@@ -20,9 +20,11 @@
 #ifndef __INSPECTOR_TRACKER_H__
 #define __INSPECTOR_TRACKER_H__
 
-#include <sdk/inspector/inspector-client.h>
+#include <sdk/core/pad.h>
 
-class InspectorTracker : public InspectorClient {
+#include <opencv2/opencv.hpp>
+
+class InspectorTracker : public PadObserver {
  public:
   /**
    * @brief Set the Location of the tracker
@@ -39,7 +41,7 @@ class InspectorTracker : public InspectorClient {
    */
   void GetLocation(int& x, int& y);
 
-  void Update(GstBuffer* buffer) override;
+  void OnNewFrame(Mat& frame) override;
 
  protected:
   /**
@@ -49,7 +51,7 @@ class InspectorTracker : public InspectorClient {
    * @param buffer GstBuffer to get point value
    * @return float point value
    */
-  float GetPoint(GstBuffer* buffer);
+  float GetPoint(Mat& frame);
   /**
    * @brief Render the point value. Not to be called directly, it's called in
    * Update() function. This function is implemented in child class to render

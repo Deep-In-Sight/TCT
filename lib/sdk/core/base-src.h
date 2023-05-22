@@ -24,6 +24,7 @@
 
 #include <opencv2/opencv.hpp>
 #include <string>
+#include <thread>
 
 class Pad;
 
@@ -40,14 +41,14 @@ class BaseSource : public Element {
    *
    * @param frame: data from sink pad.
    */
-  void PushFrame(Mat &frame);
+  void PushFrame(Mat &frame) override;
 
   /**
    * @brief A loop that continuously send frame to its source pad. Default
    * implementation does not care about timing.
    *
    */
-  virtual void PushFrame();
+  void GenerateLoop();
 
   /**
    * @brief Get the Source Pad.
@@ -58,6 +59,7 @@ class BaseSource : public Element {
 
   void Start();
   void Stop();
+  bool IsRunning();
 
  protected:
   /**
@@ -69,6 +71,7 @@ class BaseSource : public Element {
 
  private:
   Pad *source_pad_;
+  thread *thread_;
   bool running_;
 };
 

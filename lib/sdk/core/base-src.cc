@@ -17,17 +17,24 @@ BaseSource::~BaseSource() { delete source_pad_; }
 
 void BaseSource::PushFrame(Mat &frame) {}
 
-void BaseSource::PushFrame() {
+void BaseSource::GenerateLoop() {
   while (running_) {
-    if (source_pad_->GetLinkStatus() == kPadLinked) {
-      cv::Mat frame = GenerateFrame();
-      PushFrame(frame);
-    }
+    cv::Mat frame = GenerateFrame();
+    source_pad_->PushFrame(frame);
   }
 }
 
 Pad *BaseSource::GetSourcePad() { return source_pad_; }
 
-void BaseSource::Start() { running_ = true; }
+void BaseSource::Start() {
+  running_ = true;
+  thread_ = new thread(&BaseSource::GenerateLoop, this);
+}
 
-void BaseSource::Stop() { running_ = false; }
+void BaseSource::Stop() {
+  running_ = false;
+  thread_->join();
+  delete thread_;
+}
+
+bool BaseSource::IsRunning() { return running_; }

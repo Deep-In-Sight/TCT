@@ -40,6 +40,7 @@ class InspectorQueue : public PadObserver {
   void RemoveInspector(PadObserver* inspector);
 
   void OnNewFrame(cv::Mat& frame) override;
+  void SetSizeType(Size size, int type) override;
 
  private:
   std::string name_;

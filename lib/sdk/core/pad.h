@@ -23,6 +23,9 @@
 #include <opencv2/opencv.hpp>
 #include <string>
 
+#define DEFAULT_MAT_SIZE Size(640, 480)
+#define DEFAULT_MAT_TYPE CV_32FC2
+
 using namespace std;
 using namespace cv;
 
@@ -54,12 +57,34 @@ enum PadLinkReturn {
   kPadLinkAlreadyLinked
 };
 
+enum DepthAmplitudeChannel { kDepthChannel, kAmplitudeChannel };
+
 class PadObserver {
  public:
+  PadObserver();
+  /**
+   * @brief trigger the observer to process new frame.
+   *
+   * @param frame
+   */
   virtual void OnNewFrame(cv::Mat &frame) = 0;
-  void SetSizeType(Size size, int type);
+  /**
+   * @brief Child class implement this method to react to the change of size and
+   * type of the pad. E.g modify the size of the GUI render window.
+   *
+   * @param size
+   * @param type
+   */
+  virtual void SetSizeType(Size size, int type);
+  /**
+   * @brief Select the Depth or Amplitude channel to be inspected.
+   *
+   * @param channel
+   */
+  void SelectChannel(DepthAmplitudeChannel channel);
 
- private:
+ protected:
+  DepthAmplitudeChannel channel_;
   Size mat_size_;
   int mat_type_;
 };
@@ -160,6 +185,13 @@ class Pad {
    * @param observer
    */
   void RemoveObserver(PadObserver *observer);
+
+  /**
+   * @brief Get the number of observers.
+   *
+   * @return int
+   */
+  int GetObserverCount();
 
   /**
    * @brief Set the size and type of the data that the pad will receive. Also

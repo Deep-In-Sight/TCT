@@ -17,8 +17,8 @@
  * Boston, MA 02110-1335, USA.
  */
 
-#ifndef __BASE_SINK_H__
-#define __BASE_SINK_H__
+#ifndef __BASE_TRANSFORM_H__
+#define __BASE_TRANSFORM_H__
 
 #include <sdk/core/element.h>
 
@@ -40,18 +40,26 @@ class BaseTransform : public Element {
   ~BaseTransform();
 
   /**
-   * @brief Transform the frame from sink pad and push to source pad. Default
-   * implementation forward the same frame to sink pad.
+   * @brief Transform the frame.
    *
    * @param frame: data from sink pad.
    */
-  virtual void PushFrame(Mat &frame);
+  void PushFrame(Mat &frame) override;
 
   Pad *GetSinkPad();
   Pad *GetSourcePad();
 
  protected:
+  /**
+   * @brief Child transform class implement this method to transform the frame.
+   * Default implementation forward the frame to source pad.
+   *
+   * @param frame
+   */
+  virtual void TransformFrame(Mat &frame);
+
+ private:
   Pad *sink_pad_;
   Pad *source_pad_;
 };
-#endif  //__BASE_SINK_H__
+#endif  //__BASE_TRANSFORM_H__

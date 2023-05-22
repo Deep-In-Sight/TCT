@@ -1,19 +1,23 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <sdk/core/element.h>
+#include <sdk/core/base-sink.h>
 #include <sdk/core/pad.h>
 #include <sdk/core/queue.h>
 
-class DummyElement : public Element {
+using namespace std::chrono_literals;
+
+class SinkMock : public BaseSink {
  public:
-  DummyElement() {
-    sink_ = new Pad(kPadSink, "sink");
-    AddPad(sink_);
-  }
-  ~DummyElement() { delete sink_; }
-  Pad* GetSinkPad() { return sink_; }
-  MOCK_METHOD(void, PushFrame, (cv::Mat & frame), (override));
-  Pad* sink_;
+  SinkMock() {}
+  ~SinkMock() {}
+  MOCK_METHOD(void, SinkFrame, (cv::Mat & frame), (override));
+};
+
+class SinkFake : public BaseSink {
+ public:
+  SinkFake() {}
+  ~SinkFake() {}
+  void SinkFrame(cv::Mat& frame) override { this_thread::sleep_for(10ms); }
 };
 
 TEST(QueueTest, TestQueueContructor) {
@@ -27,14 +31,30 @@ TEST(QueueTest, TestQueuePushFrame) {
   int num_frame = 10;
   Queue queue("queue");
   Pad* queue_src = queue.GetSourcePad();
-  DummyElement elem;
+  SinkMock elem;
   queue_src->Link(elem.GetSinkPad());
 
-  EXPECT_CALL(elem, PushFrame).Times(num_frame);
+  EXPECT_CALL(elem, SinkFrame).Times(num_frame);
 
-  cv::Mat frame;
+  cv::Mat frame(DEFAULT_MAT_SIZE, DEFAULT_MAT_TYPE);
   for (int i = 0; i < num_frame; i++) {
     queue.PushFrame(frame);
   }
-  this_thread::sleep_for(chrono::milliseconds(1));
+  this_thread::sleep_for(1ms);
+}
+
+TEST(QueueTest, TestDropFrame) {
+  int num_frame = 10;
+  int max_queue_depth = 5;
+  Queue queue("queue");
+  queue.SetMaxQueueDepth(max_queue_depth);
+  Pad* queue_src = queue.GetSourcePad();
+  SinkFake elem;
+  queue_src->Link(elem.GetSinkPad());
+
+  cv::Mat frame(DEFAULT_MAT_SIZE, DEFAULT_MAT_TYPE);
+  for (int i = 0; i < num_frame; i++) {
+    queue.PushFrame(frame);
+  }
+  EXPECT_LE(queue.GetQueueDepth(), max_queue_depth);
 }

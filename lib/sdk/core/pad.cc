@@ -15,6 +15,8 @@ Pad::Pad(PadDirection direction, const string &name = "") {
   if (name_.empty()) {
     name_ = (direction == kPadSource) ? "src" : "sink";
   }
+  mat_size_ = DEFAULT_MAT_SIZE;  // w, h
+  mat_type_ = DEFAULT_MAT_TYPE;
 }
 
 Pad::~Pad() {}
@@ -91,6 +93,12 @@ void Pad::PushFrame(cv::Mat &frame) {
     return;
   }
 
+  // check size and type
+  if (frame.size() != mat_size_ || frame.type() != mat_type_) {
+    logger_->error("Frame size or type does not match");
+    return;
+  }
+
   // send out frame
   if (direction_ == kPadSource) {
     peer_->PushFrame(frame);
@@ -109,6 +117,7 @@ void Pad::AddObserver(PadObserver *observer) {
     }
   }
   observers_.push_back(observer);
+  observer->SetSizeType(mat_size_, mat_type_);
 }
 
 void Pad::RemoveObserver(PadObserver *observer) {
@@ -118,9 +127,15 @@ void Pad::RemoveObserver(PadObserver *observer) {
   observers_.remove(observer);
 }
 
+int Pad::GetObserverCount() { return observers_.size(); }
+
 void Pad::SetSizeType(Size size, int type) {
   mat_size_ = size;
   mat_type_ = type;
+
+  for (auto it = observers_.begin(); it != observers_.end(); it++) {
+    (*it)->SetSizeType(size, type);
+  }
 
   if (direction_ == kPadSource && link_status_ == kPadUnlinked) {
     return;
@@ -135,10 +150,6 @@ void Pad::SetSizeType(Size size, int type) {
   } else {
     parent_->SetSizeType(size, type);
   }
-
-  for (auto it = observers_.begin(); it != observers_.end(); it++) {
-    (*it)->SetSizeType(size, type);
-  }
 }
 
 void Pad::GetSizeType(Size &size, int &type) {
@@ -146,7 +157,27 @@ void Pad::GetSizeType(Size &size, int &type) {
   type = mat_type_;
 }
 
+PadObserver::PadObserver() {
+  channel_ = kDepthChannel;
+  mat_size_ = DEFAULT_MAT_SIZE;  // w, h
+  mat_type_ = DEFAULT_MAT_TYPE;
+}
+
 void PadObserver::SetSizeType(Size size, int type) {
+  if (type != CV_32FC1 && type != CV_32FC2) {
+    throw std::invalid_argument(
+        "PadObserver only supports CV_32FC1 and CV_32FC2");
+  }
   mat_size_ = size;
   mat_type_ = type;
+}
+
+void PadObserver::SelectChannel(DepthAmplitudeChannel channel) {
+  if ((channel != kDepthChannel) && (channel != kAmplitudeChannel)) {
+    throw std::invalid_argument("Invalid channel");
+  }
+  if ((channel == kAmplitudeChannel) && (CV_MAT_CN(mat_type_) < 2)) {
+    throw std::invalid_argument("Pad only has depth channel");
+  }
+  channel_ = channel;
 }
