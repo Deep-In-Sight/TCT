@@ -24,127 +24,77 @@
 #include <limits>
 
 InspectorHistogram::InspectorHistogram() {
-  top_left_x = 0;
-  top_left_y = 0;
-  bottom_right_x = 0;
-  bottom_right_y = 0;
-  width = 0;
-  height = 0;
-  is_amplitude = false;
-  is_uniform = true;
-  histogram_data.counts = std::vector<int>(1, 0);
-  histogram_data.edges = std::vector<float>({
-      std::numeric_limits<float>::lowest(),
-      std::numeric_limits<float>::max(),
-  });
+  roi_ = Rect(0, 0, mat_size_.width, mat_size_.height);
 }
 
-void InspectorHistogram::SetRange(int x, int y, int x2, int y2) {
-  top_left_x = std::max(0, std::min(x, width - 1));
-  top_left_y = std::max(0, std::min(y, height - 1));
-  bottom_right_x = std::max(0, std::min(x2, width - 1));
-  bottom_right_y = std::max(0, std::min(y2, height - 1));
-  if (top_left_x > bottom_right_x) {
-    std::swap(top_left_x, bottom_right_x);
+void InspectorHistogram::SetRoi(int x, int y, int x2, int y2) {
+  int tl_x = max(0, min(x, mat_size_.width - 1));
+  int tl_y = max(0, min(y, mat_size_.height - 1));
+  int br_x = max(0, min(x2, mat_size_.width - 1));
+  int br_y = max(0, min(y2, mat_size_.height - 1));
+  if (tl_x > br_x) {
+    swap(tl_x, br_x);
   }
-  if (top_left_y > bottom_right_y) {
-    std::swap(top_left_y, bottom_right_y);
+  if (tl_y > br_y) {
+    swap(tl_y, br_y);
   }
+  roi_.x = tl_x;
+  roi_.y = tl_y;
+  roi_.width = br_x - tl_x + 1;
+  roi_.height = br_y - tl_y + 1;
 }
 
-void InspectorHistogram::GetRange(int& x, int& y, int& x2, int& y2) {
-  x = top_left_x;
-  y = top_left_y;
-  x2 = bottom_right_x;
-  y2 = bottom_right_y;
-}
-
-void InspectorHistogram::SetBins(const std::vector<float>& edges) {
-  is_uniform = false;
-
-  std::vector<float> edges_ext = edges;
-  std::sort(edges_ext.begin(), edges_ext.end());
-
-  edges_ext.insert(edges_ext.begin(), std::numeric_limits<float>::lowest());
-  edges_ext.push_back(std::numeric_limits<float>::max());
-  SetEdges_(edges_ext);
+void InspectorHistogram::GetRoi(int& x, int& y, int& x2, int& y2) {
+  x = roi_.x;
+  y = roi_.y;
+  x2 = roi_.x + roi_.width - 1;
+  y2 = roi_.y + roi_.height - 1;
 }
 
 void InspectorHistogram::SetBins(float min, float max, int num_bins) {
+  ranges_[0] = min;
+  ranges_[1] = max;
+  bins_ = num_bins;
+}
+
+std::vector<float> InspectorHistogram::GetEdges() {
+  vector<float> edges;
+  float min = ranges_[0];
+  float max = ranges_[1];
+  int num_bins = bins_;
   float bin_width = (max - min) / num_bins;
-  std::vector<float> edges;
-  edges.push_back(std::numeric_limits<float>::lowest());
   for (int i = 0; i <= num_bins; ++i) {
     edges.push_back(min + i * bin_width);
   }
-  edges.push_back(std::numeric_limits<float>::max());
-  this->is_uniform = true;
-  SetEdges_(edges);
+  return edges;
 }
 
-void InspectorHistogram::SetEdges_(std::vector<float>& edges) {
-  this->histogram_data.edges = edges;
-  int num_bins = edges.size() - 1;
-  this->histogram_data.counts = std::vector<int>(num_bins, 0);
-}
-
-std::vector<float>& InspectorHistogram::GetEdges() {
-  return histogram_data.edges;
-}
-
-void InspectorHistogram::Update(GstBuffer* buffer) {
-  const HistogramData& hist = GetHistogram(buffer);
+void InspectorHistogram::OnNewFrame(Mat& frame) {
+  auto& hist = CalculateHistogram(frame);
   RenderHistogram(hist);
 }
 
-const HistogramData& InspectorHistogram::GetHistogram(GstBuffer* buffer) {
-  GstMapInfo mapinfo;
-  gst_buffer_map(buffer, &mapinfo, GST_MAP_READ);
-  float* data = reinterpret_cast<float*>(mapinfo.data);
-
-  int num_edges = histogram_data.edges.size();
-  int num_bins = num_edges - 1;
-  float min_val = histogram_data.edges[1];
-  float max_val = histogram_data.edges[num_edges - 2];
-  float bin_width = (max_val - min_val) / (num_bins - 2);
-
-  // reset counts
-  std::vector<int>& counts = histogram_data.counts;
-  for (int bin = 0; bin < num_bins; ++bin) {
-    counts[bin] = 0;
-  }
-
-  // 0             1    2    3             4
-  // |     0       | 1  | 2  |      3      |
-  if (!this->is_uniform) {
-    for (int y = top_left_y; y <= bottom_right_y; ++y) {
-      for (int x = top_left_x; x <= bottom_right_x; ++x) {
-        int pixel_count = y * width + x;
-        float value = data[pixel_count];
-        int bin = 0;
-        while ((bin + 1 < num_edges) &&
-               (value >= histogram_data.edges[bin + 1])) {
-          ++bin;
-        }
-        ++counts[bin];
-      }
-    }
+const Mat& InspectorHistogram::CalculateHistogram(Mat& frame) {
+  vector<Mat> splits;
+  Mat roi;
+  split(frame, splits);
+  if (mat_type_ == CV_32FC1) {
+    roi = frame(roi_);
+  } else if (channel_ = kDepthChannel) {
+    split(frame, splits);
+    roi = splits[0](roi_);
   } else {
-    for (int y = top_left_y; y <= bottom_right_y; ++y) {
-      for (int x = top_left_x; x <= bottom_right_x; ++x) {
-        int pixel_count = y * width + x;
-        float value = data[pixel_count];
-        int bin = 0;
-        bin = std::ceil((value - min_val) / bin_width);
-        if (bin * bin_width + min_val == value) {
-          bin += 1;
-        }
-        bin = std::max(0, std::min(bin, num_bins - 1));
-        ++counts[bin];
-      }
-    }
+    split(frame, splits);
+    roi = splits[1](roi_);
   }
+  int nimages = 1;
+  int channels[] = {0};
+  Mat mask;
+  int dims = 1;
+  int histSize[] = {bins_};
+  const float* ranges[] = {ranges_};
 
-  gst_buffer_unmap(buffer, &mapinfo);
-  return histogram_data;
+  calcHist(&roi, nimages, channels, mask, histogram_, 1, histSize, ranges, true,
+           false);
+  return histogram_;
 }

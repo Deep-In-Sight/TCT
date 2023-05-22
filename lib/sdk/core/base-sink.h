@@ -17,31 +17,49 @@
  * Boston, MA 02110-1335, USA.
  */
 
-#include <sdk/inspector/inspector-client.h>
+#ifndef __BASE_SINK_H__
+#define __BASE_SINK_H__
 
-#include <iostream>
+#include <sdk/core/element.h>
 
-void InspectorClient::SetCaps(GstCaps *caps) {
-  int buffer_width;
-  int buffer_height;
+#include <opencv2/opencv.hpp>
+#include <string>
 
-  GstStructure *caps_struct = gst_caps_get_structure(caps, 0);
-  const gchar *buffer_format = gst_structure_get_string(caps_struct, "format");
-  gst_structure_get_int(caps_struct, "width", &buffer_width);
-  gst_structure_get_int(caps_struct, "height", &buffer_height);
-  format = std::string(buffer_format);
-  this->width = buffer_width;
-  this->height = buffer_height;
-}
+class Pad;
 
-void InspectorClient::SetAmplitude(bool amplitude) { is_amplitude = amplitude; }
+using namespace std;
+using namespace cv;
 
-void InspectorClient::GetFrameSize(int &width, int &height) {
-  width = this->width;
-  height = this->height;
-}
+/**
+ * @brief A sink element with only sink pad that end the pipeline.
+ *
+ */
 
-void InspectorClient::SetFrameSize(int width, int height) {
-  this->width = width;
-  this->height = height;
-}
+class BaseSink : public Element {
+ public:
+  BaseSink(const string &name = "");
+  ~BaseSink();
+
+  /**
+   * @brief
+   *
+   * @param frame: data from sink pad.
+   */
+  void PushFrame(Mat &frame) override;
+
+  Pad *GetSinkPad();
+
+ protected:
+  /**
+   * @brief consume the frame. Child element implement this method to process
+   * the frame.
+   *
+   * @param frame
+   */
+  virtual void SinkFrame(Mat &frame) = 0;
+
+ protected:
+  Pad *sink_pad_;
+};
+
+#endif  //__BASE_SINK_H__

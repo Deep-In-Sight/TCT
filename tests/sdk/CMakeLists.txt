@@ -1,7 +1,13 @@
 set(SDK_TEST_SRCS
-    gtest-main.cc inspector/inspector.cc inspector/inspector-client.cc
-    inspector/inspector-scanner.cc inspector/inspector-tracker.cc
-    inspector/inspector-histogram.cc)
+    gtest-main.cc
+    inspector/inspector-queue.cc
+    inspector/inspector-scanner.cc
+    inspector/inspector-tracker.cc
+    inspector/inspector-histogram.cc
+    core/pad.cc
+    core/element.cc
+    core/bases.cc
+    core/queue.cc)
 
 set(SDK_TEST_INCLUDES ${PROJECT_BINARY_DIR} ${PROJECT_SOURCE_DIR}/lib
                       ${OPENCV_INCLUDE_DIRS} ${GST_INCLUDE_DIRS})

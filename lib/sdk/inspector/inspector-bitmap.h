@@ -20,29 +20,43 @@
 #ifndef __INSPECTOR_BITMAP_H__
 #define __INSPECTOR_BITMAP_H__
 
-#include <sdk/inspector/inspector-client.h>
+#include <sdk/core/pad.h>
 
-class InspectorBitmap : public InspectorClient {
+class InspectorBitmap : public PadObserver {
  public:
   /**
-   * @brief Update the bitmap
+   * @brief Render the whole frame
    *
-   * @param buffer
+   * @param frame
    */
-  void Update(GstBuffer* buffer) override;
+  void OnNewFrame(Mat& frame) override;
+
+  /**
+   * @brief Get the depth and amplitude at a specific pixel. This function can
+   * be used in mouse event handler to peak the value under the cursor.
+   *
+   * @param x
+   * @param y
+   * @return Vec2f depth and amplitude. Amplitude can be NaN if Pad only has 1
+   * channel.
+   * @throw std::runtime_error if x or y is out of frame
+   */
+  Vec2f GetDepthAmplitude(int x, int y);
 
  protected:
   /**
-   * @brief Render the GstBuffer's data. Not to be called directly, it's called
-   * in Update() function. This function is implemented in child class to render
-   * the depth/amplitude to either GUI window for visualizing. Unlike other
-   * inspector, this one only forward the data to GUI widget. It is the widget's
-   * job to do the colormap and implement the mouse hover/click event to get the
-   * point value.
+   * @brief Render the frame. To be called from OnNewFrame(Mat&). This function
+   * is implemented in child class to render the depth/amplitude to either GUI
+   * window for visualizing. Unlike other inspector, this one only forward the
+   * data to GUI widget. It is the widget's job to do the colormap and implement
+   * the mouse hover/click event to get the point value.
    *
    * @param buffer
    */
-  virtual void Render(float* data) = 0;
+  virtual void Render(Mat& frame) = 0;
+
+ private:
+  Mat frame_;
 };
 
 #endif  // __INSPECTOR_BITMAP_H__

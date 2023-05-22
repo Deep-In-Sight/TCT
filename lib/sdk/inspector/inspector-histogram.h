@@ -20,14 +20,9 @@
 #ifndef __INSPECTOR_HISTOGRAM_H__
 #define __INSPECTOR_HISTOGRAM_H__
 
-#include <sdk/inspector/inspector-client.h>
+#include <sdk/core/pad.h>
 
 #include <vector>
-
-struct HistogramData {
-  std::vector<float> edges;
-  std::vector<int> counts;
-};
 
 /**
  * @brief InspectorHistogram is a subclass of InspectorClient. It calculates the
@@ -35,11 +30,10 @@ struct HistogramData {
  * the histogram, and call SetBins() to set the bins' edges.
  *
  */
-class InspectorHistogram : public InspectorClient {
+class InspectorHistogram : public PadObserver {
  public:
   /**
-   * @brief Construct a new InspectorHistogram object. The default range is
-   * (0,0),(0,0) with 1 bin from -inf to inf
+   * @brief Construct a new InspectorHistogram object.
    *
    */
   InspectorHistogram();
@@ -54,7 +48,7 @@ class InspectorHistogram : public InspectorClient {
    * @param x2 end point x
    * @param y2 end point y
    */
-  void SetRange(int x, int y, int x2, int y2);
+  void SetRoi(int x, int y, int x2, int y2);
   /**
    * @brief Get the clamped/swapped range of the histogram
    *
@@ -63,15 +57,7 @@ class InspectorHistogram : public InspectorClient {
    * @param x2 end point x
    * @param y2 end point y
    */
-  void GetRange(int& x, int& y, int& x2, int& y2);
-  /**
-   * @brief Set the bins' edges of the histogram. The edges are inclusive-start
-   * and exclusive-end. The bins are (-inf, edges[0]), [edges[0], edges[1]),
-   * ..., [edges[n-1], inf).
-   *
-   * @param edges bins' edges
-   */
-  void SetBins(const std::vector<float>& edges);
+  void GetRoi(int& x, int& y, int& x2, int& y2);
   /**
    * @brief Set the bins' edges of the histogram. The edges are inclusive-start
    * and exclusive-end. The [min, max] range is uniformly divided into num_bins,
@@ -87,28 +73,27 @@ class InspectorHistogram : public InspectorClient {
   /**
    * @brief Get the bins' edges of the histogram
    *
-   * @return std::vector<float>& bins' edges
+   * @return vector<float> bins' edges
    */
-  std::vector<float>& GetEdges();
+  vector<float> GetEdges();
 
   /**
-   * @brief Implement InspectorClient::Update() to calculate histogram from
-   * GstBuffer and render it.
+   * @brief Calculate the histogram and render it.
    *
    * @param buffer
    */
-  void Update(GstBuffer* buffer) override;
+  void OnNewFrame(Mat& frame) override;
 
  protected:
   /**
-   * @brief calculate histogram from GstBuffer. This function is called by
-   * Update() and should not be called directly. It is made protected only for
-   * unit test.
+   * @brief calculate histogram. This function is called by from
+   * OnNewFrame(Mat&) and should not be called from children. It is made
+   * protected only for unit test.
    *
-   * @param buffer GstBuffer to calculate histogram
+   * @param frame input matrix to calculate histogram
    * @return HistogramData& histogram data
    */
-  const HistogramData& GetHistogram(GstBuffer* buffer);
+  const Mat& CalculateHistogram(Mat& frame);
   /**
    * @brief Render the histogram. This function is called by Update() and should
    * not be called directly. It is only made protected so it can be mocked away
@@ -117,16 +102,13 @@ class InspectorHistogram : public InspectorClient {
    *
    * @param histogram
    */
-  virtual void RenderHistogram(const HistogramData& histogram) = 0;
+  virtual void RenderHistogram(const Mat& histogram) = 0;
 
  private:
-  void SetEdges_(std::vector<float>& edges);
-  int top_left_x;
-  int top_left_y;
-  int bottom_right_x;
-  int bottom_right_y;
-  bool is_uniform;
-  HistogramData histogram_data;
+  Rect roi_;
+  float ranges_[2];
+  int bins_;
+  Mat histogram_;
 };
 
 #endif  //__INSPECTOR_HISTOGRAM_H__

@@ -16,42 +16,45 @@
  * Free Software Foundation, Inc., 51 Franklin Street, Suite 500,
  * Boston, MA 02110-1335, USA.
  */
-
-#include <sdk/inspector/inspector-tracker.h>
+/**
+ * SECTION: inspector
+ *
+ * Add description later
+ *
+ */
+#include <sdk/inspector/inspector-queue.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
+#include <iostream>
+
 using namespace spdlog;
-static logger* logger_ = stdout_color_mt("InspectorTracker").get();
+static logger* logger_ = stdout_color_mt("InspectorQueue").get();
 
-InspectorTracker::InspectorTracker() {
-  point_x = mat_size_.width / 2;
-  point_y = mat_size_.height / 2;
+InspectorQueue::InspectorQueue(const std::string name) : name_(name) {}
+
+InspectorQueue::~InspectorQueue() {}
+
+void InspectorQueue::AddInspector(PadObserver* inspector) {
+  Pad* pad = queue_.GetSourcePad();
+  pad->AddObserver(inspector);
 }
 
-void InspectorTracker::SetLocation(int x, int y) {
-  point_x = std::max(0, std::min(x, mat_size_.width - 1));
-  point_y = std::max(0, std::min(y, mat_size_.height - 1));
+void InspectorQueue::RemoveInspector(PadObserver* inspector) {
+  Pad* pad = queue_.GetSourcePad();
+  pad->RemoveObserver(inspector);
 }
 
-void InspectorTracker::GetLocation(int& x, int& y) {
-  x = point_x;
-  y = point_y;
-}
-
-void InspectorTracker::OnNewFrame(Mat& frame) {
-  point_val = GetPoint(frame);
-  RenderPoint(point_val);
-}
-
-float InspectorTracker::GetPoint(Mat& frame) {
-  float value;
-  if (mat_type_ == CV_32FC1) {
-    value = frame.at<float>(point_y, point_x);
-  } else if (channel_ == kDepthChannel) {
-    value = frame.at<Vec2f>(point_y, point_x)[0];
-  } else {
-    value = frame.at<Vec2f>(point_y, point_x)[1];
+void InspectorQueue::OnNewFrame(cv::Mat& frame) {
+  // avoid wasting queue memory if no observer
+  Pad* pad = queue_.GetSourcePad();
+  if (pad->GetObserverCount() == 0) {
+    return;
   }
-  return value;
+  queue_.PushFrame(frame);
+}
+
+void InspectorQueue::SetSizeType(Size size, int type) {
+  // notify other observers
+  queue_.SetSizeType(size, type);
 }

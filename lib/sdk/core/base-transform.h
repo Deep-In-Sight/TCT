@@ -17,26 +17,49 @@
  * Boston, MA 02110-1335, USA.
  */
 
-#ifndef __INSPECTOR_CLIENT_H__
-#define __INSPECTOR_CLIENT_H__
+#ifndef __BASE_TRANSFORM_H__
+#define __BASE_TRANSFORM_H__
 
-#include <gst/gst.h>
+#include <sdk/core/element.h>
 
+#include <opencv2/opencv.hpp>
 #include <string>
 
-class InspectorClient {
+class Pad;
+
+using namespace std;
+using namespace cv;
+
+/**
+ * @brief A transform element that has one sink and one source pad.
+ *
+ */
+class BaseTransform : public Element {
  public:
-  virtual void Update(GstBuffer* buffer) = 0;
-  virtual void SetCaps(GstCaps* caps);
-  void SetAmplitude(bool amplitude);
-  void SetFrameSize(int width, int height);
-  void GetFrameSize(int& width, int& height);
+  BaseTransform(const string &name = "");
+  ~BaseTransform();
+
+  /**
+   * @brief Transform the frame.
+   *
+   * @param frame: data from sink pad.
+   */
+  void PushFrame(Mat &frame) override;
+
+  Pad *GetSinkPad();
+  Pad *GetSourcePad();
 
  protected:
-  int width;
-  int height;
-  std::string format;
-  bool is_amplitude;
-};
+  /**
+   * @brief Child transform class implement this method to transform the frame.
+   * Default implementation forward the frame to source pad.
+   *
+   * @param frame
+   */
+  virtual void TransformFrame(Mat &frame);
 
-#endif  //__INSPECTOR_CLIENT_H__
+ private:
+  Pad *sink_pad_;
+  Pad *source_pad_;
+};
+#endif  //__BASE_TRANSFORM_H__
