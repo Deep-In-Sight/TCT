@@ -47,7 +47,7 @@ class InspectorTracker : public PadObserver {
  protected:
   /**
    * @brief Get the Point value at tracker location. Not to be called directly,
-   * it's called in Update() function
+   * it's called in OnNewFrame(Mat&) function
    *
    * @param buffer GstBuffer to get point value
    * @return float point value
@@ -55,9 +55,9 @@ class InspectorTracker : public PadObserver {
   float GetPoint(Mat& frame);
   /**
    * @brief Render the point value. Not to be called directly, it's called in
-   * Update() function. This function is implemented in child class to render
-   * the point value to either GUI window for visualizing, or text file for
-   * storing.
+   * OnNewFrame(Mat&) function. This function is implemented in child class to
+   * render the point value to either GUI window for visualizing, or text file
+   * for storing.
    *
    * @param value
    */
