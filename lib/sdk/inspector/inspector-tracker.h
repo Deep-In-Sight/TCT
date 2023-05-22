@@ -26,6 +26,7 @@
 
 class InspectorTracker : public PadObserver {
  public:
+  InspectorTracker();
   /**
    * @brief Set the Location of the tracker
    *

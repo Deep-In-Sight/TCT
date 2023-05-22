@@ -24,6 +24,11 @@
 using namespace spdlog;
 static logger* logger_ = stdout_color_mt("InspectorTracker").get();
 
+InspectorTracker::InspectorTracker() {
+  point_x = mat_size_.width / 2;
+  point_y = mat_size_.height / 2;
+}
+
 void InspectorTracker::SetLocation(int x, int y) {
   point_x = std::max(0, std::min(x, mat_size_.width - 1));
   point_y = std::max(0, std::min(y, mat_size_.height - 1));

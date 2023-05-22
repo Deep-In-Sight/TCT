@@ -2,7 +2,7 @@ set(SDK_SRCS
     inspector/inspector-queue.cc
     inspector/inspector-scanner.cc
     inspector/inspector-tracker.cc
-    # inspector/inspector-histogram.cc
+    inspector/inspector-histogram.cc
     inspector/inspector-bitmap.cc
     core/pad.cc
     core/element.cc
