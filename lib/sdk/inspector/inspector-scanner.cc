@@ -18,90 +18,84 @@
  */
 
 #include <sdk/inspector/inspector-scanner.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+#include <spdlog/spdlog.h>
 
-void InspectorScanner::GetRange(int& x1, int& y1, int& xy2) {
-  x1 = start_x;
-  y1 = start_y;
-  xy2 = end_xy;
+using namespace spdlog;
+static logger* logger_ = stdout_color_mt("InspectorScanner").get();
+
+InspectorScanner::InspectorScanner() {
+  start_x_ = -1;
+  start_y_ = -1;
+  end_xy_ = -1;
+  dir_ = kScanHorizontal;
 }
 
-void InspectorScanner::Update(GstBuffer* buffer) {
-  /* well.. argument validation and return check be damned */
-  auto vec = CollectRange(buffer);
+void InspectorScanner::GetRoi(int& x1, int& y1, int& xy2) {
+  x1 = start_x_;
+  y1 = start_y_;
+  xy2 = end_xy_;
+}
+
+void InspectorScanner::OnNewFrame(Mat& frame) {
+  if (start_x_ < 0 || start_y_ < 0 ||
+      (dir_ == kScanHorizontal && end_xy_ > frame.cols) ||
+      (dir_ == kScanVertical && end_xy_ > frame.rows)) {
+    logger_->error("Invalid range");
+    return;
+  }
+  auto vec = CollectRange(frame);
   RenderResult(vec);
 }
 
-void InspectorScanner::SetRangeImpl(int x1, int y1, int xy2,
-                                    ScanDirection dir) {
+void InspectorScanner::SetRoi(int x1, int y1, int xy2) {
   size_t vec_size;
 
-  start_x = std::min(width - 1, std::max(0, x1));
-  start_y = std::min(height - 1, std::max(0, y1));
-  if (dir == kScanHorizontal) {
-    end_xy = std::min(width - 1, std::max(0, xy2));
-    if (end_xy < start_x) {
-      std::swap(start_x, end_xy);
+  start_x_ = std::min(mat_size_.width - 1, std::max(0, x1));
+  start_y_ = std::min(mat_size_.height - 1, std::max(0, y1));
+  if (dir_ == kScanHorizontal) {
+    end_xy_ = std::min(mat_size_.width - 1, std::max(0, xy2));
+    if (end_xy_ < start_x_) {
+      std::swap(start_x_, end_xy_);
     }
-    vec_size = end_xy - start_x;
+    vec_size = end_xy_ - start_x_;
   } else {
-    end_xy = std::min(height - 1, std::max(0, xy2));
-    if (end_xy < start_y) {
-      std::swap(start_y, end_xy);
+    end_xy_ = std::min(mat_size_.height - 1, std::max(0, xy2));
+    if (end_xy_ < start_y_) {
+      std::swap(start_y_, end_xy_);
     }
-    vec_size = end_xy - start_y;
+    vec_size = end_xy_ - start_y_;
   }
 
-  if (vec_size > collected.capacity()) {
-    collected.reserve(vec_size);
+  if (vec_size > collected_.capacity()) {
+    collected_.reserve(vec_size);
   }
 }
 
-const std::vector<float>& InspectorScanner::CollectRangeImpl(
-    GstBuffer* buffer, ScanDirection dir) {
-  GstMapInfo mapinfo;
-  float* data;
-  size_t stride;
-  int start, end;
-
-  gst_buffer_map(buffer, &mapinfo, GST_MAP_READ);
-  data = reinterpret_cast<float*>(mapinfo.data);
-  if (format == "DA_F32" && is_amplitude) {
-    data += width * height;
-  }
-  data += (width * start_y + start_x);
-  if (dir == kScanHorizontal) {
-    stride = 1;
-    start = start_x;
-    end = end_xy;
+const std::vector<float>& InspectorScanner::CollectRange(Mat& frame) {
+  Mat roi;
+  // openCV colRange and rowRange are inclusive-start and exclusive-end
+  if (dir_ == kScanHorizontal) {
+    roi = frame.row(start_y_).colRange(start_x_, end_xy_ + 1);
   } else {
-    stride = width;
-    start = start_y;
-    end = end_xy;
+    roi = frame.col(start_x_).rowRange(start_y_, end_xy_ + 1);
   }
-
-  collected.clear();
-
-  for (int i = 0; i <= end - start; i++) {
-    collected.push_back(data[i * stride]);
+  if (roi.type() == CV_32FC1) {
+    for (int i = 0; i < roi.total(); i++) {
+      collected_.push_back(roi.at<float>(i));
+    }
+  } else if (channel_ == kDepthChannel) {
+    for (int i = 0; i < roi.total(); i++) {
+      collected_.push_back(roi.at<Vec2f>(i)[0]);
+    }
+  } else if (channel_ == kAmplitudeChannel) {
+    for (int i = 0; i < roi.total(); i++) {
+      collected_.push_back(roi.at<Vec2f>(i)[1]);
+    }
   }
-
-  gst_buffer_unmap(buffer, &mapinfo);
-
-  return collected;
+  return collected_;
 }
 
-void InspectorHScanner::SetRange(int x1, int y1, int xy2) {
-  SetRangeImpl(x1, y1, xy2, InspectorScanner::kScanHorizontal);
-}
+InspectorHScanner::InspectorHScanner() { dir_ = kScanHorizontal; }
 
-const std::vector<float>& InspectorHScanner::CollectRange(GstBuffer* buffer) {
-  return CollectRangeImpl(buffer, InspectorScanner::kScanHorizontal);
-}
-
-void InspectorVScanner::SetRange(int x1, int y1, int xy2) {
-  SetRangeImpl(x1, y1, xy2, InspectorScanner::kScanVertical);
-}
-
-const std::vector<float>& InspectorVScanner::CollectRange(GstBuffer* buffer) {
-  return CollectRangeImpl(buffer, InspectorScanner::kScanVertical);
-}
+InspectorVScanner::InspectorVScanner() { dir_ = kScanVertical; }

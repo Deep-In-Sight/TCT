@@ -19,13 +19,16 @@
 #ifndef __INSPECTOR_SCANNER_H__
 #define __INSPECTOR_SCANNER_H__
 
-#include <sdk/inspector/inspector-client.h>
+#include <sdk/core/pad.h>
 
 #include <vector>
 
-class InspectorScanner : public InspectorClient {
+enum ScanDirection { kScanHorizontal = 0, kScanVertical };
+
+class InspectorScanner : public PadObserver {
  public:
-  enum ScanDirection { kScanHorizontal = 0, kScanVertical };
+  InspectorScanner();
+
   /**
    * @brief set the range of the scanner. This range is inclusive-start and
    * inclusive-end. The range is clampped by frame width and height. Also start
@@ -35,7 +38,8 @@ class InspectorScanner : public InspectorClient {
    * @param y1 start point y
    * @param xy2 end point x or y
    */
-  virtual void SetRange(int x1, int y1, int xy2) = 0;
+  void SetRoi(int x1, int y1, int xy2);
+
   /**
    * @brief Get the range of the scanner
    *
@@ -43,70 +47,48 @@ class InspectorScanner : public InspectorClient {
    * @param y1 start point y
    * @param xy2 end point x or y
    */
-  void GetRange(int& x1, int& y1, int& xy2);
+  void GetRoi(int& x1, int& y1, int& xy2);
 
-  void Update(GstBuffer* buffer) override;
+  void OnNewFrame(Mat& frame) override;
 
  protected:
   /**
-   * @brief not to be called from outside. This function is called by Update().
-   * Implemented in InspectorHScanner and InspectorVScanner to collect data from
-   * GstBuffer.
+   * @brief not to be called from outside. This function is called by
+   * OnNewFrame(Mat&). protected for unittesting.
    *
-   * @param buffer GstBuffer to collect data from
+   * @param frame Mat to collect data from
    * @return std::vector<float>& collected data
    */
-  virtual const std::vector<float>& CollectRange(GstBuffer* buffer) = 0;
+  const vector<float>& CollectRange(Mat& frame);
   /**
-   * @brief not to be called from outside. This function is called by Update().
-   * Implemented by child class, to render the collected data, either to a gui
-   * window to visualizing, or a text file for storing.
+   * @brief not to be called from outside. This fuction is called by
+   * OnNewFrame(Mat&). Implemented by child class, to render the collected data,
+   * either to a gui window to visualizing, or a text file for storing.
    *
    * @param vec
    */
   virtual void RenderResult(const std::vector<float>& vec) = 0;
   /**
-   * @brief not to be called from outside. This function is called by
-   * SetRange() in each child class.
-   *
-   * @param x1 start point x
-   * @param y1 start point y
-   * @param xy2 end point x or y
-   * @param dir scan direction
+   * Not to be changed by children!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    */
-  void SetRangeImpl(int x1, int y1, int xy2, ScanDirection dir);
-  /**
-   * @brief not to be called from outside. This function is called by
-   * CollectRange() in each child class.
-   *
-   * @param buffer GstBuffer to collect data from
-   * @param dir scan direction
-   * @return std::vector<float>& collected data
-   */
-  const std::vector<float>& CollectRangeImpl(GstBuffer* buffer,
-                                             ScanDirection dir);
+  ScanDirection dir_;
 
  private:
-  int start_x;
-  int start_y;
-  int end_xy;
-  std::vector<float> collected;
+  int start_x_;
+  int start_y_;
+  int end_xy_;
+
+  vector<float> collected_;
 };
 
 class InspectorHScanner : public InspectorScanner {
  public:
-  void SetRange(int x1, int y1, int xy2) override;
-
- private:
-  const std::vector<float>& CollectRange(GstBuffer* buffer) override;
+  InspectorHScanner();
 };
 
 class InspectorVScanner : public InspectorScanner {
  public:
-  void SetRange(int x1, int y1, int xy2) override;
-
- private:
-  const std::vector<float>& CollectRange(GstBuffer* buffer) override;
+  InspectorVScanner();
 };
 
 #endif  //__INSPECTOR_SCANNER_H__
