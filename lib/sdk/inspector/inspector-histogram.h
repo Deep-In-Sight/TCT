@@ -95,10 +95,10 @@ class InspectorHistogram : public PadObserver {
    */
   const Mat& CalculateHistogram(Mat& frame);
   /**
-   * @brief Render the histogram. This function is called by Update() and should
-   * not be called directly. It is only made protected so it can be mocked away
-   * for unit test. Child class implements this function to render the histogram
-   * on a GUI window or to a text file.
+   * @brief Render the histogram. This function is called by OnNewFrame(Mat&)
+   * and should not be called directly. It is only made protected so it can be
+   * mocked away for unit test. Child class implements this function to render
+   * the histogram on a GUI window or to a text file.
    *
    * @param histogram
    */
