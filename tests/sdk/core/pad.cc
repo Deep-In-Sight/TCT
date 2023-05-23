@@ -143,18 +143,3 @@ TEST(PadTest, TestPadObserverSelectChannel) {
   EXPECT_NO_THROW(observer.SelectChannel(kDepthChannel));
   EXPECT_ANY_THROW(observer.SelectChannel(kAmplitudeChannel));
 }
-
-TEST(TestOpenCV, TestAt) {
-  float data[] = {1, 2, 3, 4, 5, 6, 7, 8};
-  cv::Mat mat(2, 2, CV_32FC2, data);
-  EXPECT_EQ(mat.at<cv::Vec2f>(0, 0)[0], 1);
-  EXPECT_EQ(mat.at<cv::Vec2f>(0, 0)[1], 2);
-
-  EXPECT_NE(CV_MAT_CN(CV_8UC1), 3);
-  EXPECT_EQ(CV_MAT_CN(CV_8UC1), 1);
-  EXPECT_EQ(CV_MAT_CN(CV_8UC2), 2);
-  EXPECT_EQ(CV_MAT_CN(CV_8UC3), 3);
-  std::cout << "CV_32FC1 = " << CV_32FC1 << std::endl;
-  std::cout << "CV_32FC2 = " << CV_32FC2 << std::endl;
-  std::cout << "CV_32FC3 = " << CV_32FC3 << std::endl;
-}

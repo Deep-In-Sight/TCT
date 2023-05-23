@@ -22,6 +22,8 @@
 
 #include <sdk/core/element.h>
 
+#include <condition_variable>
+#include <mutex>
 #include <opencv2/opencv.hpp>
 #include <string>
 #include <thread>
@@ -30,6 +32,12 @@ class Pad;
 
 using namespace std;
 using namespace cv;
+
+enum StreamState {
+  kStreamStatePlaying,
+  kStreamStatePaused,
+  kStreamStateStopped
+};
 
 class BaseSource : public Element {
  public:
@@ -57,9 +65,12 @@ class BaseSource : public Element {
    */
   Pad *GetSourcePad();
 
-  void Start();
-  void Stop();
-  bool IsRunning();
+  bool Start();
+  bool Stop();
+  bool Pause();
+  bool Resume();
+  bool Step();
+  StreamState GetState();
 
  protected:
   /**
@@ -68,11 +79,26 @@ class BaseSource : public Element {
    * @return Mat
    */
   virtual Mat GenerateFrame() = 0;
+  /**
+   * @brief Child element implement this to initialize source, such as configure
+   * the camera sensor (live streaming), or open a file descriptor (playback).
+   *
+   */
+  virtual void InitializeSource() = 0;
+  /**
+   * @brief Child element implement this to clean up the source. For example
+   * put camera on standby or close the file descriptor.
+   *
+   * @return
+   */
+  virtual void CleanupSource() = 0;
 
  private:
   Pad *source_pad_;
   thread *thread_;
-  bool running_;
+  StreamState state_;
+  mutex mutex_;
+  condition_variable condvar_;
 };
 
 #endif  //__BASE_SRC_H__

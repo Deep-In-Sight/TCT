@@ -96,7 +96,7 @@ TEST_F(InspectorHistogramTest, TestGetHistogram) {
   Mat frame(test_height_, test_width_, CV_32FC1, data_);
 
   const Mat& hist = inspector_histogram_mock_->CalculateHistogram(frame);
-  std::cout << hist.type() << "CV_32FC1=" << CV_32FC1 << std::endl;
+
   EXPECT_EQ(hist.total(), 2);
   EXPECT_EQ(hist.at<float>(0), 5);
   EXPECT_EQ(hist.at<float>(1), 5);
