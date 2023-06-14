@@ -7,9 +7,15 @@ using namespace spdlog;
 
 static logger *logger_ = stdout_color_mt("BaseSource").get();
 
-BaseSource::BaseSource(const string &name) : Element(name) {
-  source_pad_ = new Pad(kPadSource, "src");
-  AddPad(source_pad_);
+BaseSource::BaseSource(const string &name, bool is_async) : Element(name) {
+  if (!is_async) {
+    source_pad_ = new Pad(kPadSource, "src");
+    AddPad(source_pad_);
+    queue_ = nullptr;
+  } else {
+    queue_ = new Queue(name + "-queue");
+    source_pad_ = queue_->GetSourcePad();
+  }
   state_ = kStreamStateStopped;
 }
 
@@ -17,15 +23,22 @@ BaseSource::~BaseSource() {
   if (state_ != kStreamStateStopped) {
     Stop();
   }
-  delete source_pad_;
+  if (queue_ != nullptr) {
+    delete queue_;
+  } else {
+    delete source_pad_;
+  }
 }
 
 void BaseSource::PushFrame(Mat &frame) {}
 
 void BaseSource::GenerateLoop() {
   StreamState state;
-  // cout << "child address:" << this << endl;
-  InitializeSource();
+  if (InitializeSource() != true) {
+    logger_->error("Failed to initialize source");
+    return;
+  }
+
   do {
     {
       unique_lock<mutex> lock(mutex_);
@@ -34,15 +47,29 @@ void BaseSource::GenerateLoop() {
         break;
       } else if (state == kStreamStatePaused) {
         // state_, not state, by intention.
-        logger_->error("Paused, taking a nap");
+        logger_->info("Paused, taking a nap zzz...");
         condvar_.wait(lock, [this] { return state_ != kStreamStatePaused; });
-        logger_->error("rising from under, resuming");
+        logger_->info("Rising from under, get back to work!");
       }
     }
-    cv::Mat frame = GenerateFrame();
-    source_pad_->PushFrame(frame);
+    Mat frame = GenerateFrame();
+    if (frame.empty()) {
+      logger_->error("Failed to generate frame");
+      break;
+    }
+
+    if (queue_ != nullptr) {
+      queue_->PushFrame(frame);
+    } else {
+      source_pad_->PushFrame(frame);
+    }
   } while (state != kStreamStateStopped);
   CleanupSource();
+
+  {
+    unique_lock<mutex> lock(mutex_);
+    state_ = kStreamStateStopped;
+  }
 }
 
 Pad *BaseSource::GetSourcePad() { return source_pad_; }
@@ -61,7 +88,7 @@ Pad *BaseSource::GetSourcePad() { return source_pad_; }
  *   │           ├──────────────►            │
  *   │  STOPPED  │              │  PLAYING   │
  *   │           ◄──────────────┤            │
- *   └───────────┘   stop()     └────────────┘
+ *   └───────────┘ stop()/eof   └────────────┘
  */
 bool BaseSource::Start() {
   if (state_ != kStreamStateStopped) {
@@ -135,7 +162,3 @@ bool BaseSource::Step() {
 }
 
 StreamState BaseSource::GetState() { return state_; }
-
-// Mat BaseSource::GenerateFrame() {}
-// void BaseSource::InitializeSource() {}
-// void BaseSource::CleanupSource() {}

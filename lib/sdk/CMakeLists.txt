@@ -9,7 +9,11 @@ set(SDK_SRCS
     core/base-src.cc
     core/base-sink.cc
     core/base-transform.cc
-    core/queue.cc)
+    core/queue.cc
+    tof/playback-src.cc
+    tof/depth-calc.cc)
+
+find_package(Eigen3 REQUIRED)
 
 set(SDK_INCLUDES ${PROJECT_BINARY_DIR} ${PROJECT_SOURCE_DIR}/lib
                  ${GST_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})

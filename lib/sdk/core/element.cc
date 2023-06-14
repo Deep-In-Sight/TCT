@@ -33,14 +33,13 @@ bool Element::AddPad(Pad *pad) {
     }
   }
   pads_.push_back(pad);
-  pad->SetParent(this);
-  return true;
+  return pad->SetParent(this);
 }
 
-void Element::SetSizeType(Size size, int type) {
+void Element::SetFrameFormat(const MatShape &shape, int type) {
   for (auto it = pads_.begin(); it != pads_.end(); it++) {
     if ((*it)->GetDirection() == kPadSource) {
-      (*it)->SetSizeType(size, type);
+      (*it)->SetFrameFormat(shape, type);
     }
   }
 }

@@ -5,9 +5,12 @@
 
 #include <iostream>
 
+using testing::NiceMock;
 class InspectorHScannerMock : public InspectorHScanner {
  public:
   MOCK_METHOD(void, RenderResult, (const std::vector<float>& vec), (override));
+  MOCK_METHOD(void, OnFrameFormatChanged, (const MatShape& shape, int type),
+              (override));
   const vector<float>& CollectRange(Mat& frame) {
     return InspectorHScanner::CollectRange(frame);
   }
@@ -16,6 +19,8 @@ class InspectorHScannerMock : public InspectorHScanner {
 class InspectorVScannerMock : public InspectorVScanner {
  public:
   MOCK_METHOD(void, RenderResult, (const std::vector<float>& vec), (override));
+  MOCK_METHOD(void, OnFrameFormatChanged, (const MatShape& shape, int type),
+              (override));
   const vector<float>& CollectRange(Mat& frame) {
     return InspectorVScanner::CollectRange(frame);
   }
@@ -24,8 +29,8 @@ class InspectorVScannerMock : public InspectorVScanner {
 class InspectorScannerTest : public ::testing::Test {
  public:
   InspectorScannerTest() {
-    hscanner_ = new InspectorHScannerMock();
-    vscanner_ = new InspectorVScannerMock();
+    hscanner_ = new NiceMock<InspectorHScannerMock>();
+    vscanner_ = new NiceMock<InspectorVScannerMock>();
     data_ = new float[200];
     for (int i = 0; i < 200; i++) {
       data_[i] = i;
@@ -39,13 +44,13 @@ class InspectorScannerTest : public ::testing::Test {
   int test_width_ = 10;
   int test_height_ = 10;
   float* data_;
-  InspectorHScannerMock* hscanner_;
-  InspectorVScannerMock* vscanner_;
+  NiceMock<InspectorHScannerMock>* hscanner_;
+  NiceMock<InspectorVScannerMock>* vscanner_;
 };
 
 TEST_F(InspectorScannerTest, TestSetHRange) {
   int x1, y1, xy2;
-  hscanner_->SetSizeType(Size(test_width_, test_height_), CV_32FC1);
+  hscanner_->SetFrameFormat({2, 10, 10}, CV_32FC1);
   // in-bound range
   hscanner_->SetRoi(1, 2, 3);
   hscanner_->GetRoi(x1, y1, xy2);
@@ -70,7 +75,7 @@ TEST_F(InspectorScannerTest, TestSetHRange) {
 
 TEST_F(InspectorScannerTest, TestSetVRange) {
   int x1, y1, xy2;
-  vscanner_->SetSizeType(Size(test_width_, test_height_), CV_32FC1);
+  vscanner_->SetFrameFormat({2, 10, 10}, CV_32FC1);
   // in-bound range
   vscanner_->SetRoi(1, 2, 3);
   vscanner_->GetRoi(x1, y1, xy2);
@@ -94,7 +99,7 @@ TEST_F(InspectorScannerTest, TestSetVRange) {
 }
 
 TEST_F(InspectorScannerTest, TestCollectRangeOneChannel) {
-  Mat frame(test_height_, test_width_, CV_32FC1, data_);
+  Mat frame({1, 10, 10}, CV_32FC1, data_);
 
   hscanner_->SelectChannel(kDepthChannel);
   hscanner_->SetRoi(1, 2, 3);
@@ -114,29 +119,29 @@ TEST_F(InspectorScannerTest, TestCollectRangeOneChannel) {
   EXPECT_EQ(vvec[1], 31);
 
   EXPECT_ANY_THROW({
-    hscanner_->SetSizeType(Size(10, 10), CV_32FC1);
+    hscanner_->SetFrameFormat({1, 10, 10}, CV_32FC1);
     hscanner_->SelectChannel(kAmplitudeChannel);
   });
 }
 
 TEST_F(InspectorScannerTest, TestCollectRangeAmplitude) {
-  Mat frame(test_height_, test_width_, CV_32FC2, data_);
-  hscanner_->SetSizeType(Size(test_width_, test_height_), CV_32FC2);
+  Mat frame({2, 10, 10}, CV_32FC1, data_);
+  hscanner_->SetFrameFormat({2, 10, 10}, CV_32FC1);
 
   hscanner_->SelectChannel(kDepthChannel);
   hscanner_->SetRoi(1, 2, 3);
   auto& hvec = hscanner_->CollectRange(frame);
 
   EXPECT_EQ(hvec.size(), 3);
-  EXPECT_EQ(hvec[0], 42);
-  EXPECT_EQ(hvec[1], 44);
-  EXPECT_EQ(hvec[2], 46);
+  EXPECT_EQ(hvec[0], 21);
+  EXPECT_EQ(hvec[1], 22);
+  EXPECT_EQ(hvec[2], 23);
 
-  vscanner_->SetSizeType(Size(test_width_, test_height_), CV_32FC2);
+  vscanner_->SetFrameFormat({2, 10, 10}, CV_32FC1);
   vscanner_->SelectChannel(kAmplitudeChannel);
   vscanner_->SetRoi(1, 2, 3);
   auto& vvec = vscanner_->CollectRange(frame);
   EXPECT_EQ(vvec.size(), 2);
-  EXPECT_EQ(vvec[0], 43);
-  EXPECT_EQ(vvec[1], 63);
+  EXPECT_EQ(vvec[0], 121);
+  EXPECT_EQ(vvec[1], 131);
 }

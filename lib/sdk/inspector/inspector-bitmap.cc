@@ -30,13 +30,13 @@ void InspectorBitmap::OnNewFrame(Mat& frame) {
 }
 
 Vec2f InspectorBitmap::GetDepthAmplitude(int x, int y) {
-  if (x < 0 || x >= frame_.cols || y < 0 || y >= frame_.rows) {
+  if (x < 0 || x >= frame_.size[2] || y < 0 || y >= frame_.size[1]) {
     throw std::runtime_error("out of frame");
   }
 
-  if (mat_type_ == CV_32FC1) {
-    return Vec2f(frame_.at<float>(y, x), nanf(""));
+  if (mat_shape_.dims() == 1) {
+    return Vec2f(frame_.at<float>(0, y, x), nanf(""));
   } else {
-    return frame_.at<Vec2f>(y, x);
+    return Vec2f(frame_.at<float>(0, y, x), frame_.at<float>(1, y, x));
   }
 }

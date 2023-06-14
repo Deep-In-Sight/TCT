@@ -25,13 +25,13 @@ using namespace spdlog;
 static logger* logger_ = stdout_color_mt("InspectorTracker").get();
 
 InspectorTracker::InspectorTracker() {
-  point_x = mat_size_.width / 2;
-  point_y = mat_size_.height / 2;
+  point_x = mat_shape_[2] / 2;
+  point_y = mat_shape_[1] / 2;
 }
 
 void InspectorTracker::SetLocation(int x, int y) {
-  point_x = std::max(0, std::min(x, mat_size_.width - 1));
-  point_y = std::max(0, std::min(y, mat_size_.height - 1));
+  point_x = std::max(0, std::min(x, mat_shape_[2] - 1));
+  point_y = std::max(0, std::min(y, mat_shape_[1] - 1));
 }
 
 void InspectorTracker::GetLocation(int& x, int& y) {
@@ -46,12 +46,6 @@ void InspectorTracker::OnNewFrame(Mat& frame) {
 
 float InspectorTracker::GetPoint(Mat& frame) {
   float value;
-  if (mat_type_ == CV_32FC1) {
-    value = frame.at<float>(point_y, point_x);
-  } else if (channel_ == kDepthChannel) {
-    value = frame.at<Vec2f>(point_y, point_x)[0];
-  } else {
-    value = frame.at<Vec2f>(point_y, point_x)[1];
-  }
+  value = frame.at<float>(channel_, point_y, point_x);
   return value;
 }

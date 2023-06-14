@@ -5,10 +5,13 @@
 
 #include <iostream>
 
+using testing::NiceMock;
 class InspectorTrackerMock : public InspectorTracker {
  public:
   virtual ~InspectorTrackerMock(){};
   MOCK_METHOD(void, RenderPoint, (float value), (override));
+  MOCK_METHOD(void, OnFrameFormatChanged, (const MatShape& shape, int type),
+              (override));
 
   float GetPoint(Mat& frame) {
     // call the base class implementation
@@ -19,15 +22,15 @@ class InspectorTrackerMock : public InspectorTracker {
 class InspectorTrackerTest : public ::testing::Test {
  protected:
   void SetUp() override {
-    inspector_tracker_mock_ = new InspectorTrackerMock();
-    inspector_tracker_mock_->SetSizeType(Size(10, 10), CV_32FC2);
+    inspector_tracker_mock_ = new NiceMock<InspectorTrackerMock>();
+    inspector_tracker_mock_->SetFrameFormat({2, 10, 10}, CV_32FC1);
   }
 
   void TearDown() override { delete inspector_tracker_mock_; }
 
   int test_width_ = 10;
   int test_height_ = 10;
-  InspectorTrackerMock* inspector_tracker_mock_;
+  NiceMock<InspectorTrackerMock>* inspector_tracker_mock_;
 };
 
 TEST_F(InspectorTrackerTest, TestSetLocation) {
@@ -61,11 +64,11 @@ TEST_F(InspectorTrackerTest, TestGetDepthPoint) {
   for (int i = 0; i < 200; i++) {
     data[i] = i;
   }
-  Mat frame(Size(10, 10), CV_32FC2, data);
+  Mat frame({2, 10, 10}, CV_32FC1, data);
   inspector_tracker_mock_->SetLocation(1, 2);
   inspector_tracker_mock_->SelectChannel(kDepthChannel);
   float value = inspector_tracker_mock_->GetPoint(frame);
-  EXPECT_EQ(value, 42);
+  EXPECT_EQ(value, 21);
 }
 
 TEST_F(InspectorTrackerTest, TestGetAmplitudePoint) {
@@ -73,20 +76,20 @@ TEST_F(InspectorTrackerTest, TestGetAmplitudePoint) {
   for (int i = 0; i < 200; i++) {
     data[i] = i;
   }
-  Mat frame(Size(10, 10), CV_32FC2, data);
+  Mat frame({2, 10, 10}, CV_32FC1, data);
   inspector_tracker_mock_->SetLocation(1, 2);
   inspector_tracker_mock_->SelectChannel(kAmplitudeChannel);
   float value = inspector_tracker_mock_->GetPoint(frame);
-  EXPECT_EQ(value, 43);
+  EXPECT_EQ(value, 121);
 }
 
 TEST_F(InspectorTrackerTest, TestGetDepthPointOneChannel) {
-  inspector_tracker_mock_->SetSizeType(Size(10, 10), CV_32FC1);
+  inspector_tracker_mock_->SetFrameFormat({1, 10, 10}, CV_32FC1);
   float* data = new float[200];
   for (int i = 0; i < 200; i++) {
     data[i] = i;
   }
-  Mat frame(Size(10, 10), CV_32FC1, data);
+  Mat frame({1, 10, 10}, CV_32FC1, data);
   inspector_tracker_mock_->SetLocation(1, 2);
   inspector_tracker_mock_->SelectChannel(kDepthChannel);
   float value = inspector_tracker_mock_->GetPoint(frame);
@@ -94,12 +97,12 @@ TEST_F(InspectorTrackerTest, TestGetDepthPointOneChannel) {
 }
 
 TEST_F(InspectorTrackerTest, TestGetAmplitudePointOneChannel) {
-  inspector_tracker_mock_->SetSizeType(Size(10, 10), CV_32FC1);
+  inspector_tracker_mock_->SetFrameFormat({1, 10, 10}, CV_32FC1);
   float* data = new float[200];
   for (int i = 0; i < 200; i++) {
     data[i] = i;
   }
-  Mat frame(Size(10, 10), CV_32FC1, data);
+  Mat frame({1, 10, 10}, CV_32FC1, data);
   inspector_tracker_mock_->SetLocation(1, 2);
   EXPECT_ANY_THROW({
     inspector_tracker_mock_->SelectChannel(kAmplitudeChannel);

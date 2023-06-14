@@ -21,6 +21,7 @@
 #define __BASE_SRC_H__
 
 #include <sdk/core/element.h>
+#include <sdk/core/queue.h>
 
 #include <condition_variable>
 #include <mutex>
@@ -41,7 +42,14 @@ enum StreamState {
 
 class BaseSource : public Element {
  public:
-  BaseSource(const string &name = "");
+  /**
+   * @brief Construct a new BaseSource object
+   *
+   * @param name name of the source
+   * @param is_async whether or not to add a queue to decouple the source
+   * reading thread from the rest of the pipeline.
+   */
+  BaseSource(const string &name = "", bool is_async = false);
   ~BaseSource();
 
   /**
@@ -84,7 +92,7 @@ class BaseSource : public Element {
    * the camera sensor (live streaming), or open a file descriptor (playback).
    *
    */
-  virtual void InitializeSource() = 0;
+  virtual bool InitializeSource() = 0;
   /**
    * @brief Child element implement this to clean up the source. For example
    * put camera on standby or close the file descriptor.
@@ -95,10 +103,12 @@ class BaseSource : public Element {
 
  private:
   Pad *source_pad_;
+  Queue *queue_;
   thread *thread_;
   StreamState state_;
   mutex mutex_;
   condition_variable condvar_;
+  float duration_;
 };
 
 #endif  //__BASE_SRC_H__
