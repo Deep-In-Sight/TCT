@@ -220,6 +220,14 @@ PadLinkReturn Pad::Unlink() {
 Pad *Pad::GetPeer() { return peer_; }
 
 void Pad::PushFrame(cv::Mat &frame) {
+  // check size and type. frame.size, not frame.size(). frame.size() is the 2D
+  // size of the matrix, in case dims=2. frame.size is the MatSize that can have
+  // dims>2.
+  if (mat_shape_ != frame.size || frame.type() != mat_type_) {
+    logger_->error("Frame size or type does not match");
+    return;
+  }
+
   // update observers
   for (auto it = observers_.begin(); it != observers_.end(); it++) {
     (*it)->OnNewFrame(frame);
@@ -230,14 +238,6 @@ void Pad::PushFrame(cv::Mat &frame) {
   }
 
   if (direction_ == kPadSink && parent_ == nullptr) {
-    return;
-  }
-
-  // check size and type. frame.size, not frame.size(). frame.size() is the 2D
-  // size of the matrix, in case dims=2. frame.size is the MatSize that can have
-  // dims>2.
-  if (mat_shape_ != frame.size || frame.type() != mat_type_) {
-    logger_->error("Frame size or type does not match");
     return;
   }
 

@@ -56,6 +56,8 @@ TEST_F(InspectorQueueTest, TestWindowUpdated) {
     EXPECT_CALL(*window, OnNewFrame).Times(num_buffers);
   }
 
+  test_pad->SetFrameFormat({1, 10, 10}, CV_32FC1);
+
   for (int count = 0; count < num_buffers; count++) {
     cv::Mat frame({1, 10, 10}, CV_32FC1);
     test_pad->PushFrame(frame);

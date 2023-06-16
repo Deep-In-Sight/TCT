@@ -108,7 +108,8 @@ TEST(PadTest, TestPadObservers) {
   NiceMock<PadObserverMock> observer2;
   pad.AddObserver(&observer1);
   pad.AddObserver(&observer2);
-  cv::Mat frame(Size(10, 10), CV_32FC1);
+  cv::Mat frame({1, 10, 10}, CV_32FC1);
+  pad.SetFrameFormat({1, 10, 10}, CV_32FC1);
   EXPECT_CALL(observer1, OnNewFrame).Times(2);
   EXPECT_CALL(observer2, OnNewFrame).Times(1);
   pad.PushFrame(frame);
