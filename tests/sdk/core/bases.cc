@@ -16,7 +16,7 @@ class BaseSourceMock : public BaseSource {
   }
 
   MOCK_METHOD(cv::Mat, GenerateFrame, (), (override));
-  MOCK_METHOD(void, InitializeSource, (), (override));
+  MOCK_METHOD(bool, InitializeSource, (), (override));
   MOCK_METHOD(void, CleanupSource, (), (override));
 };
 
@@ -159,4 +159,15 @@ TEST_F(BaseSourceTest, TestStepFromPaused) {
   EXPECT_EQ(test_src_->GetState(), kStreamStatePaused);
   EXPECT_TRUE(test_src_->Step());
   EXPECT_EQ(test_src_->GetState(), kStreamStatePaused);
+}
+
+TEST(OCVTest, TestShape) {
+  Mat m({4, 480, 640}, CV_16SC1);
+  cout << "rows=" << m.rows << " cols=" << m.cols
+       << " channels=" << m.channels() << " dims=" << m.dims << endl;
+  cout << "total=" << m.total() << endl;
+  cout << "elemSize=" << m.elemSize() << endl;
+  cout << "elemSize=" << m.elemSize1() << endl;
+  cout << "step=" << m.step[0] << " " << m.step[1] << " " << m.step[2] << endl;
+  cout << "size=" << m.size[0] << " " << m.size[1] << " " << m.size[2] << endl;
 }

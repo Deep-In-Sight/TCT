@@ -7,7 +7,9 @@ set(SDK_TEST_SRCS
     core/pad.cc
     core/element.cc
     core/bases.cc
-    core/queue.cc)
+    core/queue.cc
+    tof/playback-src.cc
+    tof/depth-calc.cc)
 
 set(SDK_TEST_INCLUDES ${PROJECT_BINARY_DIR} ${PROJECT_SOURCE_DIR}/lib
                       ${OPENCV_INCLUDE_DIRS} ${GST_INCLUDE_DIRS})
@@ -26,4 +28,4 @@ add_executable(sdk_tests ${SDK_TEST_SRCS})
 target_include_directories(sdk_tests PUBLIC ${SDK_TEST_INCLUDES})
 target_link_libraries(sdk_tests ${SDK_TEST_LINK_LIBS})
 
-gtest_discover_tests(sdk_tests)
+gtest_discover_tests(sdk_tests WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}/tests)

@@ -6,7 +6,149 @@
 using namespace spdlog;
 static logger *logger_ = stdout_color_mt("Pad").get();
 
-Pad::Pad(PadDirection direction, const string &name = "") {
+MatShape::MatShape() {
+  dims_ = 1;
+  p_[0] = 0;
+}
+
+MatShape::MatShape(int i0, int i1) {
+  dims_ = 2;
+  p_[0] = i0;
+  p_[1] = i1;
+}
+
+MatShape::MatShape(int i0, int i1, int i2) {
+  dims_ = 3;
+  p_[0] = i0;
+  p_[1] = i1;
+  p_[2] = i2;
+}
+
+MatShape::MatShape(int i0, int i1, int i2, int i3) {
+  dims_ = 4;
+  p_[0] = i0;
+  p_[1] = i1;
+  p_[2] = i2;
+  p_[3] = i3;
+}
+
+MatShape::MatShape(int i0, int i1, int i2, int i3, int i4) {
+  dims_ = 5;
+  p_[0] = i0;
+  p_[1] = i1;
+  p_[2] = i2;
+  p_[3] = i3;
+  p_[4] = i4;
+}
+
+MatShape::MatShape(int i0, int i1, int i2, int i3, int i4, int i5) {
+  dims_ = 6;
+  p_[0] = i0;
+  p_[1] = i1;
+  p_[2] = i2;
+  p_[3] = i3;
+  p_[4] = i4;
+  p_[5] = i5;
+}
+
+MatShape::MatShape(initializer_list<int> sizes) {
+  dims_ = sizes.size();
+  assert(dims_ < sizeof(p_) / sizeof(int));
+  for (int i = 0; i < dims_; i++) {
+    p_[i] = *(sizes.begin() + i);
+  }
+}
+
+MatShape::MatShape(const MatShape &shape) {
+  dims_ = shape.dims_;
+  for (int i = 0; i < dims_; i++) {
+    p_[i] = shape.p_[i];
+  }
+}
+
+MatShape::MatShape(const MatSize &size) {
+  dims_ = size.dims();
+  for (int i = 0; i < dims_; i++) {
+    p_[i] = size[i];
+  }
+}
+
+MatShape::~MatShape() {}
+
+int MatShape::dims() const { return dims_; }
+const int *MatShape::p() const { return p_; }
+
+MatShape &MatShape::operator=(const MatShape &shape) {
+  dims_ = shape.dims_;
+  for (int i = 0; i < dims_; i++) {
+    p_[i] = shape.p_[i];
+  }
+  return *this;
+}
+
+MatShape &MatShape::operator=(const MatSize &size) {
+  dims_ = size.dims();
+  for (int i = 0; i < dims_; i++) {
+    p_[i] = size[i];
+  }
+  return *this;
+}
+
+bool MatShape::operator==(const MatShape &shape) {
+  if (dims_ != shape.dims_) {
+    return false;
+  }
+  for (int i = 0; i < dims_; i++) {
+    if (p_[i] != shape.p_[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool MatShape::operator!=(const MatShape &shape) {
+  if (dims_ != shape.dims_) {
+    return true;
+  }
+  for (int i = 0; i < dims_; i++) {
+    if (p_[i] != shape.p_[i]) {
+      return true;
+    }
+  }
+  return false;
+}
+
+bool MatShape::operator==(const MatSize &size) {
+  if (dims_ != size.dims()) {
+    return false;
+  }
+  for (int i = 0; i < dims_; i++) {
+    if (p_[i] != size[i]) {
+      return false;
+    }
+  }
+  return true;
+}
+
+bool MatShape::operator!=(const MatSize &size) {
+  if (dims_ != size.dims()) {
+    return true;
+  }
+  for (int i = 0; i < dims_; i++) {
+    if (p_[i] != size[i]) {
+      return true;
+    }
+  }
+  return false;
+}
+
+const int MatShape::operator[](int index) const {
+  assert(index < dims_);
+  return p_[index];
+}
+
+Pad::Pad(PadDirection direction, const string &name = "")
+    : mat_shape_(DEFAULT_MAT_SHAPE), mat_type_(DEFAULT_MAT_TYPE) {
   direction_ = direction;
   link_status_ = kPadUnlinked;
   parent_ = nullptr;
@@ -15,8 +157,6 @@ Pad::Pad(PadDirection direction, const string &name = "") {
   if (name_.empty()) {
     name_ = (direction == kPadSource) ? "src" : "sink";
   }
-  mat_size_ = DEFAULT_MAT_SIZE;  // w, h
-  mat_type_ = DEFAULT_MAT_TYPE;
 }
 
 Pad::~Pad() {}
@@ -80,6 +220,14 @@ PadLinkReturn Pad::Unlink() {
 Pad *Pad::GetPeer() { return peer_; }
 
 void Pad::PushFrame(cv::Mat &frame) {
+  // check size and type. frame.size, not frame.size(). frame.size() is the 2D
+  // size of the matrix, in case dims=2. frame.size is the MatSize that can have
+  // dims>2.
+  if (mat_shape_ != frame.size || frame.type() != mat_type_) {
+    logger_->error("Frame size or type does not match");
+    return;
+  }
+
   // update observers
   for (auto it = observers_.begin(); it != observers_.end(); it++) {
     (*it)->OnNewFrame(frame);
@@ -90,12 +238,6 @@ void Pad::PushFrame(cv::Mat &frame) {
   }
 
   if (direction_ == kPadSink && parent_ == nullptr) {
-    return;
-  }
-
-  // check size and type
-  if (frame.size() != mat_size_ || frame.type() != mat_type_) {
-    logger_->error("Frame size or type does not match");
     return;
   }
 
@@ -117,7 +259,7 @@ void Pad::AddObserver(PadObserver *observer) {
     }
   }
   observers_.push_back(observer);
-  observer->SetSizeType(mat_size_, mat_type_);
+  observer->SetFrameFormat(mat_shape_, mat_type_);
 }
 
 void Pad::RemoveObserver(PadObserver *observer) {
@@ -129,12 +271,12 @@ void Pad::RemoveObserver(PadObserver *observer) {
 
 int Pad::GetObserverCount() { return observers_.size(); }
 
-void Pad::SetSizeType(Size size, int type) {
-  mat_size_ = size;
+void Pad::SetFrameFormat(const MatShape &shape, int type) {
+  mat_shape_ = shape;
   mat_type_ = type;
 
   for (auto it = observers_.begin(); it != observers_.end(); it++) {
-    (*it)->SetSizeType(size, type);
+    (*it)->SetFrameFormat(shape, type);
   }
 
   if (direction_ == kPadSource && link_status_ == kPadUnlinked) {
@@ -146,37 +288,46 @@ void Pad::SetSizeType(Size size, int type) {
   }
 
   if (direction_ == kPadSource) {
-    peer_->SetSizeType(size, type);
+    peer_->SetFrameFormat(shape, type);
   } else {
-    parent_->SetSizeType(size, type);
+    parent_->SetFrameFormat(shape, type);
   }
 }
 
-void Pad::GetSizeType(Size &size, int &type) {
-  size = mat_size_;
+void Pad::GetFrameFormat(MatShape &shape, int &type) {
+  shape = mat_shape_;
   type = mat_type_;
 }
 
-PadObserver::PadObserver() {
-  channel_ = kDepthChannel;
-  mat_size_ = DEFAULT_MAT_SIZE;  // w, h
-  mat_type_ = DEFAULT_MAT_TYPE;
-}
+PadObserver::PadObserver()
+    : mat_shape_(DEFAULT_MAT_SHAPE),
+      mat_type_(DEFAULT_MAT_TYPE),
+      channel_(kDepthChannel) {}
 
-void PadObserver::SetSizeType(Size size, int type) {
-  if (type != CV_32FC1 && type != CV_32FC2) {
+void PadObserver::SetFrameFormat(const MatShape &shape, int type) {
+  if (mat_shape_.dims() != 3) {
     throw std::invalid_argument(
-        "PadObserver only supports CV_32FC1 and CV_32FC2");
+        "PadObserver only supports 3 dimension Mat (CHW)");
   }
-  mat_size_ = size;
-  mat_type_ = type;
+  if (mat_shape_[0] != 1 && mat_shape_[0] != 2) {
+    throw std::invalid_argument(
+        "PadObserver only supports 1 or 2 channels for depth (and) amplitude");
+  }
+  if (mat_type_ != CV_32FC1) {
+    throw std::invalid_argument("PadObserver only supports CV_32FC1 data type");
+  }
+  if (mat_shape_ != shape || mat_type_ != type) {
+    mat_shape_ = shape;
+    mat_type_ = type;
+    OnFrameFormatChanged(shape, type);
+  }
 }
 
 void PadObserver::SelectChannel(DepthAmplitudeChannel channel) {
   if ((channel != kDepthChannel) && (channel != kAmplitudeChannel)) {
     throw std::invalid_argument("Invalid channel");
   }
-  if ((channel == kAmplitudeChannel) && (CV_MAT_CN(mat_type_) < 2)) {
+  if ((channel == kAmplitudeChannel) && (mat_shape_[0] == 1)) {
     throw std::invalid_argument("Pad only has depth channel");
   }
   channel_ = channel;

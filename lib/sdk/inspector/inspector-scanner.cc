@@ -24,11 +24,11 @@
 using namespace spdlog;
 static logger* logger_ = stdout_color_mt("InspectorScanner").get();
 
-InspectorScanner::InspectorScanner() {
+InspectorScanner::InspectorScanner(ScanDirection dir) {
   start_x_ = -1;
   start_y_ = -1;
   end_xy_ = -1;
-  dir_ = kScanHorizontal;
+  dir_ = dir;
 }
 
 void InspectorScanner::GetRoi(int& x1, int& y1, int& xy2) {
@@ -38,29 +38,23 @@ void InspectorScanner::GetRoi(int& x1, int& y1, int& xy2) {
 }
 
 void InspectorScanner::OnNewFrame(Mat& frame) {
-  if (start_x_ < 0 || start_y_ < 0 ||
-      (dir_ == kScanHorizontal && end_xy_ > frame.cols) ||
-      (dir_ == kScanVertical && end_xy_ > frame.rows)) {
-    logger_->error("Invalid range");
-    return;
-  }
   auto vec = CollectRange(frame);
-  RenderResult(vec);
+  RenderRange(vec);
 }
 
 void InspectorScanner::SetRoi(int x1, int y1, int xy2) {
   size_t vec_size;
 
-  start_x_ = std::min(mat_size_.width - 1, std::max(0, x1));
-  start_y_ = std::min(mat_size_.height - 1, std::max(0, y1));
+  start_x_ = std::min(mat_shape_[2] - 1, std::max(0, x1));
+  start_y_ = std::min(mat_shape_[1] - 1, std::max(0, y1));
   if (dir_ == kScanHorizontal) {
-    end_xy_ = std::min(mat_size_.width - 1, std::max(0, xy2));
+    end_xy_ = std::min(mat_shape_[2] - 1, std::max(0, xy2));
     if (end_xy_ < start_x_) {
       std::swap(start_x_, end_xy_);
     }
     vec_size = end_xy_ - start_x_;
   } else {
-    end_xy_ = std::min(mat_size_.height - 1, std::max(0, xy2));
+    end_xy_ = std::min(mat_shape_[1] - 1, std::max(0, xy2));
     if (end_xy_ < start_y_) {
       std::swap(start_y_, end_xy_);
     }
@@ -73,29 +67,19 @@ void InspectorScanner::SetRoi(int x1, int y1, int xy2) {
 }
 
 const std::vector<float>& InspectorScanner::CollectRange(Mat& frame) {
-  Mat roi;
-  // openCV colRange and rowRange are inclusive-start and exclusive-end
+  collected_.clear();
   if (dir_ == kScanHorizontal) {
-    roi = frame.row(start_y_).colRange(start_x_, end_xy_ + 1);
+    for (int x = start_x_; x <= end_xy_; x++) {
+      collected_.push_back(frame.at<float>(channel_, start_y_, x));
+    }
   } else {
-    roi = frame.col(start_x_).rowRange(start_y_, end_xy_ + 1);
-  }
-  if (roi.type() == CV_32FC1) {
-    for (int i = 0; i < roi.total(); i++) {
-      collected_.push_back(roi.at<float>(i));
-    }
-  } else if (channel_ == kDepthChannel) {
-    for (int i = 0; i < roi.total(); i++) {
-      collected_.push_back(roi.at<Vec2f>(i)[0]);
-    }
-  } else if (channel_ == kAmplitudeChannel) {
-    for (int i = 0; i < roi.total(); i++) {
-      collected_.push_back(roi.at<Vec2f>(i)[1]);
+    for (int y = start_y_; y <= end_xy_; y++) {
+      collected_.push_back(frame.at<float>(channel_, y, start_x_));
     }
   }
   return collected_;
 }
 
-InspectorHScanner::InspectorHScanner() { dir_ = kScanHorizontal; }
+InspectorHScanner::InspectorHScanner() : InspectorScanner(kScanHorizontal) {}
 
-InspectorVScanner::InspectorVScanner() { dir_ = kScanVertical; }
+InspectorVScanner::InspectorVScanner() : InspectorScanner(kScanVertical) {}

@@ -26,6 +26,7 @@
 #include <string>
 
 class Pad;
+class MatShape;
 
 using namespace std;
 using namespace cv;
@@ -82,14 +83,14 @@ class Element {
   virtual void PushFrame(Mat &frame) = 0;
 
   /**
-   * @brief Set the mat size and type of the element. Child element reimplement
-   * this method to transform the size and type between sink to source pad.
-   * Default implementation send the same size and type to all the sink pad.
+   * @brief Child element reimplement this method to transform the size and type
+   * between sink to source pad. Default implementation send the same size and
+   * type to all the sink pad.
    *
    * @param size
    * @param type
    */
-  virtual void SetSizeType(Size size, int type);
+  virtual void SetFrameFormat(const MatShape &shape, int type);
 
  protected:
   /**

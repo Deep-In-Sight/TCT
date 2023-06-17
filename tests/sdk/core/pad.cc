@@ -7,6 +7,8 @@
 #include <spdlog/sinks/stdout_color_sinks.h>
 #include <spdlog/spdlog.h>
 
+using ::testing::NiceMock;
+
 class ElementMock : public Element {
  public:
   ElementMock(const string& name = "") : Element(name) {}
@@ -26,6 +28,8 @@ class PadObserverMock : public PadObserver {
   PadObserverMock() {}
   ~PadObserverMock() {}
   MOCK_METHOD(void, OnNewFrame, (cv::Mat & frame), (override));
+  MOCK_METHOD(void, OnFrameFormatChanged, (const MatShape& shape, int type),
+              (override));
 };
 
 TEST(PadTest, TestPadContructor) {
@@ -86,7 +90,8 @@ TEST(PadTest, TestPadPushFrame) {
   EXPECT_CALL(elem, PushFrame).Times(1);
   EXPECT_CALL(elem2, PushFrame).Times(1);
 
-  cv::Mat frame(DEFAULT_MAT_SIZE, DEFAULT_MAT_TYPE);
+  MatShape shape(DEFAULT_MAT_SHAPE);
+  cv::Mat frame(shape.dims(), shape.p(), DEFAULT_MAT_TYPE);
 
   pad1.Link(&pad2);
   pad2.SetParent(&elem);
@@ -99,11 +104,12 @@ TEST(PadTest, TestPadPushFrame) {
 
 TEST(PadTest, TestPadObservers) {
   Pad pad(kPadSource, "src");
-  PadObserverMock observer1;
-  PadObserverMock observer2;
+  NiceMock<PadObserverMock> observer1;
+  NiceMock<PadObserverMock> observer2;
   pad.AddObserver(&observer1);
   pad.AddObserver(&observer2);
-  cv::Mat frame(Size(10, 10), CV_32FC1);
+  cv::Mat frame({1, 10, 10}, CV_32FC1);
+  pad.SetFrameFormat({1, 10, 10}, CV_32FC1);
   EXPECT_CALL(observer1, OnNewFrame).Times(2);
   EXPECT_CALL(observer2, OnNewFrame).Times(1);
   pad.PushFrame(frame);
@@ -111,7 +117,7 @@ TEST(PadTest, TestPadObservers) {
   pad.PushFrame(frame);
 }
 
-TEST(PadTest, TestSetSizeTypeChain) {
+TEST(PadTest, TestSetFrameFormatChain) {
   string name = "elem";
   TransformMock elem(name);
   Pad* source_pad = elem.GetSourcePad();
@@ -120,26 +126,26 @@ TEST(PadTest, TestSetSizeTypeChain) {
   Pad p(kPadSource, "src0");
 
   p.Link(sink_pad);
-  p.SetSizeType(Size(100, 100), CV_8UC3);
+  p.SetFrameFormat({1, 10, 10}, CV_8UC3);
 
-  Size size;
+  MatShape shape({});
   int type;
-  source_pad->GetSizeType(size, type);
+  source_pad->GetFrameFormat(shape, type);
 
   // check src0->source_pad->elem->sink_pad propagation
-  EXPECT_EQ(size.width, 100);
-  EXPECT_EQ(size.height, 100);
+  EXPECT_EQ(shape[1], 10);
+  EXPECT_EQ(shape[2], 10);
   EXPECT_EQ(type, CV_8UC3);
 }
 
 TEST(PadTest, TestPadObserverSelectChannel) {
   Pad p(kPadSource, "src");
-  PadObserverMock observer;
+  NiceMock<PadObserverMock> observer;
   p.AddObserver(&observer);
-  p.SetSizeType(Size(100, 100), CV_32FC2);
+  p.SetFrameFormat({2, 2, 2}, CV_32FC1);
   EXPECT_NO_THROW(observer.SelectChannel(kDepthChannel));
   EXPECT_NO_THROW(observer.SelectChannel(kAmplitudeChannel));
-  p.SetSizeType(Size(100, 100), CV_32FC1);
+  p.SetFrameFormat({1, 2, 2}, CV_32FC1);
   EXPECT_NO_THROW(observer.SelectChannel(kDepthChannel));
   EXPECT_ANY_THROW(observer.SelectChannel(kAmplitudeChannel));
 }

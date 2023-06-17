@@ -6,12 +6,15 @@
 #include <thread>
 
 using namespace std::chrono_literals;
+using testing::NiceMock;
 
 class WindowMock : public PadObserver {
  public:
   WindowMock(const std::string w_name) : name_(w_name){};
   ~WindowMock(){};
   MOCK_METHOD(void, OnNewFrame, (cv::Mat & frame), (override));
+  MOCK_METHOD(void, OnFrameFormatChanged, (const MatShape& shape, int type),
+              (override));
 
  private:
   string name_;
@@ -25,7 +28,7 @@ class InspectorQueueTest : public ::testing::Test {
     const char* window_names[] = {"hscanner0", "hscanner1", "vscanner0",
                                   "tracker0", "histogram0"};
     for (auto name : window_names) {
-      auto window = new WindowMock(name);
+      auto window = new NiceMock<WindowMock>(name);
       test_windows.push_back(window);
     }
   }
@@ -40,7 +43,7 @@ class InspectorQueueTest : public ::testing::Test {
 
   Pad* test_pad;
   InspectorQueue* test_inspector_queue;
-  std::vector<WindowMock*> test_windows;
+  std::vector<NiceMock<WindowMock>*> test_windows;
 };
 
 TEST_F(InspectorQueueTest, TestWindowUpdated) {
@@ -53,8 +56,10 @@ TEST_F(InspectorQueueTest, TestWindowUpdated) {
     EXPECT_CALL(*window, OnNewFrame).Times(num_buffers);
   }
 
+  test_pad->SetFrameFormat({1, 10, 10}, CV_32FC1);
+
   for (int count = 0; count < num_buffers; count++) {
-    cv::Mat frame = cv::Mat::zeros(100, 100, CV_8UC3);
+    cv::Mat frame({1, 10, 10}, CV_32FC1);
     test_pad->PushFrame(frame);
   }
   /* wait a lil bit because the update method is called from different

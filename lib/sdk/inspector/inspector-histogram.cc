@@ -24,14 +24,14 @@
 #include <limits>
 
 InspectorHistogram::InspectorHistogram() {
-  roi_ = Rect(0, 0, mat_size_.width, mat_size_.height);
+  roi_ = Rect(0, 0, mat_shape_[2], mat_shape_[1]);
 }
 
 void InspectorHistogram::SetRoi(int x, int y, int x2, int y2) {
-  int tl_x = max(0, min(x, mat_size_.width - 1));
-  int tl_y = max(0, min(y, mat_size_.height - 1));
-  int br_x = max(0, min(x2, mat_size_.width - 1));
-  int br_y = max(0, min(y2, mat_size_.height - 1));
+  int tl_x = max(0, min(x, mat_shape_[2] - 1));
+  int tl_y = max(0, min(y, mat_shape_[1] - 1));
+  int br_x = max(0, min(x2, mat_shape_[2] - 1));
+  int br_y = max(0, min(y2, mat_shape_[1] - 1));
   if (tl_x > br_x) {
     swap(tl_x, br_x);
   }
@@ -75,18 +75,15 @@ void InspectorHistogram::OnNewFrame(Mat& frame) {
 }
 
 const Mat& InspectorHistogram::CalculateHistogram(Mat& frame) {
-  vector<Mat> splits;
-  Mat roi;
-  split(frame, splits);
-  if (mat_type_ == CV_32FC1) {
-    roi = frame(roi_);
-  } else if (channel_ = kDepthChannel) {
-    split(frame, splits);
-    roi = splits[0](roi_);
-  } else {
-    split(frame, splits);
-    roi = splits[1](roi_);
+  int width = mat_shape_[2];
+  int height = mat_shape_[1];
+  uint8_t* data = frame.data;
+  if (channel_ == kAmplitudeChannel) {
+    data = &frame.data[width * height * frame.elemSize()];
   }
+  Mat m(height, width, mat_type_, data);
+  Mat roi = m(roi_);
+
   int nimages = 1;
   int channels[] = {0};
   Mat mask;

@@ -38,8 +38,13 @@ if(GST_CHECK_NOTFOUND)
   message(FATAL "gstreamer check not found")
 endif()
 
+# Open3D
+find_package(Open3D REQUIRED)
+
 # put this out here so vscode can find it
 enable_testing()
 
 add_subdirectory(lib)
 add_subdirectory(tests)
+add_subdirectory(apps)
+add_subdirectory(3rdparty)

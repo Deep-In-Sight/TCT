@@ -20,11 +20,9 @@
 #ifndef __PAD_H__
 #define __PAD_H__
 
+#include <iostream>
 #include <opencv2/opencv.hpp>
 #include <string>
-
-#define DEFAULT_MAT_SIZE Size(640, 480)
-#define DEFAULT_MAT_TYPE CV_32FC2
 
 using namespace std;
 using namespace cv;
@@ -59,6 +57,45 @@ enum PadLinkReturn {
 
 enum DepthAmplitudeChannel { kDepthChannel, kAmplitudeChannel };
 
+#define DEFAULT_MAT_SHAPE \
+  { 2, 480, 640 }
+#define DEFAULT_MAT_TYPE CV_32FC1
+
+/**
+ * @brief OpenCV MatSize is very unnatural to use. This class is a alternative
+ *
+ */
+class MatShape {
+ public:
+  MatShape();
+  MatShape(int i0);
+  MatShape(int i0, int i1);
+  MatShape(int i0, int i1, int i2);
+  MatShape(int i0, int i1, int i2, int i3);
+  MatShape(int i0, int i1, int i2, int i3, int i4);
+  MatShape(int i0, int i1, int i2, int i3, int i4, int i5);
+  MatShape(initializer_list<int> sizes);
+  MatShape(const MatShape &shape);
+  MatShape(const MatSize &size);
+  ~MatShape();
+
+  int dims() const;
+  const int *p() const;
+
+  MatShape &operator=(const MatShape &shape);
+  MatShape &operator=(const MatSize &size);
+  bool operator==(const MatShape &shape);
+  bool operator!=(const MatShape &shape);
+  bool operator==(const MatSize &size);
+  bool operator!=(const MatSize &size);
+
+  const int operator[](int index) const;
+
+ private:
+  int dims_;
+  int p_[6];
+};
+
 class PadObserver {
  public:
   PadObserver();
@@ -70,12 +107,19 @@ class PadObserver {
   virtual void OnNewFrame(cv::Mat &frame) = 0;
   /**
    * @brief Child class implement this method to react to the change of size and
-   * type of the pad. E.g modify the size of the GUI render window.
+   * type
    *
    * @param size
    * @param type
    */
-  virtual void SetSizeType(Size size, int type);
+  virtual void OnFrameFormatChanged(const MatShape &shape, int type) = 0;
+  /**
+   * @brief Update the Size and Type of the observer.
+   *
+   * @param size
+   * @param type
+   */
+  void SetFrameFormat(const MatShape &shape, int type);
   /**
    * @brief Select the Depth or Amplitude channel to be inspected.
    *
@@ -85,7 +129,7 @@ class PadObserver {
 
  protected:
   DepthAmplitudeChannel channel_;
-  Size mat_size_;
+  MatShape mat_shape_;
   int mat_type_;
 };
 
@@ -197,18 +241,18 @@ class Pad {
    * @brief Set the size and type of the data that the pad will receive. Also
    * update all downstream pads and elements type and size.
    *
-   * @param mat_size
+   * @param mat_shape
    * @param mat_type
    */
-  void SetSizeType(Size mat_size, int mat_type);
+  void SetFrameFormat(const MatShape &mat_shape, int mat_type);
 
   /**
    * @brief Get the size and type of the data that the pad will receive.
    *
-   * @param mat_size
+   * @param mat_shape
    * @param mat_type
    */
-  void GetSizeType(Size &mat_size, int &mat_type);
+  void GetFrameFormat(MatShape &mat_shape, int &mat_type);
 
  private:
   PadDirection direction_;
@@ -218,7 +262,7 @@ class Pad {
   list<PadObserver *> observers_;
   string name_;
 
-  Size mat_size_;
+  MatShape mat_shape_;
   int mat_type_;
 };
 

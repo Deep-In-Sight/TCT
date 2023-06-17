@@ -36,7 +36,9 @@ TEST(QueueTest, TestQueuePushFrame) {
 
   EXPECT_CALL(elem, SinkFrame).Times(num_frame);
 
-  cv::Mat frame(DEFAULT_MAT_SIZE, DEFAULT_MAT_TYPE);
+  queue_src->SetFrameFormat({2, 10, 10}, CV_32FC1);
+
+  cv::Mat frame({2, 10, 10}, CV_32FC1);
   for (int i = 0; i < num_frame; i++) {
     queue.PushFrame(frame);
   }
@@ -52,7 +54,7 @@ TEST(QueueTest, TestDropFrame) {
   SinkFake elem;
   queue_src->Link(elem.GetSinkPad());
 
-  cv::Mat frame(DEFAULT_MAT_SIZE, DEFAULT_MAT_TYPE);
+  cv::Mat frame(10, 10, DEFAULT_MAT_TYPE);
   for (int i = 0; i < num_frame; i++) {
     queue.PushFrame(frame);
   }

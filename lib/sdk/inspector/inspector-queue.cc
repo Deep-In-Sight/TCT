@@ -54,7 +54,7 @@ void InspectorQueue::OnNewFrame(cv::Mat& frame) {
   queue_.PushFrame(frame);
 }
 
-void InspectorQueue::SetSizeType(Size size, int type) {
+void InspectorQueue::OnFrameFormatChanged(const MatShape& shape, int type) {
   // notify other observers
-  queue_.SetSizeType(size, type);
+  queue_.SetFrameFormat(shape, type);
 }

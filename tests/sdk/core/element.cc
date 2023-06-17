@@ -33,6 +33,7 @@ TEST(ElementTest, TestPushFrame) {
   Pad pad(kPadSink, "sink");
   elem.AddPad(&pad);
   EXPECT_CALL(elem, PushFrame).Times(1);
-  cv::Mat frame(DEFAULT_MAT_SIZE, DEFAULT_MAT_TYPE);
+  MatShape shape(DEFAULT_MAT_SHAPE);
+  cv::Mat frame(shape.dims(), shape.p(), DEFAULT_MAT_TYPE);
   pad.PushFrame(frame);
 }

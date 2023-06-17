@@ -23,7 +23,9 @@ BaseTransform::~BaseTransform() {
 
 void BaseTransform::PushFrame(Mat &frame) { TransformFrame(frame); }
 
-void BaseTransform::TransformFrame(Mat &frame) { sink_pad_->PushFrame(frame); }
+void BaseTransform::TransformFrame(Mat &frame) {
+  source_pad_->PushFrame(frame);
+}
 
 Pad *BaseTransform::GetSinkPad() { return sink_pad_; }
 
