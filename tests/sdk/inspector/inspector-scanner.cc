@@ -8,7 +8,7 @@
 using testing::NiceMock;
 class InspectorHScannerMock : public InspectorHScanner {
  public:
-  MOCK_METHOD(void, RenderResult, (const std::vector<float>& vec), (override));
+  MOCK_METHOD(void, RenderRange, (const std::vector<float>& vec), (override));
   MOCK_METHOD(void, OnFrameFormatChanged, (const MatShape& shape, int type),
               (override));
   const vector<float>& CollectRange(Mat& frame) {
@@ -18,7 +18,7 @@ class InspectorHScannerMock : public InspectorHScanner {
 
 class InspectorVScannerMock : public InspectorVScanner {
  public:
-  MOCK_METHOD(void, RenderResult, (const std::vector<float>& vec), (override));
+  MOCK_METHOD(void, RenderRange, (const std::vector<float>& vec), (override));
   MOCK_METHOD(void, OnFrameFormatChanged, (const MatShape& shape, int type),
               (override));
   const vector<float>& CollectRange(Mat& frame) {

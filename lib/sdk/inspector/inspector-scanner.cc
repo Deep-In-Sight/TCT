@@ -24,11 +24,11 @@
 using namespace spdlog;
 static logger* logger_ = stdout_color_mt("InspectorScanner").get();
 
-InspectorScanner::InspectorScanner() {
+InspectorScanner::InspectorScanner(ScanDirection dir) {
   start_x_ = -1;
   start_y_ = -1;
   end_xy_ = -1;
-  dir_ = kScanHorizontal;
+  dir_ = dir;
 }
 
 void InspectorScanner::GetRoi(int& x1, int& y1, int& xy2) {
@@ -39,7 +39,7 @@ void InspectorScanner::GetRoi(int& x1, int& y1, int& xy2) {
 
 void InspectorScanner::OnNewFrame(Mat& frame) {
   auto vec = CollectRange(frame);
-  RenderResult(vec);
+  RenderRange(vec);
 }
 
 void InspectorScanner::SetRoi(int x1, int y1, int xy2) {
@@ -80,6 +80,6 @@ const std::vector<float>& InspectorScanner::CollectRange(Mat& frame) {
   return collected_;
 }
 
-InspectorHScanner::InspectorHScanner() { dir_ = kScanHorizontal; }
+InspectorHScanner::InspectorHScanner() : InspectorScanner(kScanHorizontal) {}
 
-InspectorVScanner::InspectorVScanner() { dir_ = kScanVertical; }
+InspectorVScanner::InspectorVScanner() : InspectorScanner(kScanVertical) {}

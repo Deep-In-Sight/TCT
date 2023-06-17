@@ -27,7 +27,7 @@ enum ScanDirection { kScanHorizontal = 0, kScanVertical };
 
 class InspectorScanner : public PadObserver {
  public:
-  InspectorScanner();
+  InspectorScanner(ScanDirection dir = kScanHorizontal);
 
   /**
    * @brief set the range of the scanner. This range is inclusive-start and
@@ -67,16 +67,13 @@ class InspectorScanner : public PadObserver {
    *
    * @param vec
    */
-  virtual void RenderResult(const std::vector<float>& vec) = 0;
-  /**
-   * Not to be changed by children!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   */
-  ScanDirection dir_;
+  virtual void RenderRange(const std::vector<float>& vec) = 0;
 
  private:
   int start_x_;
   int start_y_;
   int end_xy_;
+  ScanDirection dir_;
 
   vector<float> collected_;
 };
