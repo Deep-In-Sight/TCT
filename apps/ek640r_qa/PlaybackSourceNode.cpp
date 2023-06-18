@@ -6,44 +6,17 @@
 
 #include "ToFDataTypes.hpp"
 
-PlaybackSourceNode::PlaybackSourceNode() : _widget{nullptr} {
+PlaybackSourceNode::PlaybackSourceNode()
+    : NodeBase(kSourceNode, "PlaybackSource0", "PlaybackSource", true) {
   _source = new PlaybackSource("", false, false);
-  _widget = new PlaybackSettingWidget();
-  _widget->setPlaybackSource(_source);
-  setNodePrivate(_source);
+  _settingWidget = new PlaybackSettingWidget();
+  _settingWidget->setPlaybackSource(_source);
+  setElement(_source);
 }
 
 PlaybackSourceNode::~PlaybackSourceNode() {
   delete _source;
-  delete _widget;
-}
-
-QString PlaybackSourceNode::caption() const {
-  return QStringLiteral("PlaybackSource");
-}
-
-bool PlaybackSourceNode::captionVisible() const { return true; }
-
-QString PlaybackSourceNode::name() const {
-  return QStringLiteral("PlaybackSource0");
-}
-
-unsigned int PlaybackSourceNode::nPorts(PortType portType) const {
-  unsigned int result = 1;
-
-  switch (portType) {
-    case PortType::In:
-      result = 0;
-      break;
-
-    case PortType::Out:
-      result = 1;
-
-    default:
-      break;
-  }
-
-  return result;
+  delete _settingWidget;
 }
 
 NodeDataType PlaybackSourceNode::dataType(PortType, PortIndex) const {
@@ -54,8 +27,4 @@ std::shared_ptr<NodeData> PlaybackSourceNode::outData(PortIndex) {
   return std::make_shared<RawData>();
 }
 
-void PlaybackSourceNode::setInData(std::shared_ptr<NodeData>, PortIndex) {}
-
-QWidget* PlaybackSourceNode::embeddedWidget() { return _widget; }
-
-Pad* PlaybackSourceNode::getPad() { return _source->GetSourcePad(); }
+QWidget* PlaybackSourceNode::embeddedWidget() { return _settingWidget; }

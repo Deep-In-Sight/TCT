@@ -1,14 +1,12 @@
 #pragma once
 
-#include <sdk/tof/playback-src.h>
+#include <sdk/core/base-sink.h>
 
 #include <QtCore/QObject>
 #include <iostream>
 
+// #include "ImageInspectorGraphicsScene.hpp"
 #include "NodeBase.hpp"
-#include "PlaybackSettingWidget.hpp"
-
-class DecimalData;
 
 using QtNodes::NodeData;
 using QtNodes::NodeDataType;
@@ -16,17 +14,24 @@ using QtNodes::NodeDelegateModel;
 using QtNodes::PortIndex;
 using QtNodes::PortType;
 
-/// The model dictates the number of inputs and outputs for the Node.
-/// In this example it has no logic.
-class PlaybackSourceNode : public NodeBase {
+class VideoSink : public BaseSink {
+ public:
+  VideoSink() = default;
+
+  virtual ~VideoSink() = default;
+
+ public:
+  void SinkFrame(Mat &frame) override{
+      // do nothing
+  };
+};
+
+class VideoSinkNode : public NodeBase {
   Q_OBJECT
 
  public:
-  PlaybackSourceNode();
+  VideoSinkNode();
 
-  virtual ~PlaybackSourceNode();
-
- public:
   NodeDataType dataType(PortType portType, PortIndex portIndex) const override;
 
   std::shared_ptr<NodeData> outData(PortIndex port) override;
@@ -34,6 +39,5 @@ class PlaybackSourceNode : public NodeBase {
   QWidget *embeddedWidget() override;
 
  private:
-  PlaybackSource *_source;
-  PlaybackSettingWidget *_settingWidget;
+  VideoSink *_sink;
 };

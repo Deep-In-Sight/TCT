@@ -3,14 +3,18 @@
 #include <sdk/core/element.h>
 #include <sdk/core/pad.h>
 
+#include "NodeBase.hpp"
+
 void PipelineModel::addConnection(QtNodes::ConnectionId const connectionId) {
   DataFlowGraphModel::addConnection(connectionId);
   auto sourceNode = _models.find(connectionId.outNodeId);
   auto sinkNode = _models.find(connectionId.inNodeId);
   if (sourceNode != _models.end() && sinkNode != _models.end()) {
-    Element* source =
-        static_cast<Element*>(sourceNode->second->getNodePrivate());
-    Element* sink = static_cast<Element*>(sinkNode->second->getNodePrivate());
+    NodeBase* srcNodeBase = dynamic_cast<NodeBase*>(sourceNode->second.get());
+    NodeBase* sinkNodeBase = dynamic_cast<NodeBase*>(sinkNode->second.get());
+
+    Element* source = srcNodeBase->getElement();
+    Element* sink = sinkNodeBase->getElement();
     source->GetPad("src")->Link(sink->GetPad("sink"));
   }
 }

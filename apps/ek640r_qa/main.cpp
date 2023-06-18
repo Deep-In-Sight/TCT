@@ -9,9 +9,9 @@
 #include <QtWidgets/QMenuBar>
 #include <QtWidgets/QVBoxLayout>
 
-#include "FakeSinkNode.hpp"
 #include "PipelineModel.hpp"
 #include "PlaybackSourceNode.hpp"
+#include "VideoSinkNode.hpp"
 
 using QtNodes::ConnectionStyle;
 using QtNodes::DataFlowGraphicsScene;
@@ -22,7 +22,7 @@ using QtNodes::NodeDelegateModelRegistry;
 static std::shared_ptr<NodeDelegateModelRegistry> registerDataModels() {
   auto ret = std::make_shared<NodeDelegateModelRegistry>();
   ret->registerModel<PlaybackSourceNode>("Sources");
-  ret->registerModel<FakeSinkNode>("Sinks");
+  ret->registerModel<VideoSinkNode>("Sinks");
 
   return ret;
 }

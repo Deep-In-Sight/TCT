@@ -6,10 +6,11 @@ find_package(
 set(CMAKE_AUTOMOC ON)
 
 set(APP_SRCS main.cpp PlaybackSourceNode.cpp PlaybackSettingWidget.cpp
-             FakeSinkNode.cpp PipelineModel.cpp)
+             VideoSinkNode.cpp PipelineModel.cpp NodeBase.cpp)
 
-set(APP_HEADERS PlaybackSourceNode.hpp PlaybackSettingWidget.hpp
-                FakeSinkNode.hpp PipelineModel.hpp)
+set(APP_HEADERS
+    PlaybackSourceNode.hpp PlaybackSettingWidget.hpp VideoSinkNode.hpp
+    PipelineModel.hpp NodeBase.hpp ToFDataTypes.hpp)
 
 add_executable(ek640r ${APP_SRCS} ${APP_HEADERS})
 
