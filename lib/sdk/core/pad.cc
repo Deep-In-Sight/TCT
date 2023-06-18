@@ -180,15 +180,22 @@ bool Pad::SetParent(Element *parent) {
 Element *Pad::GetParent() { return parent_; }
 
 PadLinkReturn Pad::Link(Pad *peer) {
+  if (!(GetName().empty()) && !(peer->GetName().empty())) {
+    logger_->info("Linking {} to {}...", GetName(), peer->GetName());
+  }
+
   if (peer_ != nullptr && peer_ != peer) {
+    logger_->error("Pad already linked");
     return kPadLinkAlreadyLinked;
   }
 
   if (direction_ == peer->GetDirection()) {
+    logger_->error("Pad direction does not compatible");
     return kPadLinkWrongDirection;
   }
 
   if (peer_ == peer) {
+    logger_->info("Pad Link success.");
     return kPadLinkOk;
   }
 
@@ -201,6 +208,7 @@ PadLinkReturn Pad::Link(Pad *peer) {
     return ret;
   } else {
     link_status_ = kPadLinked;
+    logger_->info("Pad Link success.");
     return kPadLinkOk;
   }
 }
@@ -213,6 +221,8 @@ PadLinkReturn Pad::Unlink() {
   link_status_ = kPadUnlinked;
   peer_->Unlink();
   peer_ = nullptr;
+
+  logger_->info("Pad Unlink success.");
 
   return kPadLinkOk;
 }

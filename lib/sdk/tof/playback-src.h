@@ -32,7 +32,9 @@ class PlaybackSource : public BaseSource {
   bool loop_;
   MatShape shape_;
   int type_;
-  float fps_;
+  float frame_duration_;
+  float sleep_duration_ms_;
+  chrono::time_point<chrono::steady_clock> last_frame_time_;
 };
 
 #endif  // __PLAYBACK_SRC_H__
