@@ -59,7 +59,7 @@ PlaybackSettingWidget::PlaybackSettingWidget(QWidget *parent)
   setLayout(layout);
 
   // connect the signal and slot
-  connect(_lineEditFilePath, &QLineEdit::textEdited, this,
+  connect(_lineEditFilePath, &QLineEdit::textChanged, this,
           &PlaybackSettingWidget::onFilenameChanged);
   connect(_spinBoxFps, qOverload<double>(&QDoubleSpinBox::valueChanged), this,
           &PlaybackSettingWidget::onFpsChanged);
@@ -67,9 +67,9 @@ PlaybackSettingWidget::PlaybackSettingWidget(QWidget *parent)
           &PlaybackSettingWidget::onLoopChanged);
   connect(_buttonPlayStop, &QPushButton::clicked, this,
           &PlaybackSettingWidget::onPlayStopClicked);
-  connect(_lineEditWidth, &QLineEdit::textEdited, this,
+  connect(_lineEditWidth, &QLineEdit::textChanged, this,
           &PlaybackSettingWidget::onShapeChanged);
-  connect(_lineEditHeight, &QLineEdit::textEdited, this,
+  connect(_lineEditHeight, &QLineEdit::textChanged, this,
           &PlaybackSettingWidget::onShapeChanged);
 };
 

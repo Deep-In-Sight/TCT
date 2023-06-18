@@ -40,6 +40,7 @@ class PlaybackSettingWidget : public QWidget {
   QString _filename;
   double _fps;
 
+ public:
   QLineEdit *_lineEditFilePath;
   QDoubleSpinBox *_spinBoxFps;
   QLineEdit *_lineEditWidth;

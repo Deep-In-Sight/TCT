@@ -1,3 +1,6 @@
+#ifndef __DEPTH_CALC_NODE_HPP__
+#define __DEPTH_CALC_NODE_HPP__
+
 #include <sdk/tof/depth-calc.h>
 
 #include "DepthCalcConfigWidget.hpp"
@@ -9,6 +12,9 @@ class DepthCalcNode : public NodeBase {
  public:
   DepthCalcNode();
 
+  QJsonObject save() const override;
+  void load(QJsonObject const &p) override;
+
   NodeDataType dataType(PortType portType, PortIndex portIndex) const override;
 
   std::shared_ptr<NodeData> outData(PortIndex port) override;
@@ -19,3 +25,5 @@ class DepthCalcNode : public NodeBase {
   DepthCalc *transformer_;
   DepthCalcConfigWidget *configWidget_;
 };
+
+#endif  //__DEPTH_CALC_NODE_HPP__

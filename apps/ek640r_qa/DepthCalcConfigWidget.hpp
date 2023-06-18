@@ -17,7 +17,7 @@ class DepthCalcConfigWidget : public QWidget {
  private slots:
   void onConfigChanged(const QString &text);
 
- private:
+ public:
   QLineEdit *lineEditFmod_;
   QLineEdit *lineEditOffset_;
 
