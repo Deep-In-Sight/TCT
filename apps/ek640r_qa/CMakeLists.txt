@@ -4,6 +4,7 @@ find_package(
   REQUIRED)
 
 set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
 
 set(APP_SRCS
     main.cpp
@@ -13,7 +14,8 @@ set(APP_SRCS
     DepthCalcNode.cpp
     DepthCalcConfigWidget.cpp
     PipelineModel.cpp
-    NodeBase.cpp)
+    NodeBase.cpp
+    TopLevelNodeEditorWidget.cpp)
 
 set(APP_HEADERS
     PlaybackSourceNode.hpp
@@ -23,8 +25,11 @@ set(APP_HEADERS
     DepthCalcConfigWidget.hpp
     PipelineModel.hpp
     NodeBase.hpp
-    ToFDataTypes.hpp)
+    ToFDataTypes.hpp
+    TopLevelNodeEditorWidget.hpp)
 
-add_executable(ek640r ${APP_SRCS} ${APP_HEADERS})
+set(RESOURCE_FILES resource/resource.qrc)
+
+add_executable(ek640r ${APP_SRCS} ${APP_HEADERS} ${RESOURCE_FILES})
 
 target_link_libraries(ek640r QtNodes sdk)

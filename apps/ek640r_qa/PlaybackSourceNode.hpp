@@ -19,6 +19,10 @@ class PlaybackSourceNode : public NodeBase {
   virtual ~PlaybackSourceNode();
 
  public:
+  QJsonObject save() const override;
+
+  void load(QJsonObject const &p) override;
+
   NodeDataType dataType(PortType portType, PortIndex portIndex) const override;
 
   std::shared_ptr<NodeData> outData(PortIndex port) override;
