@@ -113,6 +113,12 @@ void PlaybackSettingWidget::onPlayStopClicked() {
       _source->Stop();
       _buttonPlayStop->setText("Play");
     } else if (_source->GetState() == kStreamStateStopped) {
+      _source->SetFilename(_filename.toStdString());
+      _source->SetFrameRate(_spinBoxFps->value());
+      _source->SetLoop(_checkboxLoop->checkState() == Qt::Checked);
+      _source->SetFormat(
+          {4, _lineEditHeight->text().toInt(), _lineEditWidth->text().toInt()},
+          CV_16SC1);
       _source->Start();
       _buttonPlayStop->setText("Stop");
     }

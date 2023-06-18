@@ -6,6 +6,12 @@
 
 #include <QtNodes/NodeDelegateModel>
 
+using QtNodes::NodeData;
+using QtNodes::NodeDataType;
+using QtNodes::NodeDelegateModel;
+using QtNodes::PortIndex;
+using QtNodes::PortType;
+
 enum NodeType { kSourceNode, kTransformNode, kSinkNode };
 class NodeBase : public QtNodes::NodeDelegateModel {
   Q_OBJECT
@@ -19,9 +25,8 @@ class NodeBase : public QtNodes::NodeDelegateModel {
   QString name() const override;
 
  public:
-  unsigned int nPorts(QtNodes::PortType portType) const override;
-  void setInData(std::shared_ptr<QtNodes::NodeData>,
-                 QtNodes::PortIndex) override;
+  unsigned int nPorts(PortType portType) const override;
+  void setInData(std::shared_ptr<NodeData>, PortIndex) override;
   void setElement(Element *element);
   Element *getElement();
 

@@ -8,12 +8,6 @@
 // #include "ImageInspectorGraphicsScene.hpp"
 #include "NodeBase.hpp"
 
-using QtNodes::NodeData;
-using QtNodes::NodeDataType;
-using QtNodes::NodeDelegateModel;
-using QtNodes::PortIndex;
-using QtNodes::PortType;
-
 class VideoSink : public BaseSink {
  public:
   VideoSink() = default;
@@ -21,8 +15,11 @@ class VideoSink : public BaseSink {
   virtual ~VideoSink() = default;
 
  public:
-  void SinkFrame(Mat &frame) override{
-      // do nothing
+  void SinkFrame(Mat &frame) override {
+    // do nothing
+    auto size = frame.size;
+    cout << "VideoSink::SinkFrame " << size[0] << "x" << size[1] << "x"
+         << size[2] << endl;
   };
 };
 

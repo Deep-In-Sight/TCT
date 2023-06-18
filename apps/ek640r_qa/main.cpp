@@ -9,6 +9,7 @@
 #include <QtWidgets/QMenuBar>
 #include <QtWidgets/QVBoxLayout>
 
+#include "DepthCalcNode.hpp"
 #include "PipelineModel.hpp"
 #include "PlaybackSourceNode.hpp"
 #include "VideoSinkNode.hpp"
@@ -22,6 +23,7 @@ using QtNodes::NodeDelegateModelRegistry;
 static std::shared_ptr<NodeDelegateModelRegistry> registerDataModels() {
   auto ret = std::make_shared<NodeDelegateModelRegistry>();
   ret->registerModel<PlaybackSourceNode>("Sources");
+  ret->registerModel<DepthCalcNode>("ToF");
   ret->registerModel<VideoSinkNode>("Sinks");
 
   return ret;
