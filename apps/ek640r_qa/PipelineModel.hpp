@@ -19,6 +19,7 @@ class PipelineModel : public QtNodes::DataFlowGraphModel {
       : QtNodes::DataFlowGraphModel(registry) {}
 
   void addConnection(QtNodes::ConnectionId const connectionId) override;
+  bool deleteConnection(QtNodes::ConnectionId const connectionId) override;
   bool connectionPossible(
       QtNodes::ConnectionId const connectionId) const override;
 };

@@ -6,21 +6,30 @@
 #include <iostream>
 
 // #include "ImageInspectorGraphicsScene.hpp"
+#include <QCheckBox>
+#include <QComboBox>
+
+#include "ImageInspectorWidget.hpp"
 #include "NodeBase.hpp"
 
-class VideoSink : public BaseSink {
+class ViewerConfigWidget : public QWidget {
+  Q_OBJECT
  public:
-  VideoSink() = default;
+  ViewerConfigWidget(QWidget* parent = nullptr);
+  ~ViewerConfigWidget();
 
-  virtual ~VideoSink() = default;
+  void SetViewer(VideoSinkViewer* viewer);
+
+ private:
+  VideoSinkViewer* viewer_;
+
+ private slots:
+  void onEnableViewerChanged(int state);
+  void onViewerTypeChanged(int index);
 
  public:
-  void SinkFrame(Mat &frame) override {
-    // do nothing
-    auto size = frame.size;
-    cout << "VideoSink::SinkFrame " << size[0] << "x" << size[1] << "x"
-         << size[2] << endl;
-  };
+  QCheckBox* checkboxEnableViewer_;
+  QComboBox* comboBoxViewerType_;
 };
 
 class VideoSinkNode : public NodeBase {
@@ -33,8 +42,9 @@ class VideoSinkNode : public NodeBase {
 
   std::shared_ptr<NodeData> outData(PortIndex port) override;
 
-  QWidget *embeddedWidget() override;
+  QWidget* embeddedWidget() override;
 
  private:
-  VideoSink *_sink;
+  VideoSinkViewer* _sink;
+  ViewerConfigWidget* configWidget_;
 };

@@ -17,12 +17,13 @@
 
 using namespace std;
 
-class ImageInspectorGraphicsScene : public QGraphicsScene, public BaseSink {
+class ImageInspectorGraphicsScene : public QGraphicsScene {
+  Q_OBJECT
  public:
   ImageInspectorGraphicsScene(QWidget* parent = nullptr);
   void contextMenuEvent(QGraphicsSceneContextMenuEvent* event) override;
 
-  void SinkFrame(Mat& frame) override;
+  void SetImage(const QPixmap& pixmap);
 
  private slots:
   void deleteChildInspector();
@@ -37,6 +38,31 @@ class ImageInspectorGraphicsScene : public QGraphicsScene, public BaseSink {
   QMenu* menuDeleteInspector_;
   QGraphicsItem* selectedItem_;
   QPointF lastPos_;
+  QGraphicsPixmapItem* pixmapItem_;
+};
+
+class VideoSinkViewer : public QWidget, public BaseSink {
+  Q_OBJECT
+
+ public:
+  enum class ViewerChannel { Depth, Amplitude };
+  VideoSinkViewer(QWidget* parent = nullptr);
+  ~VideoSinkViewer();
+
+  void SinkFrame(Mat& frame) override;
+  void SetChannel(ViewerChannel channel);
+
+ signals:
+  void newPixMap(const QPixmap& pixmap);
+
+ public slots:
+  void onNewPixMap(const QPixmap& pixmap);
+
+ private:
+  QVBoxLayout* layout_;
+  QGraphicsView* view_;
+  ImageInspectorGraphicsScene* scene_;
+  ViewerChannel channel_;
 };
 
 #endif

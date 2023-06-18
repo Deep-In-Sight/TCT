@@ -15,6 +15,7 @@
 #include <QtWidgets/QVBoxLayout>
 
 #include "DepthCalcNode.hpp"
+#include "MovingAverageNode.hpp"
 #include "PipelineModel.hpp"
 #include "PlaybackSourceNode.hpp"
 #include "VideoSinkNode.hpp"

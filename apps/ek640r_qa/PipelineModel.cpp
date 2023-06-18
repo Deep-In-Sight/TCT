@@ -19,6 +19,22 @@ void PipelineModel::addConnection(QtNodes::ConnectionId const connectionId) {
   }
 }
 
+bool PipelineModel::deleteConnection(QtNodes::ConnectionId const connectionId) {
+  bool disconnected = DataFlowGraphModel::deleteConnection(connectionId);
+
+  auto sourceNode = _models.find(connectionId.outNodeId);
+  auto sinkNode = _models.find(connectionId.inNodeId);
+  if (sourceNode != _models.end() && sinkNode != _models.end()) {
+    NodeBase* srcNodeBase = dynamic_cast<NodeBase*>(sourceNode->second.get());
+    NodeBase* sinkNodeBase = dynamic_cast<NodeBase*>(sinkNode->second.get());
+
+    Element* source = srcNodeBase->getElement();
+    Element* sink = sinkNodeBase->getElement();
+    source->GetPad("src")->Unlink();
+  }
+  return disconnected;
+}
+
 bool PipelineModel::connectionPossible(
     QtNodes::ConnectionId const connectionId) const {
   auto getDataType = [&](PortType const portType) {
