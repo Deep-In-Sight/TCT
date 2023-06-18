@@ -11,8 +11,10 @@ set(APP_SRCS
     PlaybackSourceNode.cpp
     PlaybackSettingWidget.cpp
     VideoSinkNode.cpp
+    ImageInspectorWidget.cpp
     DepthCalcNode.cpp
     DepthCalcConfigWidget.cpp
+    MovingAverageNode.cpp
     PipelineModel.cpp
     NodeBase.cpp
     TopLevelNodeEditorWidget.cpp)
@@ -21,8 +23,10 @@ set(APP_HEADERS
     PlaybackSourceNode.hpp
     PlaybackSettingWidget.hpp
     VideoSinkNode.hpp
+    ImageInspectorWidget.hpp
     DepthCalcNode.hpp
     DepthCalcConfigWidget.hpp
+    MovingAverageNode.hpp
     PipelineModel.hpp
     NodeBase.hpp
     ToFDataTypes.hpp

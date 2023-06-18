@@ -7,6 +7,7 @@ static std::shared_ptr<NodeDelegateModelRegistry> registerDataModels() {
   ret->registerModel<PlaybackSourceNode>("Sources");
   ret->registerModel<DepthCalcNode>("ToF");
   ret->registerModel<VideoSinkNode>("Sinks");
+  ret->registerModel<MovingAverageNode>("Filters");
 
   return ret;
 }

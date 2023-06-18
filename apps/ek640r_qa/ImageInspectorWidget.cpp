@@ -1,4 +1,6 @@
-#include "ImageInspectorGraphicsScene.hpp"
+#include "ImageInspectorWidget.hpp"
+
+#include <QGraphicsView>
 
 ImageInspectorGraphicsScene::ImageInspectorGraphicsScene(QWidget* parent)
     : QGraphicsScene(parent) {
@@ -22,10 +24,12 @@ ImageInspectorGraphicsScene::ImageInspectorGraphicsScene(QWidget* parent)
   QAction* delInspector = menuDeleteInspector_->addAction("Delete Inspector");
   connect(delInspector, &QAction::triggered, this,
           &ImageInspectorGraphicsScene::deleteChildInspector);
+
+  pixmapItem_ = nullptr;
 }
 
 void ImageInspectorGraphicsScene::contextMenuEvent(
-    QGraphicsSceneContextMenuEvent* event) override {
+    QGraphicsSceneContextMenuEvent* event) {
   QGraphicsItem* item = itemAt(event->scenePos(), QTransform());
   lastPos_ = event->scenePos();
 
@@ -37,10 +41,20 @@ void ImageInspectorGraphicsScene::contextMenuEvent(
       menu = menuDeleteInspector_;
     }
 
-    menu.exec(event->screenPos());
+    menu->exec(event->screenPos());
   }
 
   event->accept();
+}
+
+void ImageInspectorGraphicsScene::SetImage(const QPixmap& pixmap) {
+  cout << "ImageInspectorGraphicsScene::SetImage" << endl;
+  if (pixmapItem_ == nullptr) {
+    pixmapItem_ = addPixmap(pixmap);
+    setSceneRect(pixmap.rect());
+  } else {
+    pixmapItem_->setPixmap(pixmap);
+  }
 }
 
 void ImageInspectorGraphicsScene::deleteChildInspector() {
@@ -61,18 +75,46 @@ void ImageInspectorGraphicsScene::addTrackerPoint() {
   cout << "addTrackerPoint triggered" << endl;
 }
 
-void ImageInspectorGraphicsScene::SinkFrame(Mat& frame) {
-  // Convert the frame to a pixmap
-  // QPixmap pixmap = QPixmap::fromImage(
-  //     QImage(frame.data, frame.cols, frame.rows, frame.step,
-  //     QImage::Format_RGB888).rgbSwapped());
+VideoSinkViewer::VideoSinkViewer(QWidget* parent)
+    : QWidget(parent), BaseSink() {
+  layout_ = new QVBoxLayout(this);
+  scene_ = new ImageInspectorGraphicsScene(this);
+  view_ = new QGraphicsView(scene_, this);
 
-  // // Create a pixmap item
-  // QGraphicsPixmapItem* pixmapItem = new QGraphicsPixmapItem(pixmap);
+  layout_->addWidget(view_);
 
-  // // Add the pixmap item to the scene
-  // addItem(pixmapItem);
+  connect(this, &VideoSinkViewer::newPixMap, this,
+          &VideoSinkViewer::onNewPixMap);
 
-  // // Set the selected item to the pixmap item
-  // selectedItem_ = pixmapItem;
+  setWindowFlags(Qt::WindowStaysOnTopHint);
 }
+
+VideoSinkViewer::~VideoSinkViewer() {}
+
+void VideoSinkViewer::SinkFrame(Mat& frame) {
+  int height = frame.size[1];
+  int width = frame.size[2];
+  uint8_t* data = frame.data;
+  if (channel_ == ViewerChannel::Amplitude) {
+    data = frame.data + width * height * frame.elemSize();
+  }
+
+  Mat depth(height, width, CV_32FC1, data);
+  Mat depth_norm;
+  cv::normalize(depth, depth_norm, 0, 255, cv::NORM_MINMAX, CV_8UC1);
+  cv::cvtColor(depth_norm, depth_norm, cv::COLOR_GRAY2RGB);
+  cv::imwrite("/home/linh/depth.png", depth_norm);
+  QPixmap pixmap = QPixmap::fromImage(QImage(depth_norm.data, depth_norm.cols,
+                                             depth_norm.rows, depth_norm.step,
+                                             QImage::Format_RGB888));
+
+  emit newPixMap(pixmap);
+}
+
+void VideoSinkViewer::onNewPixMap(const QPixmap& pixmap) {
+  scene_->SetImage(pixmap);
+  this->setMinimumSize(pixmap.size());
+  view_->fitInView(scene_->sceneRect(), Qt::KeepAspectRatio);
+}
+
+void VideoSinkViewer::SetChannel(ViewerChannel channel) { channel_ = channel; }

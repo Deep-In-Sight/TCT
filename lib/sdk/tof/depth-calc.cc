@@ -1,11 +1,17 @@
 #include <sdk/core/pad.h>
 #include <sdk/tof/depth-calc.h>
+#include <spdlog/sinks/stdout_color_sinks.h>
+
+using namespace spdlog;
+
+static logger *logger_ = stdout_color_mt("DepthCalc").get();
 
 DepthCalc::DepthCalc(const string &name) : BaseTransform(name) {}
 
 DepthCalc::~DepthCalc() {}
 
 void DepthCalc::SetConfig(float fmod, float offset) {
+  logger_->info("SetConfig: fmod={}, offset={}", fmod, offset);
   fmod_ = fmod;
   offset_ = offset;
 }

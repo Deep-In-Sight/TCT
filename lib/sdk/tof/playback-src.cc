@@ -9,9 +9,11 @@ PlaybackSource::PlaybackSource(const string &name, bool is_async, bool loop)
     : BaseSource(name, is_async),
       loop_(loop),
       file_(nullptr),
-      fps_(30.0f),
+      frame_duration_(1.0f / 30.0f),
       shape_({4, 480, 640}),
-      type_(CV_16SC1) {}
+      type_(CV_16SC1) {
+  last_frame_time_ = chrono::steady_clock::now();
+}
 
 PlaybackSource::~PlaybackSource() {
   if (GetState() != kStreamStateStopped) {
@@ -59,6 +61,8 @@ void PlaybackSource::CleanupSource() {
 }
 
 void PlaybackSource::SetFormat(const MatShape &shape, int type) {
+  logger_->info("Setting playback source format to {}x{}x{} type: {}", shape[0],
+                shape[1], shape[2], type);
   shape_ = shape;
   type_ = type;
   GetSourcePad()->SetFrameFormat(shape, type);
@@ -66,7 +70,8 @@ void PlaybackSource::SetFormat(const MatShape &shape, int type) {
 
 void PlaybackSource::SetFrameRate(float fps) {
   logger_->info("Setting playback source fps to {}", fps);
-  fps_ = fps;
+  frame_duration_ = 1.0 / fps;
+  sleep_duration_ms_ = frame_duration_ * 1000;
 }
 
 void PlaybackSource::SetLoop(bool loop) {
@@ -76,16 +81,26 @@ void PlaybackSource::SetLoop(bool loop) {
 
 Mat PlaybackSource::GenerateFrame() {
   Mat frame(shape_.dims(), shape_.p(), type_);
-  float duration_ms = 1 / fps_ * 1000;
 
-  std::this_thread::sleep_for(std::chrono::milliseconds((int)duration_ms));
+  auto elapsed = (chrono::steady_clock::now() - last_frame_time_);
+  last_frame_time_ = chrono::steady_clock::now();
+  float elapsed_ms =
+      chrono::duration_cast<chrono::milliseconds>(elapsed).count();
+  float frame_duration_ms = frame_duration_ * 1000.0f;
+  float sleep_adjust_ms = elapsed_ms - frame_duration_ms;
+  float sleep_ms = sleep_duration_ms_ - sleep_adjust_ms;
+  if (sleep_ms <= 0) {
+    sleep_ms = 0;
+  } else {
+    std::this_thread::sleep_for(std::chrono::milliseconds((int)sleep_ms));
+  }
+  sleep_duration_ms_ = sleep_ms;
 
   // logger_->info("Reading frame of shape: {} {}x{}x{} type: {}",
   // shape_.dims(),
   // shape_[0], shape_[1], shape_[2], type_);
 
   int read = fread(frame.data, 1, frame.total() * frame.elemSize(), file_);
-  cout << read << "elem size" << frame.elemSize() << endl;
 
   if (read == frame.total() * frame.elemSize()) {
     logger_->info("Sending frame");

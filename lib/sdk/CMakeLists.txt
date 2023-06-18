@@ -11,8 +11,8 @@ set(SDK_SRCS
     core/base-transform.cc
     core/queue.cc
     tof/playback-src.cc
-    tof/fake-sink.cc
-    tof/depth-calc.cc)
+    tof/depth-calc.cc
+    tof/moving-average.cc)
 
 find_package(Eigen3 REQUIRED)
 
