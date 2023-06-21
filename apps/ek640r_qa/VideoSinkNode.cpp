@@ -66,9 +66,25 @@ VideoSinkNode::VideoSinkNode()
     : NodeBase(kSinkNode, "VideoSink0", "VideoSink", true) {
   // _sink = new ImageInspectorGraphicsScene();
   _sink = new VideoSinkViewer();
+  _sink->setWindowTitle("3D SVM");
   configWidget_ = new ViewerConfigWidget();
   configWidget_->SetViewer(_sink);
   setElement(_sink);
+}
+
+QJsonObject VideoSinkNode::save() const {
+  QJsonObject modelJson = NodeBase::save();
+  modelJson["viewer_enabled"] =
+      configWidget_->checkboxEnableViewer_->isChecked();
+  modelJson["viewer_type"] = configWidget_->comboBoxViewerType_->currentIndex();
+  return modelJson;
+}
+
+void VideoSinkNode::load(QJsonObject const& p) {
+  NodeBase::load(p);
+  configWidget_->checkboxEnableViewer_->setChecked(
+      p["viewer_enabled"].toBool());
+  configWidget_->comboBoxViewerType_->setCurrentIndex(p["viewer_type"].toInt());
 }
 
 NodeDataType VideoSinkNode::dataType(PortType, PortIndex) const {

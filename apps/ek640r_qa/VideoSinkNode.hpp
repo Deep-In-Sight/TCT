@@ -38,6 +38,10 @@ class VideoSinkNode : public NodeBase {
  public:
   VideoSinkNode();
 
+  QJsonObject save() const override;
+
+  void load(QJsonObject const& p) override;
+
   NodeDataType dataType(PortType portType, PortIndex portIndex) const override;
 
   std::shared_ptr<NodeData> outData(PortIndex port) override;

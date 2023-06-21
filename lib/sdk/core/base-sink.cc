@@ -19,4 +19,8 @@ BaseSink::~BaseSink() {
 
 void BaseSink::PushFrame(Mat &frame) { SinkFrame(frame); }
 
+void BaseSink::PushState(StreamState state) {
+  // do nothing
+}
+
 Pad *BaseSink::GetSinkPad() { return sink_pad_; }

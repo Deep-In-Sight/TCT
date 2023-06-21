@@ -47,6 +47,8 @@ class BaseSink : public Element {
    */
   void PushFrame(Mat &frame) override;
 
+  void PushState(StreamState state) override;
+
   Pad *GetSinkPad();
 
  protected:

@@ -39,8 +39,8 @@ void DepthCalcConfigWidget::SetTransformer(DepthCalc *transformer) {
 }
 
 void DepthCalcConfigWidget::onConfigChanged(const QString &text) {
-  float fmod = lineEditFmod_->text().toFloat();
+  float fmod_MHz = lineEditFmod_->text().toFloat();
   float offset = lineEditOffset_->text().toFloat();
 
-  transformer_->SetConfig(fmod, offset);
+  transformer_->SetConfig(fmod_MHz * 1e6, offset);
 }

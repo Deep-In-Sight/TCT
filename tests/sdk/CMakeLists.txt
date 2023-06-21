@@ -9,7 +9,8 @@ set(SDK_TEST_SRCS
     core/bases.cc
     core/queue.cc
     tof/playback-src.cc
-    tof/depth-calc.cc)
+    tof/depth-calc.cc
+    tof/camera-src.cc)
 
 set(SDK_TEST_INCLUDES ${PROJECT_BINARY_DIR} ${PROJECT_SOURCE_DIR}/lib
                       ${OPENCV_INCLUDE_DIRS} ${GST_INCLUDE_DIRS})

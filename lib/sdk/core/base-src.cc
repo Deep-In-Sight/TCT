@@ -99,6 +99,7 @@ bool BaseSource::Start() {
     // lock on write
     unique_lock<mutex> lock(mutex_);
     state_ = kStreamStatePlaying;
+    source_pad_->PushState(state_);
   }
 
   thread_ = new thread(&BaseSource::GenerateLoop, this);
@@ -116,6 +117,7 @@ bool BaseSource::Stop() {
   {
     unique_lock<mutex> lock(mutex_);
     state_ = kStreamStateStopped;
+    source_pad_->PushState(state_);
   }
 
   if (last_wake) {
@@ -135,6 +137,7 @@ bool BaseSource::Resume() {
   {
     unique_lock<mutex> lock(mutex_);
     state_ = kStreamStatePlaying;
+    source_pad_->PushState(state_);
   }
   condvar_.notify_one();
   return true;
@@ -148,6 +151,7 @@ bool BaseSource::Pause() {
   {
     unique_lock<mutex> lock(mutex_);
     state_ = kStreamStatePaused;
+    source_pad_->PushState(state_);
   }
   return true;
 }
