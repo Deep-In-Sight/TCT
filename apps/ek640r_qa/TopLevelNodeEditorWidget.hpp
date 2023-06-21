@@ -16,6 +16,7 @@
 
 #include "CameraSourceNode.hpp"
 #include "DepthCalcNode.hpp"
+#include "FishEyeNode.hpp"
 #include "MovingAverageNode.hpp"
 #include "PipelineModel.hpp"
 #include "PlaybackSourceNode.hpp"

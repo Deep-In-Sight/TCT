@@ -17,6 +17,8 @@ set(APP_SRCS
     DepthCalcNode.cpp
     DepthCalcConfigWidget.cpp
     MovingAverageNode.cpp
+    FishEyeSettingWidget.cpp
+    FishEyeNode.cpp
     PipelineModel.cpp
     NodeBase.cpp
     TopLevelNodeEditorWidget.cpp)
@@ -31,6 +33,8 @@ set(APP_HEADERS
     DepthCalcNode.hpp
     DepthCalcConfigWidget.hpp
     MovingAverageNode.hpp
+    FishEyeSettingWidget.hpp
+    FishEyeNode.hpp
     PipelineModel.hpp
     NodeBase.hpp
     ToFDataTypes.hpp

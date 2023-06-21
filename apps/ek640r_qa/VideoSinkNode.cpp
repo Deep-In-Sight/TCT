@@ -59,8 +59,9 @@ ViewerConfigWidget::ViewerConfigWidget(QWidget* parent)
           &ViewerConfigWidget::onEnableViewerChanged);
   connect(comboBoxViewerType_, qOverload<int>(&QComboBox::currentIndexChanged),
           this, &ViewerConfigWidget::onViewerTypeChanged);
-  connect(comboBoxColorMapStyle_, qOverload<int>(&QComboBox::currentIndexChanged),
-          this, &ViewerConfigWidget::onViewerColorMapStyleChanged);
+  connect(comboBoxColorMapStyle_,
+          qOverload<int>(&QComboBox::currentIndexChanged), this,
+          &ViewerConfigWidget::onViewerColorMapStyleChanged);
 }
 
 ViewerConfigWidget::~ViewerConfigWidget() {}
@@ -104,7 +105,7 @@ void ViewerConfigWidget::onViewerColorMapStyleChanged(int index) {
 VideoSinkNode::VideoSinkNode()
     : NodeBase(kSinkNode, "VideoSink0", "VideoSink", true) {
   // _sink = new ImageInspectorGraphicsScene();
-  _sink = new VideoSinkViewer();
+  _sink = new VideoSinkViewer("qtVideoSink");
   _sink->setWindowTitle("3D SVM");
   configWidget_ = new ViewerConfigWidget();
   configWidget_->SetViewer(_sink);

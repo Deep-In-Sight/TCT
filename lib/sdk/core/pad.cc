@@ -233,8 +233,16 @@ void Pad::PushFrame(cv::Mat &frame) {
   // check size and type. frame.size, not frame.size(). frame.size() is the 2D
   // size of the matrix, in case dims=2. frame.size is the MatSize that can have
   // dims>2.
+
   if (mat_shape_ != frame.size || frame.type() != mat_type_) {
-    logger_->error("Frame size or type does not match");
+    string elemName = (parent_ == nullptr) ? "" : parent_->GetName();
+    string padName = GetName();
+    logger_->error("[{}/{}]Frame size or type does not match", elemName,
+                   padName);
+    logger_->error("Pad shape: {} ({}x{}x{}), type: {}", mat_shape_.dims(),
+                   mat_shape_[0], mat_shape_[1], mat_shape_[2], mat_type_);
+    logger_->error("Frame shape: {} ({}x{}x{}), type: {}", frame.size.dims(),
+                   frame.size[0], frame.size[1], frame.size[2], frame.type());
     return;
   }
 

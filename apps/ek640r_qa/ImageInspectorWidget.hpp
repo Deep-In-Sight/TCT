@@ -58,7 +58,7 @@ class VideoSinkViewer : public QWidget, public BaseSink {
 
  public:
   enum class ViewerChannel { Depth, Amplitude };
-  VideoSinkViewer(QWidget* parent = nullptr);
+  VideoSinkViewer(const string& name = "", QWidget* parent = nullptr);
   ~VideoSinkViewer();
 
   void SinkFrame(Mat& frame) override;

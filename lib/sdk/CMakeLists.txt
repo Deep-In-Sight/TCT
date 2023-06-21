@@ -13,6 +13,7 @@ set(SDK_SRCS
     tof/playback-src.cc
     tof/depth-calc.cc
     tof/moving-average.cc
+    calib/fisheye.cc
     tof/camera-src.cc)
 
 find_package(Eigen3 REQUIRED)
