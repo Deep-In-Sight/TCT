@@ -20,13 +20,15 @@
 #ifndef __ELEMENT_H__
 #define __ELEMENT_H__
 
+#include <sdk/core/pad.h>
+
 #include <iterator>
 #include <list>
 #include <opencv2/opencv.hpp>
 #include <string>
 
-class Pad;
-class MatShape;
+// class Pad;
+// class MatShape;
 
 using namespace std;
 using namespace cv;
@@ -83,9 +85,16 @@ class Element {
   virtual void PushFrame(Mat &frame) = 0;
 
   /**
-   * @brief Child element reimplement this method to transform the size and type
-   * between sink to source pad. Default implementation send the same size and
-   * type to all the sink pad.
+   * @brief Handle the state change of the stream.
+   * Child implement this to update the element state. Don't forget to propagate
+   * downstream.
+   */
+  virtual void PushState(StreamState state){};
+
+  /**
+   * @brief Child element reimplement this method to transform the size and
+   * type between sink to source pad. Default implementation send the same
+   * size and type to all the sink pad.
    *
    * @param size
    * @param type

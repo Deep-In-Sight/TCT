@@ -259,6 +259,23 @@ void Pad::PushFrame(cv::Mat &frame) {
   }
 }
 
+void Pad::PushState(StreamState state) {
+  if (direction_ == kPadSource && link_status_ == kPadUnlinked) {
+    return;
+  }
+
+  if (direction_ == kPadSink && parent_ == nullptr) {
+    return;
+  }
+
+  // send out frame
+  if (direction_ == kPadSource) {
+    peer_->PushState(state);
+  } else {
+    parent_->PushState(state);
+  }
+}
+
 void Pad::AddObserver(PadObserver *observer) {
   if (observer == nullptr) {
     return;

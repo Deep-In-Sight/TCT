@@ -72,6 +72,8 @@ class Queue : public Element {
    */
   void PushFrame(cv::Mat &frame) override;
 
+  void PushState(StreamState state) override;
+
   /**
    * @brief Get the source pad.
    *

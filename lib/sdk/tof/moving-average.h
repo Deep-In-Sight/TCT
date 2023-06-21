@@ -10,6 +10,8 @@ class MovingAverage : public BaseTransform {
 
   void SetWindowSize(int windowSize);
 
+  void PushState(StreamState state) override;
+
  private:
   void TransformFrame(Mat &frame) override;
   int windowSize_;

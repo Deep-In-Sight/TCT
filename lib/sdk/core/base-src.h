@@ -34,12 +34,6 @@ class Pad;
 using namespace std;
 using namespace cv;
 
-enum StreamState {
-  kStreamStatePlaying,
-  kStreamStatePaused,
-  kStreamStateStopped
-};
-
 class BaseSource : public Element {
  public:
   /**

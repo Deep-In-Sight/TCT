@@ -46,6 +46,8 @@ class BaseTransform : public Element {
    */
   void PushFrame(Mat &frame) override;
 
+  void PushState(StreamState state) override;
+
   Pad *GetSinkPad();
   Pad *GetSourcePad();
 
