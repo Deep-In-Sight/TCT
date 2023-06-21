@@ -10,6 +10,8 @@ set(APP_SRCS
     main.cpp
     PlaybackSourceNode.cpp
     PlaybackSettingWidget.cpp
+    CameraSourceNode.cpp
+    CameraSourceSettingWidget.cpp
     VideoSinkNode.cpp
     ImageInspectorWidget.cpp
     DepthCalcNode.cpp
@@ -22,6 +24,8 @@ set(APP_SRCS
 set(APP_HEADERS
     PlaybackSourceNode.hpp
     PlaybackSettingWidget.hpp
+    CameraSourceNode.hpp
+    CameraSourceSettingWidget.hpp
     VideoSinkNode.hpp
     ImageInspectorWidget.hpp
     DepthCalcNode.hpp

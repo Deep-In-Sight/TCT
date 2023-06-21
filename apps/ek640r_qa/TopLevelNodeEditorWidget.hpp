@@ -14,6 +14,7 @@
 #include <QtWidgets/QMenuBar>
 #include <QtWidgets/QVBoxLayout>
 
+#include "CameraSourceNode.hpp"
 #include "DepthCalcNode.hpp"
 #include "MovingAverageNode.hpp"
 #include "PipelineModel.hpp"

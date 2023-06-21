@@ -103,7 +103,7 @@ Mat PlaybackSource::GenerateFrame() {
   int read = fread(frame.data, 1, frame.total() * frame.elemSize(), file_);
 
   if (read == frame.total() * frame.elemSize()) {
-    logger_->info("Sending frame");
+    // logger_->info("Sending frame");
     return frame;
   } else if (loop_) {
     logger_->info("Reached end of file, looping");

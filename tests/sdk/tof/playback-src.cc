@@ -37,6 +37,6 @@ TEST(PlaybackSource, GenerateFrame) {
   EXPECT_EQ(type, CV_16SC1);
 
   source.Start();
-  this_thread::sleep_for(chrono::milliseconds(10));
+  this_thread::sleep_for(chrono::milliseconds(100));
   source.Stop();
 }

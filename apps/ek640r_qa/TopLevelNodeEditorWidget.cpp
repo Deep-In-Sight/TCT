@@ -5,6 +5,7 @@
 static std::shared_ptr<NodeDelegateModelRegistry> registerDataModels() {
   auto ret = std::make_shared<NodeDelegateModelRegistry>();
   ret->registerModel<PlaybackSourceNode>("Sources");
+  ret->registerModel<CameraSourceNode>("Sources");
   ret->registerModel<DepthCalcNode>("ToF");
   ret->registerModel<VideoSinkNode>("Sinks");
   ret->registerModel<MovingAverageNode>("Filters");
@@ -17,8 +18,8 @@ TopLevelNodeEditorWidget::TopLevelNodeEditorWidget(QWidget *parent)
   std::shared_ptr<NodeDelegateModelRegistry> registry = registerDataModels();
   auto menuBar = new QMenuBar();
   QMenu *menu = menuBar->addMenu("File");
-  auto saveAction = menu->addAction("Save Scene");
-  auto loadAction = menu->addAction("Load Scene");
+  auto saveAction = menu->addAction("Save Graph");
+  auto loadAction = menu->addAction("Load Graph");
   QVBoxLayout *l = new QVBoxLayout(this);
   dataFlowGraphModel = new PipelineModel(registry);
   l->addWidget(menuBar);
@@ -35,7 +36,7 @@ TopLevelNodeEditorWidget::TopLevelNodeEditorWidget(QWidget *parent)
 
   QObject::connect(scene, &DataFlowGraphicsScene::sceneLoaded, view,
                    &GraphicsView::centerScene);
-  setWindowTitle("EK640R QA Tool");
+  setWindowTitle("3D SVM");
   resize(1280, 720);
 
   labelLogo = new QLabel(this);

@@ -17,6 +17,8 @@
 
 using namespace std;
 
+class VideoSinkViewer;
+
 class ImageInspectorGraphicsScene : public QGraphicsScene {
   Q_OBJECT
  public:
@@ -26,19 +28,29 @@ class ImageInspectorGraphicsScene : public QGraphicsScene {
   void SetImage(const QPixmap& pixmap);
 
  private slots:
-  void deleteChildInspector();
+  void deleteChildInspector(QGraphicsItem* item);
+  void deleteAllMarkers();
+  void saveFrame();
 
-  void addRowScanner();
-  void addColScanner();
-  void addHistROI();
-  void addTrackerPoint();
+  void addRowScanner(int row_y);
+  void addColScanner(int col_x);
+  // void addHistROI(QRect rect);
+  void addTrackerPoint(QPoint point);
 
  private:
-  QMenu* menuAddInspector_;
+  void addCrossHair(QPoint point, float depthVal_);
+  void addFrameRate(float frameRate);
+
+ public:
+  QMenu* menuInspector_;
   QMenu* menuDeleteInspector_;
   QGraphicsItem* selectedItem_;
   QPointF lastPos_;
   QGraphicsPixmapItem* pixmapItem_;
+  QGraphicsTextItem* frameRateTextItem_;
+  chrono::time_point<chrono::system_clock> lastFrameTime_;
+  VideoSinkViewer* viewer_;
+  list<QGraphicsItem*> markersList;
 };
 
 class VideoSinkViewer : public QWidget, public BaseSink {
@@ -58,11 +70,12 @@ class VideoSinkViewer : public QWidget, public BaseSink {
  public slots:
   void onNewPixMap(const QPixmap& pixmap);
 
- private:
+ public:
   QVBoxLayout* layout_;
   QGraphicsView* view_;
   ImageInspectorGraphicsScene* scene_;
   ViewerChannel channel_;
+  Mat depthMap_;
 };
 
 #endif

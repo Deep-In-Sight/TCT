@@ -12,7 +12,8 @@ set(SDK_SRCS
     core/queue.cc
     tof/playback-src.cc
     tof/depth-calc.cc
-    tof/moving-average.cc)
+    tof/moving-average.cc
+    tof/camera-src.cc)
 
 find_package(Eigen3 REQUIRED)
 

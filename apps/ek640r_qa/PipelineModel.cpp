@@ -5,6 +5,9 @@
 
 #include "NodeBase.hpp"
 
+// hack
+#include <sdk/tof/camera-src.h>
+
 void PipelineModel::addConnection(QtNodes::ConnectionId const connectionId) {
   DataFlowGraphModel::addConnection(connectionId);
   auto sourceNode = _models.find(connectionId.outNodeId);
@@ -15,7 +18,14 @@ void PipelineModel::addConnection(QtNodes::ConnectionId const connectionId) {
 
     Element* source = srcNodeBase->getElement();
     Element* sink = sinkNodeBase->getElement();
-    source->GetPad("src")->Link(sink->GetPad("sink"));
+    Pad *srcPad, *sinkPad;
+    if (dynamic_cast<ToFCameraSrc*>(source)) {
+      srcPad = dynamic_cast<ToFCameraSrc*>(source)->GetSourcePad();
+    } else {
+      srcPad = source->GetPad("src");
+    }
+    sinkPad = sink->GetPad("sink");
+    srcPad->Link(sinkPad);
   }
 }
 

@@ -22,8 +22,8 @@ void DepthCalc::TransformFrame(Mat &frame) {
   Mat m({2, height, width}, CV_32FC1);
 
   int16_t *p0 = (int16_t *)frame.data;
-  int16_t *p2 = (int16_t *)frame.data + height * width;
-  int16_t *p1 = (int16_t *)frame.data + height * width * 2;
+  int16_t *p1 = (int16_t *)frame.data + height * width;
+  int16_t *p2 = (int16_t *)frame.data + height * width * 2;
   int16_t *p3 = (int16_t *)frame.data + height * width * 3;
 
   float *depth = (float *)m.data;
@@ -33,11 +33,14 @@ void DepthCalc::TransformFrame(Mat &frame) {
   float phase2depth_scale = 3e8 / (4 * M_PI * fmod_);
 
   for (int p = 0; p < height * width; p++) {
-    int q = p3[p] - p1[p];
-    int i = p2[p] - p0[p];
-    float d = (atan2f(q, i) + M_PI) * phase2depth_scale;
+    float q = p3[p] - p1[p];
+    float i = p2[p] - p0[p];
+
+    float d = (atan2f(-q, i) + M_PI) * phase2depth_scale;
     d = d + offset_;
-    if (d > range) {
+    if (d < 0) {
+      d = d + range;
+    } else if (d > range) {
       d = d - range * floor(d / range);
     }
     float a = 0.5 * sqrtf(q * q + i * i);
