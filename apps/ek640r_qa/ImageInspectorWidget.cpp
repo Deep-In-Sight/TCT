@@ -44,7 +44,7 @@ ImageInspectorGraphicsScene::ImageInspectorGraphicsScene(QWidget* parent)
           [this]() { deleteChildInspector(selectedItem_); });
 
   pixmapItem_ = nullptr;
-  frameRateTextItem_ = nullptr;
+  frameRateItem_ = nullptr;
 }
 
 void ImageInspectorGraphicsScene::contextMenuEvent(
@@ -133,19 +133,25 @@ void ImageInspectorGraphicsScene::addCrossHair(QPoint point, float depthVal_) {
 }
 
 void ImageInspectorGraphicsScene::addFrameRate(float frameRate) {
-  if (frameRateTextItem_ != nullptr) {
-    removeItem(frameRateTextItem_);
+  if (frameRateItem_ != nullptr) {
+    removeItem(frameRateItem_);
   }
 
-  frameRateTextItem_ = addText(QString("%1 fps").arg(frameRate));
+  frameRateItem_ = new QGraphicsItemGroup();
+  auto frameRateTextItem_ = new QGraphicsTextItem(QString("%1 fps").arg(frameRate));
+  frameRateTextItem_->setDefaultTextColor(Qt::red);
+  auto frameRateRectItem_ = new QGraphicsRectItem(frameRateTextItem_->boundingRect());
+  frameRateRectItem_->setBrush(QBrush(Qt::white));
 
+  frameRateItem_->addToGroup(frameRateRectItem_);
+  frameRateItem_->addToGroup(frameRateTextItem_);
+  addItem(frameRateItem_);
   int posX =
       sceneRect().width() - frameRateTextItem_->boundingRect().width() - 10;
   int posY =
       sceneRect().height() - frameRateTextItem_->boundingRect().height() - 10;
+  frameRateItem_->setPos(posX, posY);
 
-  frameRateTextItem_->setPos(posX, posY);
-  frameRateTextItem_->setDefaultTextColor(Qt::red);
 }
 
 void ImageInspectorGraphicsScene::deleteChildInspector(QGraphicsItem* item) {
@@ -218,6 +224,9 @@ VideoSinkViewer::VideoSinkViewer(QWidget* parent)
   scene_->viewer_ = this;
   view_ = new QGraphicsView(scene_, this);
 
+  view_->setContentsMargins(0, 0, 0, 0);
+  layout_->setSpacing(0);
+  layout_->setContentsMargins(0, 0, 0, 0);
   layout_->addWidget(view_);
 
   // even though newPixMap and onNewPixMap belongs to the same class, they need
@@ -246,7 +255,9 @@ void VideoSinkViewer::SinkFrame(Mat& frame) {
   depthMap_ = depth;
   Mat depth_norm;
   cv::normalize(depth, depth_norm, 0, 255, cv::NORM_MINMAX, CV_8UC1);
-  cv::cvtColor(depth_norm, depth_norm, cv::COLOR_GRAY2RGB);
+  cv::applyColorMap(depth_norm, depth_norm, colorMapStyle_);
+  cv::cvtColor(depth_norm, depth_norm, cv::COLOR_BGR2RGB);
+  // cv::cvtColor(depth_norm, depth_norm, cv::COLOR_GRAY2RGB);
   QPixmap pixmap = QPixmap::fromImage(QImage(depth_norm.data, depth_norm.cols,
                                              depth_norm.rows, depth_norm.step,
                                              QImage::Format_RGB888));
@@ -261,3 +272,7 @@ void VideoSinkViewer::onNewPixMap(const QPixmap& pixmap) {
 }
 
 void VideoSinkViewer::SetChannel(ViewerChannel channel) { channel_ = channel; }
+
+void VideoSinkViewer::SetColorMapStyle(int style) {
+  colorMapStyle_ = style;
+}

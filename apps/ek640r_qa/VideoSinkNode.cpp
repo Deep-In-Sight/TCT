@@ -22,14 +22,45 @@ ViewerConfigWidget::ViewerConfigWidget(QWidget* parent)
   comboBoxViewerType_->setCurrentIndex(0);
   layout2->addWidget(comboBoxViewerType_);
 
+  auto layout3 = new QHBoxLayout();
+  layout3->addWidget(new QLabel("ColorMap"));
+  comboBoxColorMapStyle_ = new QComboBox();
+  comboBoxColorMapStyle_->addItem("AUTUMN");
+  comboBoxColorMapStyle_->addItem("BONE");
+  comboBoxColorMapStyle_->addItem("JET");
+  comboBoxColorMapStyle_->addItem("WINTER");
+  comboBoxColorMapStyle_->addItem("RAINBOW");
+  comboBoxColorMapStyle_->addItem("OCEAN");
+  comboBoxColorMapStyle_->addItem("SUMMER");
+  comboBoxColorMapStyle_->addItem("SPRING");
+  comboBoxColorMapStyle_->addItem("COOL");
+  comboBoxColorMapStyle_->addItem("HSV");
+  comboBoxColorMapStyle_->addItem("PINK");
+  comboBoxColorMapStyle_->addItem("HOT");
+  comboBoxColorMapStyle_->addItem("PARULA");
+  comboBoxColorMapStyle_->addItem("MAGMA");
+  comboBoxColorMapStyle_->addItem("INFERNO");
+  comboBoxColorMapStyle_->addItem("PLASMA");
+  comboBoxColorMapStyle_->addItem("VIRIDIS");
+  comboBoxColorMapStyle_->addItem("CIVIDIS");
+  comboBoxColorMapStyle_->addItem("TWILIGHT");
+  comboBoxColorMapStyle_->addItem("TWILIGHT_SHIFTED");
+  comboBoxColorMapStyle_->addItem("TURBO");
+  comboBoxColorMapStyle_->addItem("DEEPGREEN");
+  comboBoxColorMapStyle_->setCurrentIndex(0);
+  layout3->addWidget(comboBoxColorMapStyle_);
+
   auto layout = new QVBoxLayout(this);
   layout->addLayout(layout1);
   layout->addLayout(layout2);
+  layout->addLayout(layout3);
 
   connect(checkboxEnableViewer_, &QCheckBox::stateChanged, this,
           &ViewerConfigWidget::onEnableViewerChanged);
   connect(comboBoxViewerType_, qOverload<int>(&QComboBox::currentIndexChanged),
           this, &ViewerConfigWidget::onViewerTypeChanged);
+  connect(comboBoxColorMapStyle_, qOverload<int>(&QComboBox::currentIndexChanged),
+          this, &ViewerConfigWidget::onViewerColorMapStyleChanged);
 }
 
 ViewerConfigWidget::~ViewerConfigWidget() {}
@@ -62,6 +93,14 @@ void ViewerConfigWidget::onViewerTypeChanged(int index) {
   }
 }
 
+void ViewerConfigWidget::onViewerColorMapStyleChanged(int index) {
+  if (viewer_ == nullptr) {
+    return;
+  }
+
+  viewer_->SetColorMapStyle(index);
+}
+
 VideoSinkNode::VideoSinkNode()
     : NodeBase(kSinkNode, "VideoSink0", "VideoSink", true) {
   // _sink = new ImageInspectorGraphicsScene();
@@ -77,6 +116,8 @@ QJsonObject VideoSinkNode::save() const {
   modelJson["viewer_enabled"] =
       configWidget_->checkboxEnableViewer_->isChecked();
   modelJson["viewer_type"] = configWidget_->comboBoxViewerType_->currentIndex();
+  modelJson["viewer_colormap"] =
+      configWidget_->comboBoxColorMapStyle_->currentIndex();
   return modelJson;
 }
 
@@ -85,6 +126,8 @@ void VideoSinkNode::load(QJsonObject const& p) {
   configWidget_->checkboxEnableViewer_->setChecked(
       p["viewer_enabled"].toBool());
   configWidget_->comboBoxViewerType_->setCurrentIndex(p["viewer_type"].toInt());
+  configWidget_->comboBoxColorMapStyle_->setCurrentIndex(
+      p["viewer_colormap"].toInt());
 }
 
 NodeDataType VideoSinkNode::dataType(PortType, PortIndex) const {

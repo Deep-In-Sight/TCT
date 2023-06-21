@@ -47,7 +47,7 @@ class ImageInspectorGraphicsScene : public QGraphicsScene {
   QGraphicsItem* selectedItem_;
   QPointF lastPos_;
   QGraphicsPixmapItem* pixmapItem_;
-  QGraphicsTextItem* frameRateTextItem_;
+  QGraphicsItemGroup* frameRateItem_;
   chrono::time_point<chrono::system_clock> lastFrameTime_;
   VideoSinkViewer* viewer_;
   list<QGraphicsItem*> markersList;
@@ -63,6 +63,7 @@ class VideoSinkViewer : public QWidget, public BaseSink {
 
   void SinkFrame(Mat& frame) override;
   void SetChannel(ViewerChannel channel);
+  void SetColorMapStyle(int style);
 
  signals:
   void newPixMap(const QPixmap& pixmap);
@@ -76,6 +77,7 @@ class VideoSinkViewer : public QWidget, public BaseSink {
   ImageInspectorGraphicsScene* scene_;
   ViewerChannel channel_;
   Mat depthMap_;
+  int colorMapStyle_;
 };
 
 #endif

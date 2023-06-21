@@ -26,10 +26,12 @@ class ViewerConfigWidget : public QWidget {
  private slots:
   void onEnableViewerChanged(int state);
   void onViewerTypeChanged(int index);
+  void onViewerColorMapStyleChanged(int index);
 
  public:
   QCheckBox* checkboxEnableViewer_;
   QComboBox* comboBoxViewerType_;
+  QComboBox* comboBoxColorMapStyle_;
 };
 
 class VideoSinkNode : public NodeBase {
