@@ -20,6 +20,7 @@ QJsonObject CameraSourceNode::save() const {
 
   modelJson["device"] = settingWidget_->lineEditDevice_->text();
   modelJson["fmod"] = settingWidget_->spinboxFmod_->value();
+  modelJson["exposureTime"] = settingWidget_->spinboxExposureTime_->value();
 
   return modelJson;
 }
@@ -29,6 +30,7 @@ void CameraSourceNode::load(QJsonObject const& p) {
 
   settingWidget_->lineEditDevice_->setText(p["device"].toString());
   settingWidget_->spinboxFmod_->setValue(p["fmod"].toInt());
+  settingWidget_->spinboxExposureTime_->setValue(p["exposureTime"].toInt());
 }
 
 NodeDataType CameraSourceNode::dataType(PortType type, PortIndex index) const {

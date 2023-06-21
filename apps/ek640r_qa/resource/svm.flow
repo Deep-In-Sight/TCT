@@ -1,0 +1,72 @@
+{
+    "connections": [
+        {
+            "inPortIndex": 0,
+            "intNodeId": 4,
+            "outNodeId": 2,
+            "outPortIndex": 0
+        },
+        {
+            "inPortIndex": 0,
+            "intNodeId": 3,
+            "outNodeId": 4,
+            "outPortIndex": 0
+        },
+        {
+            "inPortIndex": 0,
+            "intNodeId": 2,
+            "outNodeId": 5,
+            "outPortIndex": 0
+        }
+    ],
+    "nodes": [
+        {
+            "id": 2,
+            "internal-data": {
+                "fmod": 20,
+                "model-name": "DepthTransform",
+                "offset": 0
+            },
+            "position": {
+                "x": -376,
+                "y": -365
+            }
+        },
+        {
+            "id": 3,
+            "internal-data": {
+                "model-name": "VideoSink",
+                "viewer_enabled": true,
+                "viewer_type": 0
+            },
+            "position": {
+                "x": -387,
+                "y": -135
+            }
+        },
+        {
+            "id": 4,
+            "internal-data": {
+                "model-name": "MovingAverage",
+                "windowSize": 1
+            },
+            "position": {
+                "x": 46,
+                "y": -378
+            }
+        },
+        {
+            "id": 5,
+            "internal-data": {
+                "device": "192.168.7.2:50660",
+                "exposureTime": 5,
+                "fmod": 20,
+                "model-name": "CameraSource"
+            },
+            "position": {
+                "x": -849.2206901930869,
+                "y": -486.27574791139415
+            }
+        }
+    ]
+}

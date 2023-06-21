@@ -19,11 +19,14 @@ class CameraSourceSettingWidget : public QWidget {
   void onDeviceChanged(const QString &text);
   void onFmodChanged(int value);
   void onPlayStopClicked();
+  void onShortCaptureClicked();
 
  public:
   QLineEdit *lineEditDevice_;
   QSpinBox *spinboxFmod_;
+  QSpinBox *spinboxExposureTime_;
   QPushButton *buttonPlayStop_;
+  QPushButton *buttonLongExposure_;
 
   ToFCameraSrc *source_;
 };
