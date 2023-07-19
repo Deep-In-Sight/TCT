@@ -46,6 +46,16 @@ enum PadDirection { kPadSource, kPadSink };
 enum PadLinkStatus { kPadUnlinked, kPadLinked };
 
 /**
+ * @brief StreamState The state of a stream.
+ *
+ */
+enum StreamState {
+  kStreamStatePlaying,
+  kStreamStatePaused,
+  kStreamStateStopped
+};
+
+/**
  * @brief PadLinkReturn Return value of Pad::Link method.
  *
  */
@@ -214,6 +224,13 @@ class Pad {
    * @param frame
    */
   void PushFrame(cv::Mat &frame);
+
+  /**
+   * @brief propagate the state of the stream to downstream elements.
+   *
+   * @param state
+   */
+  void PushState(StreamState state);
 
   /**
    * @brief Add an observer to the pad. The observer will be notified when a new

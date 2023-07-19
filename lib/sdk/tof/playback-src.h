@@ -16,52 +16,43 @@
  * Free Software Foundation, Inc., 51 Franklin Street, Suite 500,
  * Boston, MA 02110-1335, USA.
  */
+#ifndef __PLAYBACK_SRC_H__
+#define __PLAYBACK_SRC_H__
 
-#ifndef __BASE_SINK_H__
-#define __BASE_SINK_H__
+#include <sdk/core/base-src.h>
 
-#include <sdk/core/element.h>
-
-#include <opencv2/opencv.hpp>
-#include <string>
-
-class Pad;
-
-using namespace std;
-using namespace cv;
-
-/**
- * @brief A sink element with only sink pad that end the pipeline.
- *
- */
-
-class BaseSink : public Element {
+class PlaybackSource : public BaseSource {
  public:
-  BaseSink(const string &name = "");
-  ~BaseSink();
+  PlaybackSource(const string& name, bool is_async, bool loop = false);
+  ~PlaybackSource();
 
+  void SetFilename(const string& filename);
   /**
-   * @brief
+   * @brief Manually set the format of the source. To be removed later and parse
+   * file header instead.
    *
-   * @param frame: data from sink pad.
+   * @param size
+   * @param type
    */
-  void PushFrame(Mat &frame) override;
+  void SetFormat(const MatShape& shape, int type);
 
-  void PushState(StreamState state) override;
+  void SetFrameRate(float fps);
 
-  Pad *GetSinkPad();
+  void SetLoop(bool loop);
 
- protected:
-  /**
-   * @brief consume the frame. Child element implement this method to process
-   * the frame.
-   *
-   * @param frame
-   */
-  virtual void SinkFrame(Mat &frame) = 0;
+  bool InitializeSource() override;
+  Mat GenerateFrame() override;
+  void CleanupSource() override;
 
- protected:
-  Pad *sink_pad_;
+ private:
+  string filename_;
+  FILE* file_;
+  bool loop_;
+  MatShape shape_;
+  int type_;
+  float frame_duration_;
+  float sleep_duration_ms_;
+  chrono::time_point<chrono::steady_clock> last_frame_time_;
 };
 
-#endif  //__BASE_SINK_H__
+#endif  // __PLAYBACK_SRC_H__

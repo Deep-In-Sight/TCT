@@ -16,52 +16,24 @@
  * Free Software Foundation, Inc., 51 Franklin Street, Suite 500,
  * Boston, MA 02110-1335, USA.
  */
+#ifndef __DEPTH_CALC_H__
+#define __DEPTH_CALC_H__
 
-#ifndef __BASE_SINK_H__
-#define __BASE_SINK_H__
+#include <sdk/core/base-transform.h>
 
-#include <sdk/core/element.h>
-
-#include <opencv2/opencv.hpp>
-#include <string>
-
-class Pad;
-
-using namespace std;
-using namespace cv;
-
-/**
- * @brief A sink element with only sink pad that end the pipeline.
- *
- */
-
-class BaseSink : public Element {
+class DepthCalc : public BaseTransform {
  public:
-  BaseSink(const string &name = "");
-  ~BaseSink();
+  DepthCalc(const string &name = "");
+  ~DepthCalc();
 
-  /**
-   * @brief
-   *
-   * @param frame: data from sink pad.
-   */
-  void PushFrame(Mat &frame) override;
+  void SetConfig(float fmod, float offset);
 
-  void PushState(StreamState state) override;
+ private:
+  void TransformFrame(Mat &frame) override;
+  void SetFrameFormat(const MatShape &shape, int type) override;
 
-  Pad *GetSinkPad();
-
- protected:
-  /**
-   * @brief consume the frame. Child element implement this method to process
-   * the frame.
-   *
-   * @param frame
-   */
-  virtual void SinkFrame(Mat &frame) = 0;
-
- protected:
-  Pad *sink_pad_;
+  float fmod_;
+  float offset_;
 };
 
-#endif  //__BASE_SINK_H__
+#endif  //__DEPTH_CALC_H__

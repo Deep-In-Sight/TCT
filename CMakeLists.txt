@@ -39,6 +39,7 @@ if(GST_CHECK_NOTFOUND)
 endif()
 
 # Open3D
+set(Open3D_DIR /home/linh/Open3d/lib/cmake/Open3D)
 find_package(Open3D REQUIRED)
 
 # put this out here so vscode can find it

@@ -179,30 +179,32 @@ bool Pad::SetParent(Element *parent) {
 
 Element *Pad::GetParent() { return parent_; }
 
-PadLinkReturn Pad::Link(Pad *peer) {
-  if (peer_ != nullptr && peer_ != peer) {
+PadLinkReturn Pad::Link(Pad *otherPad) {
+  if (!(GetName().empty()) && !(otherPad->GetName().empty())) {
+    logger_->info("Linking {} to {}...", GetName(), otherPad->GetName());
+  }
+
+  if (peer_ != nullptr) {
+    logger_->error("Pad already linked");
     return kPadLinkAlreadyLinked;
   }
 
-  if (direction_ == peer->GetDirection()) {
+  if (otherPad != nullptr && otherPad->peer_ != nullptr) {
+    logger_->error("Otherpad already linked");
+    return kPadLinkAlreadyLinked;
+  }
+
+  if (direction_ == otherPad->GetDirection()) {
+    logger_->error("Pad direction does not compatible");
     return kPadLinkWrongDirection;
   }
 
-  if (peer_ == peer) {
-    return kPadLinkOk;
-  }
+  peer_ = otherPad;
+  otherPad->peer_ = this;
+  link_status_ = kPadLinked;
+  otherPad->link_status_ = kPadLinked;
 
-  peer_ = peer;
-  PadLinkReturn ret = peer_->Link(this);
-
-  if (ret != kPadLinkOk) {
-    peer_ = nullptr;
-    link_status_ = kPadUnlinked;
-    return ret;
-  } else {
-    link_status_ = kPadLinked;
-    return kPadLinkOk;
-  }
+  return kPadLinkOk;
 }
 
 PadLinkReturn Pad::Unlink() {
@@ -210,9 +212,12 @@ PadLinkReturn Pad::Unlink() {
     return kPadLinkOk;
   }
 
-  link_status_ = kPadUnlinked;
-  peer_->Unlink();
+  peer_->peer_ = nullptr;
+  peer_->link_status_ = kPadUnlinked;
   peer_ = nullptr;
+  link_status_ = kPadUnlinked;
+
+  logger_->info("Pad Unlink success.");
 
   return kPadLinkOk;
 }
@@ -223,8 +228,16 @@ void Pad::PushFrame(cv::Mat &frame) {
   // check size and type. frame.size, not frame.size(). frame.size() is the 2D
   // size of the matrix, in case dims=2. frame.size is the MatSize that can have
   // dims>2.
+
   if (mat_shape_ != frame.size || frame.type() != mat_type_) {
-    logger_->error("Frame size or type does not match");
+    string elemName = (parent_ == nullptr) ? "" : parent_->GetName();
+    string padName = GetName();
+    logger_->error("[{}/{}]Frame size or type does not match", elemName,
+                   padName);
+    logger_->error("Pad shape: {} ({}x{}x{}), type: {}", mat_shape_.dims(),
+                   mat_shape_[0], mat_shape_[1], mat_shape_[2], mat_type_);
+    logger_->error("Frame shape: {} ({}x{}x{}), type: {}", frame.size.dims(),
+                   frame.size[0], frame.size[1], frame.size[2], frame.type());
     return;
   }
 
@@ -246,6 +259,23 @@ void Pad::PushFrame(cv::Mat &frame) {
     peer_->PushFrame(frame);
   } else {
     parent_->PushFrame(frame);
+  }
+}
+
+void Pad::PushState(StreamState state) {
+  if (direction_ == kPadSource && link_status_ == kPadUnlinked) {
+    return;
+  }
+
+  if (direction_ == kPadSink && parent_ == nullptr) {
+    return;
+  }
+
+  // send out frame
+  if (direction_ == kPadSource) {
+    peer_->PushState(state);
+  } else {
+    parent_->PushState(state);
   }
 }
 

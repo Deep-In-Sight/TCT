@@ -16,52 +16,27 @@
  * Free Software Foundation, Inc., 51 Franklin Street, Suite 500,
  * Boston, MA 02110-1335, USA.
  */
+#ifndef __MOVING_AVERAGE_H__
+#define __MOVING_AVERAGE_H__
 
-#ifndef __BASE_SINK_H__
-#define __BASE_SINK_H__
+#include <sdk/core/base-transform.h>
 
-#include <sdk/core/element.h>
-
-#include <opencv2/opencv.hpp>
-#include <string>
-
-class Pad;
-
-using namespace std;
-using namespace cv;
-
-/**
- * @brief A sink element with only sink pad that end the pipeline.
- *
- */
-
-class BaseSink : public Element {
+class MovingAverage : public BaseTransform {
  public:
-  BaseSink(const string &name = "");
-  ~BaseSink();
+  MovingAverage(const string &name = "");
+  ~MovingAverage();
 
-  /**
-   * @brief
-   *
-   * @param frame: data from sink pad.
-   */
-  void PushFrame(Mat &frame) override;
+  void SetWindowSize(int windowSize);
 
   void PushState(StreamState state) override;
 
-  Pad *GetSinkPad();
-
- protected:
-  /**
-   * @brief consume the frame. Child element implement this method to process
-   * the frame.
-   *
-   * @param frame
-   */
-  virtual void SinkFrame(Mat &frame) = 0;
-
- protected:
-  Pad *sink_pad_;
+ private:
+  void TransformFrame(Mat &frame) override;
+  int windowSize_;
+  Mat frameSum_;
+  std::list<Mat> frameList_;
+  int listCount_;
+  mutex mutex_;
 };
 
-#endif  //__BASE_SINK_H__
+#endif  //__MOVING_AVERAGE_H__

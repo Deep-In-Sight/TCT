@@ -11,7 +11,10 @@ set(SDK_SRCS
     core/base-transform.cc
     core/queue.cc
     tof/playback-src.cc
-    tof/depth-calc.cc)
+    tof/depth-calc.cc
+    tof/moving-average.cc
+    calib/fisheye.cc
+    tof/camera-src.cc)
 
 find_package(Eigen3 REQUIRED)
 

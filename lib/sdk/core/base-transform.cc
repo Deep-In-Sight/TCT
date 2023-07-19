@@ -27,6 +27,10 @@ void BaseTransform::TransformFrame(Mat &frame) {
   source_pad_->PushFrame(frame);
 }
 
+void BaseTransform::PushState(StreamState state) {
+  source_pad_->PushState(state);
+}
+
 Pad *BaseTransform::GetSinkPad() { return sink_pad_; }
 
 Pad *BaseTransform::GetSourcePad() { return source_pad_; }

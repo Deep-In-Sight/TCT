@@ -65,3 +65,5 @@ void Queue::WaitFrame() {
     src_->PushFrame(frame);
   }
 }
+
+void Queue::PushState(StreamState state) { src_->PushState(state); }
