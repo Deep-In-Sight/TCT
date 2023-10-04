@@ -17,7 +17,7 @@ struct ImGuiWidget {
    */
   virtual void ImGuiLayout() = 0;
 
-  virtual ImRect ImGuiGetPreferedSize() = 0;
+  // virtual ImRect ImGuiGetPreferedSize() = 0;
 
   // contentRect of a widget is all absolute coordinates, origin is top-left of
   // window it belong to. (as oppose to relative to its immediate parent)
