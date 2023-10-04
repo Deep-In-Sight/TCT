@@ -1,0 +1,75 @@
+{
+  "layout": {
+    "mainWindow": {
+      "title": "ToF Camera Toolkit",
+      "width": 1200,
+      "height": 700,
+      "x": 1920,
+      "y": 0,
+      "visible": true
+    }
+  },
+  "resources": {
+    "fonts": {
+      "mainFont": {
+        "ttf": "data/fonts/Play-Regular.ttf",
+        "config": {
+          "sizePixels": 18.0,
+          "oversampleH": 4,
+          "oversampleV": 4,
+          "pixelSnapH": false
+        }
+      }
+    },
+    "icons": {
+      "imageIcon": {
+        "file": "data/images/MyImage01.jpg",
+        "size": 128
+      },
+      "appIcon": {
+        "file": "data/icons/vscan.png",
+        "size": 32
+      },
+      "vscanIcon": {
+        "file": "data/icons/vscan.png",
+        "size": 32
+      },
+      "hscanIcon": {
+        "file": "data/icons/hscan.png",
+        "size": 32
+      },
+      "histogramIcon": {
+        "file": "data/icons/histogram.png",
+        "size": 32
+      },
+      "crosshairIcon": {
+        "file": "data/icons/crosshair.png",
+        "size": 32
+      },
+      "captureIcon": {
+        "file": "data/icons/capture.png",
+        "size": 32
+      },
+      "recordIcon": {
+        "file": "data/icons/record.png",
+        "size": 32
+      },
+      "gridIcon": {
+        "file": "data/icons/grid.png",
+        "size": 32
+      },
+      "tabIcon": {
+        "file": "data/icons/tab.png",
+        "size": 32
+      },
+      "saveAllIcon": {
+        "file": "data/icons/saveAll.png",
+        "size": 32
+      },
+      "deleteAllIcon": {
+        "file": "data/icons/deleteAll.png",
+        "size": 32
+      }
+    }
+  }
+}
