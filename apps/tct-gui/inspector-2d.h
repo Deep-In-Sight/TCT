@@ -11,8 +11,15 @@ struct Inspector2D : public ImGuiWidget {
   void ImGuiDraw() override;
   void ImGuiLayout() override;
 
+  void DrawMenu();
+
+  void onMouseMove(ImVec2 mousePos);
+  void onMouseScroll(ImVec2 mousePos, float scroll);
+
   std::shared_ptr<ImageWidget> imageWidget;
 
   bool firstFrame;
+  bool imageSizeChanged;
+  bool windowSizeChanged;
   ViewMode viewMode;
 };
