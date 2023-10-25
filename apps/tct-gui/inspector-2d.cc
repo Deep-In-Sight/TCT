@@ -4,6 +4,7 @@
 
 Inspector2D::Inspector2D() {
   imageWidget = std::make_shared<ImageWidget>();
+  imageWidget2 = std::make_shared<ImageWidget>();
   firstFrame = true;
   imageSizeChanged = false;
   windowSizeChanged = false;
@@ -31,6 +32,7 @@ void Inspector2D::ImGuiDraw() {
 
     // child widgets draw
     imageWidget->ImGuiDraw();
+    imageWidget2->ImGuiDraw();
 
     // handle events
     if (ImGui::IsWindowHovered()) {
@@ -65,7 +67,14 @@ void Inspector2D::ImGuiLayout() {
   contentRect = ImRect(ImGui::GetWindowContentRegionMin(),
                        ImGui::GetWindowContentRegionMax());
   imageWidget->contentRect = contentRect;
+  imageWidget2->contentRect = contentRect;
+  float xmid = contentRect.Min.x + contentRect.GetWidth() / 2;
+
+  imageWidget->contentRect.Max.x = xmid;
+  imageWidget2->contentRect.Min.x = xmid;
+
   imageWidget->ImGuiLayout();
+  imageWidget2->ImGuiLayout();
 }
 
 void Inspector2D::DrawMenu() {
@@ -75,18 +84,20 @@ void Inspector2D::DrawMenu() {
         static bool menuOriginalSelected = true;
         static bool menuFitSelected = false;
         static bool menuStretchSelected = false;
+        ViewMode lastvm = imageWidget->viewMode;
         ViewMode vm = imageWidget->viewMode;
         if (ImGui::MenuItem("Original", nullptr, &menuOriginalSelected)) {
           vm = ViewMode::kViewOriginal;
-          imageWidget->setViewMode(vm);
         }
         if (ImGui::MenuItem("Fit", nullptr, &menuFitSelected)) {
           vm = ViewMode::kViewFit;
-          imageWidget->setViewMode(vm);
         }
         if (ImGui::MenuItem("Stretch", nullptr, &menuStretchSelected)) {
           vm = ViewMode::kViewStretch;
+        }
+        if (lastvm != vm) {
           imageWidget->setViewMode(vm);
+          imageWidget2->setViewMode(vm);
         }
         menuOriginalSelected = (vm == ViewMode::kViewOriginal);
         menuFitSelected = (vm == ViewMode::kViewFit);
@@ -104,6 +115,7 @@ void Inspector2D::DrawMenu() {
       bool showRulers = imageWidget->showRulers;
       if (ImGui::MenuItem("Show Rulers", nullptr, &showRulers)) {
         imageWidget->setShowRulers(showRulers);
+        imageWidget2->setShowRulers(showRulers);
       }
       ImGui::EndMenu();  // end menu View
     }
@@ -116,5 +128,8 @@ void Inspector2D::onMouseMove(ImVec2 mousePos) {}
 void Inspector2D::onMouseScroll(ImVec2 mousePos, float scroll) {
   if (imageWidget->contentRect.Contains(mousePos)) {
     imageWidget->onMouseScroll(mousePos, scroll);
+  }
+  if (imageWidget2->contentRect.Contains(mousePos)) {
+    imageWidget2->onMouseScroll(mousePos, scroll);
   }
 }

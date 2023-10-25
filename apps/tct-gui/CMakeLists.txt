@@ -16,8 +16,15 @@ set(IMGUI_NODE_SRCS
     ${IMGUI_NODE_DIR}/imgui_canvas.cpp ${IMGUI_NODE_DIR}/crude_json.cpp)
 set(IMGUI_NODE_INCLUDE_DIRS ${IMGUI_NODE_DIR})
 
-set(TCT_SRCS main.cc application.cc node-editor.cc inspector-2d.cc
-             image-widget.cc utility.cc)
+set(TCT_SRCS
+    main.cc
+    application.cc
+    node-editor.cc
+    inspector-2d.cc
+    image-widget.cc
+    utility.cc
+    graphics-item.cc
+    transform.cc)
 
 add_executable(tct)
 

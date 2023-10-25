@@ -17,6 +17,7 @@ struct Inspector2D : public ImGuiWidget {
   void onMouseScroll(ImVec2 mousePos, float scroll);
 
   std::shared_ptr<ImageWidget> imageWidget;
+  std::shared_ptr<ImageWidget> imageWidget2;
 
   bool firstFrame;
   bool imageSizeChanged;
