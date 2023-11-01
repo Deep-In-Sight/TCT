@@ -3,6 +3,7 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 
+#include <string>
 #include <vector>
 
 /**
@@ -25,10 +26,10 @@ struct Transform {
  *
  */
 struct GraphicsItem {
-  GraphicsItem(GraphicsItem* parent = nullptr);
+  GraphicsItem(std::string name = "", GraphicsItem* parent = nullptr);
   ~GraphicsItem();
   /**
-   * @brief Set the transformation matrix
+   * @brief Set the transformation matrix about the transformation origin point.
    * T = [[sx, 0, dx],
    *      [0, sy, dy],
    *      [0, 0, 1]];
@@ -39,15 +40,15 @@ struct GraphicsItem {
    *
    * @param matrix
    */
-  void setTransform(Transform T);
+  void transform(Transform T);
 
   /**
-   * @brief apply transformation T about the origin
+   * @brief apply transformation T about the origin, keep the old origin.
    *
    * @param T
    * @param origin
    */
-  void setTransform(Transform T, ImVec2 origin);
+  void transform(Transform T, ImVec2 origin);
 
   /**
    * @brief translate the object and all the children in it's local coordinate
@@ -56,7 +57,7 @@ struct GraphicsItem {
    * @param dx
    * @param dy
    */
-  void setTranslation(float dx, float dy);
+  void translate(float dx, float dy, bool additive = false);
   /**
    * @brief scale the object and all the children in it's local coordinate
    * system.
@@ -64,18 +65,19 @@ struct GraphicsItem {
    * @param sx
    * @param sy
    */
-  void setScale(float sx, float sy);
+  void scale(float sx, float sy, bool multiplicative = false);
   /**
    * @brief clip the object and all the children in it's local coordinate
    * system.
    *
    * @param r
    */
-  // void setClipRect(ImRect r);
+  void clip(ImRect r, bool triggerUpdate = true);
+  void unclip();
 
   /**
-   * @brief set the position of the item (center of is bounding box) in the
-   * parent's coordinate system.
+   * @brief set the position of the item's (0,0) in the parent's coordinate
+   * system.
    *
    * @param p
    */
@@ -85,7 +87,7 @@ struct GraphicsItem {
    *
    * @param p
    */
-  void setTransformationOrigin(ImVec2 p);
+  void setOrigin(ImVec2 p);
   /**
    * @brief map a point from local coordinate system to parent's coordinate.
    *
@@ -115,6 +117,22 @@ struct GraphicsItem {
    */
   ImVec2 mapFromScene(ImVec2 p);
   /**
+   * @brief map a point from local coordinate system to item's coordinate.
+   *
+   * @param item
+   * @param p
+   * @return ImVec2
+   */
+  ImVec2 mapToItem(GraphicsItem* item, ImVec2 p);
+  /**
+   * @brief map a point from item's coordinate system to local coordinate.
+   *
+   * @param item
+   * @param p
+   * @return ImVec2
+   */
+  ImVec2 mapFromItem(GraphicsItem* item, ImVec2 p);
+  /**
    * @brief add a child to this item.
    *
    * @param child
@@ -133,18 +151,29 @@ struct GraphicsItem {
   void update();
 
   /**
-   * @brief call the imgui function to draw the item and all the children.
+   * @brief draw itself and all the children.
    *
    */
-  virtual void paint() = 0;
-  virtual void contextMenu() = 0;
-  virtual void focusInEvent() = 0;
-  virtual void focusOutEvent() = 0;
-  virtual void hoverEnterEvent() = 0;
-  virtual void hoverLeaveEvent() = 0;
-  virtual void doubleClickEvent() = 0;
-  virtual void wheelEvent() = 0;
+  void paint();
+  /**
+   * @brief call the imgui function to draw the item.
+   *
+   */
+  virtual void paintSelf();
+  /**
+   * @brief allow each item to have its own way to clip itself.
+   *
+   */
+  virtual void clipSelf(ImRect r);
+  // virtual void contextMenu() = 0;
+  // virtual void focusInEvent() = 0;
+  // virtual void focusOutEvent() = 0;
+  // virtual void hoverEnterEvent() = 0;
+  // virtual void hoverLeaveEvent() = 0;
+  // virtual void doubleClickEvent() = 0;
+  // virtual void wheelEvent() = 0;
 
+  std::string name_;
   GraphicsItem* parent_;
   std::vector<GraphicsItem*> children_;
   Transform T_;
@@ -152,7 +181,7 @@ struct GraphicsItem {
   std::vector<ImVec2> sceneGeometries_;
   ImVec2 pos_;
   ImVec2 origin_;
-  // ImRect clipRect_;
+  ImRect clipRect_;
   // ImRect boundingRect_;
   ImColor lineColor_;
   ImColor fillColor_;
