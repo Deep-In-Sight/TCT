@@ -24,6 +24,8 @@ set(TCT_SRCS
     image-widget.cc
     utility.cc
     graphics-item.cc
+    graphics-item-impl.cc
+    graphics-view.cc
     transform.cc)
 
 add_executable(tct)
