@@ -259,21 +259,9 @@ void GraphicsItem::scale(float sx, float sy, bool multiplicative) {
   update();
 }
 
-void GraphicsItem::clip(ImRect r, bool triggerUpdate) {
-  // clipping is done on the item's geometries mapped to scene coordinates, so
-  // map this clip rect to scene
+void GraphicsItem::clip(ImRect r) {
   clipRect_ = r;
-
-  for (auto child : children_) {
-    ImRect rc = r;
-    // move the rect to child's coordinate system
-    rc.Translate(-child->pos_);
-    child->clip(rc, false);
-  }
-
-  if (triggerUpdate) {
-    update();
-  }
+  update();
 }
 
 void GraphicsItem::unclip() { clip(UNCLIP_RECT); }
@@ -335,43 +323,44 @@ void GraphicsItem::removeChild(GraphicsItem* child) {
  * children and repeat. So probably a lot of redundant calculations. Would be a
  * problem if the number of item grows to a few thoudsands (and a lot of
  * hierachy levels), but for a couple of rects and lines with 2 geometries each,
- * just do it the readable way, instead of some genious nobody-can-understand
+ * just do it the readable way, instead of some ingenious nobody-can-understand
  * way.
  *
  */
 void GraphicsItem::update() {
   // 1. calculate the combined transformation matrix
-  Transform Tback(1.0f, 1.0f, -origin_.x, -origin_.y);
-  Transform Tforth(1.0f, 1.0f, origin_.x, origin_.y);
-  // 1.1. transform itself
-  Transform Tself = Tforth * T_ * Tback;
+  Transform T;  // I
   GraphicsItem* item = this;
-  while (item->parent_ != nullptr) {
-    // 1.2. shift to its position inside the parent
+  // combine all the transformations from this item up to the root
+  while (item != nullptr) {
+    Transform Tback(1.0f, 1.0f, -item->origin_.x, -item->origin_.y);
+    Transform Tforth(1.0f, 1.0f, item->origin_.x, item->origin_.y);
     Transform Tpos(1.0f, 1.0f, item->pos_.x, item->pos_.y);
-    Tself = Tpos * Tself;
-    ImVec2 parentOrigin = item->parent_->origin_;
-    Transform Tback_(1.0f, 1.0f, -parentOrigin.x, -parentOrigin.y);
-    Transform Tforth_(1.0f, 1.0f, parentOrigin.x, parentOrigin.y);
-    Transform Tparent = Tforth_ * item->parent_->T_ * Tback_;
-    // 1.3. apply the parent transformation
-    Tself = Tparent * Tself;
+    // translate -origin, apply item's T_, move back origin, then move to pos in
+    // parent
+    T = Tpos * Tforth * item->T_ * Tback * T;
     item = item->parent_;
   }
-  // last root item translation
-  Transform Tpos(1.0f, 1.0f, item->pos_.x, item->pos_.y);
-  Tself = Tpos * Tself;
+
   // 2. calculate the geometries
   sceneGeometries_.clear();
   for (auto p : geometries_) {
-    sceneGeometries_.push_back(Tself * p);
+    sceneGeometries_.push_back(T * p);
   }
-  // 3. clip the geometries
-  ImRect sceneClipRect = clipRect_;
-  ImVec2 scenePos = mapToScene(ImVec2(0.0f, 0.0f));
-  sceneClipRect.Translate(scenePos);
-  clipSelf(sceneClipRect);
 
+  // 3. clip the geometries
+  item = this;
+  ImRect R = UNCLIP_RECT;
+  // overlap all the clipping rects from this item up to the root
+  while (item != nullptr) {
+    ImRect itemRect = item->clipRect_;
+    itemRect.Translate(item->mapToScene(ImVec2(0.0f, 0.0f)));
+    R.ClipWithFull(itemRect);
+    item = item->parent_;
+  }
+  clipSelf(R);
+
+  // 4. update the children
   for (auto child : children_) {
     child->update();
   }

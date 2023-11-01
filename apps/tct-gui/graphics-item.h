@@ -72,7 +72,7 @@ struct GraphicsItem {
    *
    * @param r
    */
-  void clip(ImRect r, bool triggerUpdate = true);
+  void clip(ImRect r);
   void unclip();
 
   /**
