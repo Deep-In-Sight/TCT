@@ -10,6 +10,8 @@ void GraphicsScene::addItem(GraphicsItem* item) { rootItem_->addChild(item); }
 
 void GraphicsScene::paint() { rootItem_->paint(); }
 
+GraphicsItem* GraphicsScene::itemAt(ImVec2 p) { return findItem(rootItem_, p); }
+
 GraphicsView::GraphicsView(GraphicsScene* scene) { scene_ = scene; }
 
 GraphicsView::~GraphicsView() {}

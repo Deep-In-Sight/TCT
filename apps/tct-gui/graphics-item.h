@@ -144,6 +144,7 @@ struct GraphicsItem {
    * @param child
    */
   void removeChild(GraphicsItem* child);
+
   /**
    * @brief update the geometries of the item and all the children.
    *
@@ -165,6 +166,17 @@ struct GraphicsItem {
    *
    */
   virtual void clipSelf(ImRect r);
+
+  /**
+   * @brief check if the point is inside the item.
+   *
+   * @param p point location in scene's coordinate system. (should it be
+   * otherwise?)
+   * @return true
+   * @return false
+   */
+  virtual bool hitTest(ImVec2 p);
+
   // virtual void contextMenu() = 0;
   // virtual void focusInEvent() = 0;
   // virtual void focusOutEvent() = 0;
@@ -188,17 +200,9 @@ struct GraphicsItem {
   float lineWidth_;
 };
 
+GraphicsItem* findItem(GraphicsItem* item, ImVec2 point);
+
 typedef std::vector<ImVec2> Polygon;
-
-// struct GraphicsItemLine : public GraphicsItem {
-//   std::pair<ImVec2, ImVec2> points;
-// };
-
-// struct GraphicsItemPolygon : public GraphicsItem {
-//   std::vector<ImVec2> points;
-// };
-
-// struct GraphicsItemRect : public GraphicsItemPolygon {};
 
 // here only for testing
 bool lineClip(float x1, float y1, float x2, float y2, float xmin, float ymin,
@@ -206,3 +210,4 @@ bool lineClip(float x1, float y1, float x2, float y2, float xmin, float ymin,
               float& x2_out, float& y2_out);
 bool lineClip(ImVec2 p1, ImVec2 p2, ImRect r, ImVec2& p1_out, ImVec2& p2_out);
 Polygon polygonClip(Polygon points, ImRect r);
+bool polygonContain(Polygon points, ImVec2 p);

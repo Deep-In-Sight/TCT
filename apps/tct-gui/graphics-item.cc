@@ -4,6 +4,190 @@
 
 #include "utility.h"
 
+#define UNCLIP_RECT ImRect(-1e4, -1e4, 1e4, 1e4)
+
+GraphicsItem::GraphicsItem(std::string name, GraphicsItem* parent) {
+  name_ = name;
+  parent_ = parent;
+
+  if (parent != nullptr) {
+    parent_->addChild(this);
+  }
+
+  T_ = Transform(1.0f, 1.0f, 0.0f, 0.0f);
+  pos_ = ImVec2(0.0f, 0.0f);
+  origin_ = ImVec2(0.0f, 0.0f);
+  clipRect_ = UNCLIP_RECT;
+
+  lineColor_ = IM_COL32(255, 255, 255, 255);
+  fillColor_ = IM_COL32(255, 255, 255, 255);
+  lineWidth_ = 1.0f;
+}
+
+GraphicsItem::~GraphicsItem() {
+  if (parent_) {
+    parent_->removeChild(this);
+  }
+}
+
+void GraphicsItem::transform(Transform T) {
+  T_ = T;
+  update();
+}
+
+void GraphicsItem::transform(Transform T, ImVec2 origin) {
+  auto oldOrigin = origin_;
+  origin_ = origin;
+  transform(T);
+  origin_ = oldOrigin;
+}
+
+void GraphicsItem::translate(float dx, float dy, bool additive) {
+  T_.dx_ = (additive) ? (T_.dx_ + dx) : dx;
+  T_.dy_ = (additive) ? (T_.dy_ + dy) : dy;
+  update();
+}
+
+void GraphicsItem::scale(float sx, float sy, bool multiplicative) {
+  T_.sx_ = (multiplicative) ? (T_.sx_ * sx) : sx;
+  T_.sy_ = (multiplicative) ? (T_.sy_ * sy) : sy;
+  update();
+}
+
+void GraphicsItem::clip(ImRect r) {
+  clipRect_ = r;
+  update();
+}
+
+void GraphicsItem::unclip() { clip(UNCLIP_RECT); }
+
+void GraphicsItem::setPos(ImVec2 pos) {
+  pos_ = pos;
+  update();
+}
+
+void GraphicsItem::setOrigin(ImVec2 p) {
+  origin_ = p;
+  update();
+}
+
+ImVec2 GraphicsItem::mapToParent(ImVec2 p) { return p + pos_; }
+
+ImVec2 GraphicsItem::mapFromParent(ImVec2 p) { return p - pos_; }
+
+ImVec2 GraphicsItem::mapToScene(ImVec2 p) {
+  GraphicsItem* item = this;
+  ImVec2 ret = p;
+  while (item != nullptr) {
+    ret = item->mapToParent(ret);
+    item = item->parent_;
+  }
+  return ret;
+}
+
+ImVec2 GraphicsItem::mapFromScene(ImVec2 p) {
+  auto itemPos = mapToScene(ImVec2(0.0f, 0.0f));
+  return p - itemPos;
+}
+
+ImVec2 GraphicsItem::mapToItem(GraphicsItem* item, ImVec2 p) {
+  return item->mapFromScene(mapToScene(p));
+}
+
+ImVec2 GraphicsItem::mapFromItem(GraphicsItem* item, ImVec2 p) {
+  return mapFromScene(item->mapToScene(p));
+}
+
+void GraphicsItem::addChild(GraphicsItem* child) {
+  children_.push_back(child);
+  child->parent_ = this;
+  child->update();
+}
+
+void GraphicsItem::removeChild(GraphicsItem* child) {
+  auto it = std::find(children_.begin(), children_.end(), child);
+  if (it != children_.end()) {
+    children_.erase(it);
+    child->parent_ = nullptr;
+  }
+}
+
+/**
+ * @brief update the scene geometries of this item and its children.
+ * For each item, calculate the acumulated transformation matrix, from itself up
+ * to all the parents. Then calculate the scene geometries. Then move on to the
+ * children and repeat. So probably a lot of redundant calculations. Would be a
+ * problem if the number of item grows to a few thoudsands (and a lot of
+ * hierachy levels), but for a couple of rects and lines with 2 geometries each,
+ * just do it the readable way, instead of some ingenious nobody-can-understand
+ * way.
+ *
+ */
+void GraphicsItem::update() {
+  // 1. calculate the combined transformation matrix
+  Transform T;  // I
+  GraphicsItem* item = this;
+  // combine all the transformations from this item up to the root
+  while (item != nullptr) {
+    Transform Tback(1.0f, 1.0f, -item->origin_.x, -item->origin_.y);
+    Transform Tforth(1.0f, 1.0f, item->origin_.x, item->origin_.y);
+    Transform Tpos(1.0f, 1.0f, item->pos_.x, item->pos_.y);
+    // translate -origin, apply item's T_, move back origin, then move to pos in
+    // parent
+    T = Tpos * Tforth * item->T_ * Tback * T;
+    item = item->parent_;
+  }
+
+  // 2. calculate the geometries
+  sceneGeometries_.clear();
+  for (auto p : geometries_) {
+    sceneGeometries_.push_back(T * p);
+  }
+
+  // 3. clip the geometries
+  item = this;
+  ImRect R = UNCLIP_RECT;
+  // overlap all the clipping rects from this item up to the root
+  while (item != nullptr) {
+    ImRect itemRect = item->clipRect_;
+    itemRect.Translate(item->mapToScene(ImVec2(0.0f, 0.0f)));
+    R.ClipWithFull(itemRect);
+    item = item->parent_;
+  }
+  clipSelf(R);
+
+  // 4. update the children
+  for (auto child : children_) {
+    child->update();
+  }
+}
+
+void GraphicsItem::paint() {
+  paintSelf();
+  for (auto child : children_) {
+    child->paint();
+  }
+}
+
+void GraphicsItem::paintSelf() {}
+
+void GraphicsItem::clipSelf(ImRect r) {}
+
+bool GraphicsItem::hitTest(ImVec2 p) { return false; }
+
+GraphicsItem* findItem(GraphicsItem* item, ImVec2 point) {
+  GraphicsItem* ret = nullptr;
+  // test young children first
+  for (auto it = item->children_.rbegin(); it != item->children_.rend(); it++) {
+    GraphicsItem* ret = findItem(*it, point);
+    if (ret != nullptr) {
+      return ret;
+    }
+  }
+  // if child not found, test itself
+  return item->hitTest(point) ? item : nullptr;
+};
+
 float intersect_with_yline(float x1, float y1, float x2, float y2, float y) {
   return x1 + (x2 - x1) * (y - y1) / (y2 - y1);
 };
@@ -11,8 +195,6 @@ float intersect_with_yline(float x1, float y1, float x2, float y2, float y) {
 float intersect_with_xline(float x1, float y1, float x2, float y2, float x) {
   return y1 + (y2 - y1) * (x - x1) / (x2 - x1);
 };
-
-#define UNCLIP_RECT ImRect(-1e4, -1e4, 1e4, 1e4)
 
 /**
  * @brief Cohen-Sutherland line clipping algorithm
@@ -211,168 +393,33 @@ Polygon polygonClip(Polygon points, ImRect r) {
   return outputPolygon;
 }
 
-GraphicsItem::GraphicsItem(std::string name, GraphicsItem* parent) {
-  name_ = name;
-
-  if (parent != nullptr) {
-    parent_ = parent;
-    parent_->addChild(this);
-  }
-
-  T_ = Transform(1.0f, 1.0f, 0.0f, 0.0f);
-  pos_ = ImVec2(0.0f, 0.0f);
-  origin_ = ImVec2(0.0f, 0.0f);
-  clipRect_ = UNCLIP_RECT;
-
-  lineColor_ = IM_COL32(255, 255, 255, 255);
-  fillColor_ = IM_COL32(255, 255, 255, 255);
-  lineWidth_ = 1.0f;
-}
-
-GraphicsItem::~GraphicsItem() {
-  for (auto child : children_) {
-    delete child;
-  }
-}
-
-void GraphicsItem::transform(Transform T) {
-  T_ = T;
-  update();
-}
-
-void GraphicsItem::transform(Transform T, ImVec2 origin) {
-  auto oldOrigin = origin_;
-  origin_ = origin;
-  transform(T);
-  origin_ = oldOrigin;
-}
-
-void GraphicsItem::translate(float dx, float dy, bool additive) {
-  T_.dx_ = (additive) ? (T_.dx_ + dx) : dx;
-  T_.dy_ = (additive) ? (T_.dy_ + dy) : dy;
-  update();
-}
-
-void GraphicsItem::scale(float sx, float sy, bool multiplicative) {
-  T_.sx_ = (multiplicative) ? (T_.sx_ * sx) : sx;
-  T_.sy_ = (multiplicative) ? (T_.sy_ * sy) : sy;
-  update();
-}
-
-void GraphicsItem::clip(ImRect r) {
-  clipRect_ = r;
-  update();
-}
-
-void GraphicsItem::unclip() { clip(UNCLIP_RECT); }
-
-void GraphicsItem::setPos(ImVec2 pos) {
-  pos_ = pos;
-  update();
-}
-
-void GraphicsItem::setOrigin(ImVec2 p) {
-  origin_ = p;
-  update();
-}
-
-ImVec2 GraphicsItem::mapToParent(ImVec2 p) { return p + pos_; }
-
-ImVec2 GraphicsItem::mapFromParent(ImVec2 p) { return p - pos_; }
-
-ImVec2 GraphicsItem::mapToScene(ImVec2 p) {
-  GraphicsItem* item = this;
-  ImVec2 ret = p;
-  while (item != nullptr) {
-    ret = item->mapToParent(ret);
-    item = item->parent_;
-  }
-  return ret;
-}
-
-ImVec2 GraphicsItem::mapFromScene(ImVec2 p) {
-  auto itemPos = mapToScene(ImVec2(0.0f, 0.0f));
-  return p - itemPos;
-}
-
-ImVec2 GraphicsItem::mapToItem(GraphicsItem* item, ImVec2 p) {
-  return item->mapFromScene(mapToScene(p));
-}
-
-ImVec2 GraphicsItem::mapFromItem(GraphicsItem* item, ImVec2 p) {
-  return mapFromScene(item->mapToScene(p));
-}
-
-void GraphicsItem::addChild(GraphicsItem* child) {
-  children_.push_back(child);
-  child->parent_ = this;
-}
-
-void GraphicsItem::removeChild(GraphicsItem* child) {
-  auto it = std::find(children_.begin(), children_.end(), child);
-  if (it != children_.end()) {
-    children_.erase(it);
-    child->parent_ = nullptr;
-  }
-}
-
 /**
- * @brief update the scene geometries of this item and its children.
- * For each item, calculate the acumulated transformation matrix, from itself up
- * to all the parents. Then calculate the scene geometries. Then move on to the
- * children and repeat. So probably a lot of redundant calculations. Would be a
- * problem if the number of item grows to a few thoudsands (and a lot of
- * hierachy levels), but for a couple of rects and lines with 2 geometries each,
- * just do it the readable way, instead of some ingenious nobody-can-understand
- * way.
+ * @brief ray casting algorithm, draw a horizontal line goes through p, and
+ * count number of intersections with the polygon, on the right side of p. Point
+ * p is inside the polygon if it lies on one the the line segments, of if number
+ * of intersections is odd.
  *
+ * @param points
+ * @param p
+ * @return true
+ * @return false
  */
-void GraphicsItem::update() {
-  // 1. calculate the combined transformation matrix
-  Transform T;  // I
-  GraphicsItem* item = this;
-  // combine all the transformations from this item up to the root
-  while (item != nullptr) {
-    Transform Tback(1.0f, 1.0f, -item->origin_.x, -item->origin_.y);
-    Transform Tforth(1.0f, 1.0f, item->origin_.x, item->origin_.y);
-    Transform Tpos(1.0f, 1.0f, item->pos_.x, item->pos_.y);
-    // translate -origin, apply item's T_, move back origin, then move to pos in
-    // parent
-    T = Tpos * Tforth * item->T_ * Tback * T;
-    item = item->parent_;
+bool polygonContain(Polygon points, ImVec2 p) {
+  int n = points.size();
+  int i, j;
+  int count = 0;
+  for (i = 0, j = n - 1; i < n; j = i++) {
+    float x1 = points[i].x;
+    float y1 = points[i].y;
+    float x2 = points[j].x;
+    float y2 = points[j].y;
+    float xc = intersect_with_yline(x1, y1, x2, y2, p.y);
+    float yc = p.y;
+    if (xc == p.x) {
+      return true;
+    }
+    // intersection is on the right of p
+    if (((y1 > yc) != (y2 > yc)) && (xc > p.x)) count++;
   }
-
-  // 2. calculate the geometries
-  sceneGeometries_.clear();
-  for (auto p : geometries_) {
-    sceneGeometries_.push_back(T * p);
-  }
-
-  // 3. clip the geometries
-  item = this;
-  ImRect R = UNCLIP_RECT;
-  // overlap all the clipping rects from this item up to the root
-  while (item != nullptr) {
-    ImRect itemRect = item->clipRect_;
-    itemRect.Translate(item->mapToScene(ImVec2(0.0f, 0.0f)));
-    R.ClipWithFull(itemRect);
-    item = item->parent_;
-  }
-  clipSelf(R);
-
-  // 4. update the children
-  for (auto child : children_) {
-    child->update();
-  }
+  return count % 2 == 1;
 }
-
-void GraphicsItem::paint() {
-  paintSelf();
-  for (auto child : children_) {
-    child->paint();
-  }
-}
-
-void GraphicsItem::paintSelf() {}
-
-void GraphicsItem::clipSelf(ImRect r) {}

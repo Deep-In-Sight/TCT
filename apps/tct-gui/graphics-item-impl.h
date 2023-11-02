@@ -6,6 +6,10 @@ struct GraphicLineItem : public GraphicsItem {
                   GraphicsItem* parent = nullptr);
   void paintSelf() override;
   void clipSelf(ImRect r) override;
+  bool hitTest(ImVec2 p) override;
+  // make a rectangle and 2 semicircles at both ends wrapping around the line
+  // for easy hit test
+  int hitTestMargin_ = 1;
 };
 
 struct GraphicRectItem : public GraphicsItem {
@@ -13,6 +17,7 @@ struct GraphicRectItem : public GraphicsItem {
                   GraphicsItem* parent = nullptr);
   void paintSelf() override;
   void clipSelf(ImRect r) override;
+  bool hitTest(ImVec2 p) override;
 };
 
 struct GraphicPolygonItem : public GraphicsItem {
@@ -20,4 +25,5 @@ struct GraphicPolygonItem : public GraphicsItem {
                      GraphicsItem* parent = nullptr);
   void paintSelf() override;
   void clipSelf(ImRect r) override;
+  bool hitTest(ImVec2 p) override;
 };

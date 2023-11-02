@@ -1,3 +1,4 @@
+#include <graphics-item-impl.h>
 #include <graphics-item.h>
 #include <gtest/gtest.h>
 
@@ -121,4 +122,82 @@ TEST(GraphicsItem, TestPolygonClip) {
     EXPECT_FLOAT_EQ(expectPoints[i].x, clippedPolygon[i].x);
     EXPECT_FLOAT_EQ(expectPoints[i].y, clippedPolygon[i].y);
   }
+}
+
+TEST(GraphicsItem, TestPolygonContain) {
+  Polygon subjectPolygon;
+  subjectPolygon.push_back(ImVec2(-10, -10));
+  subjectPolygon.push_back(ImVec2(10, -10));
+  subjectPolygon.push_back(ImVec2(10, 10));
+  subjectPolygon.push_back(ImVec2(30, 10));
+  subjectPolygon.push_back(ImVec2(30, -10));
+  subjectPolygon.push_back(ImVec2(60, -10));
+  subjectPolygon.push_back(ImVec2(60, 10));
+  subjectPolygon.push_back(ImVec2(40, 10));
+  subjectPolygon.push_back(ImVec2(40, 20));
+  subjectPolygon.push_back(ImVec2(60, 20));
+  subjectPolygon.push_back(ImVec2(60, 50));
+  subjectPolygon.push_back(ImVec2(40, 50));
+  subjectPolygon.push_back(ImVec2(40, 30));
+  subjectPolygon.push_back(ImVec2(10, 30));
+  subjectPolygon.push_back(ImVec2(10, 50));
+  subjectPolygon.push_back(ImVec2(-10, 50));
+
+  ImVec2 p1(0, 0);
+  EXPECT_TRUE(polygonContain(subjectPolygon, p1));
+  ImVec2 p2(10, 0);
+  EXPECT_TRUE(polygonContain(subjectPolygon, p2));
+  ImVec2 p3(20, 0);
+  EXPECT_FALSE(polygonContain(subjectPolygon, p3));
+  ImVec2 p4(50, 0);
+  EXPECT_TRUE(polygonContain(subjectPolygon, p4));
+  ImVec2 p5(-50, 20);
+  EXPECT_FALSE(polygonContain(subjectPolygon, p5));
+  ImVec2 p6(100, 20);
+  EXPECT_FALSE(polygonContain(subjectPolygon, p6));
+}
+
+TEST(GraphicsItem, TestHitTest) {
+  GraphicRectItem rect1(ImVec2(0.0f, 0.0f), ImVec2(400.0f, 400.0f), "rect1",
+                        nullptr);
+  GraphicRectItem rect2(ImVec2(0.0f, 0.0f), ImVec2(200.0f, 200.0f), "rect2",
+                        &rect1);
+  GraphicRectItem rect3(ImVec2(0.0f, 0.0f), ImVec2(100.0f, 100.0f), "rect3",
+                        &rect2);
+  GraphicRectItem rect4(ImVec2(0.0f, 0.0f), ImVec2(50.0f, 50.0f), "rect4",
+                        &rect3);
+  rect1.update();  // to calculate the scene geometries
+
+  GraphicsItem* item1 = findItem(&rect1, ImVec2(300.0f, 300.0f));
+  GraphicsItem* item2 = findItem(&rect1, ImVec2(150.0f, 150.0f));
+  GraphicsItem* item3 = findItem(&rect1, ImVec2(75.0f, 75.0f));
+  GraphicsItem* item4 = findItem(&rect1, ImVec2(37.5f, 37.5f));
+
+  EXPECT_EQ(item1, &rect1);
+  EXPECT_EQ(item2, &rect2);
+  EXPECT_EQ(item3, &rect3);
+  EXPECT_EQ(item4, &rect4);
+
+  GraphicsItem* item5 = findItem(&rect2, ImVec2(300.0f, 300.0f));
+  GraphicsItem* item6 = findItem(&rect2, ImVec2(150.0f, 150.0f));
+  EXPECT_EQ(item5, nullptr);
+  EXPECT_EQ(item6, &rect2);
+
+  GraphicLineItem hline(ImVec2(0, 300), ImVec2(400, 300), "hline", &rect1);
+  GraphicLineItem vline(ImVec2(300, 0), ImVec2(300, 400), "vline", &rect1);
+  rect1.update();  // to calculate the scene geometries
+
+  GraphicsItem* item7 = findItem(&rect1, ImVec2(300.0f, 300.0f));
+  GraphicsItem* item8 = findItem(&rect1, ImVec2(300.0f, 150.0f));
+  GraphicsItem* item9 = findItem(&rect1, ImVec2(150.0f, 300.0f));
+  GraphicsItem* item10 = findItem(&rect1, ImVec2(301.0f, 150.0f));
+  GraphicsItem* item11 = findItem(&rect1, ImVec2(150.0f, 301.0f));
+  GraphicsItem* item12 = findItem(&rect1, ImVec2(302.0f, 150.0f));
+
+  EXPECT_EQ(item7, &vline);
+  EXPECT_EQ(item8, &vline);
+  EXPECT_EQ(item9, &hline);
+  EXPECT_EQ(item10, &vline);
+  EXPECT_EQ(item11, &hline);
+  EXPECT_EQ(item12, &rect1);
 }

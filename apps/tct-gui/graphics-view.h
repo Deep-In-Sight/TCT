@@ -8,6 +8,7 @@ struct GraphicsScene {
 
   void addItem(GraphicsItem* item);
   void paint();
+  GraphicsItem* itemAt(ImVec2 p);
 
   GraphicsItem* rootItem_;
 };

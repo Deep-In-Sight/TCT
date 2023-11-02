@@ -1,18 +1,16 @@
 set(IMGUI_DIR ${CMAKE_SOURCE_DIR}/3rdparty/imgui)
 set(IMGUI_SRCS
-    ${IMGUI_DIR}/imgui.cpp
-    ${IMGUI_DIR}/imgui_demo.cpp
-    ${IMGUI_DIR}/imgui_draw.cpp
-    ${IMGUI_DIR}/imgui_tables.cpp
-    ${IMGUI_DIR}/imgui_widgets.cpp
-    ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp
-    ${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp)
+    ${IMGUI_DIR}/imgui.cpp ${IMGUI_DIR}/imgui_demo.cpp
+    ${IMGUI_DIR}/imgui_draw.cpp ${IMGUI_DIR}/imgui_tables.cpp
+    ${IMGUI_DIR}/imgui_widgets.cpp)
 set(IMGUI_INCLUDE_DIRS ${IMGUI_DIR} ${IMGUI_DIR}/backends)
 
 set(TCT_DIR ${CMAKE_SOURCE_DIR}/apps/tct-gui)
-set(TCT_SRCS ${TCT_DIR}/graphics-item.cc ${TCT_DIR}/transform.cc)
+set(TCT_SRCS ${TCT_DIR}/graphics-item.cc ${TCT_DIR}/transform.cc
+             ${TCT_DIR}/graphics-item-impl.cc)
 
-set(TCT_TEST_SRCS gtest-main.cc graphics-item.cc transform.cc ${TCT_SRCS})
+set(TCT_TEST_SRCS gtest-main.cc graphics-item.cc transform.cc ${TCT_SRCS}
+                  ${IMGUI_SRCS})
 
 set(TCT_TEST_INCLUDES ${PROJECT_BINARY_DIR} ${PROJECT_SOURCE_DIR}/apps/tct-gui
                       ${OPENCV_INCLUDE_DIRS} ${IMGUI_INCLUDE_DIRS})
