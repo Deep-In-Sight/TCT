@@ -170,15 +170,15 @@ bool GraphicImageItem::hitTest(ImVec2 p) {
 void GraphicImageItem::setFitMode(FitMode mode) {}
 
 GraphicTextItem::GraphicTextItem(std::string name, GraphicsItem* parent)
-    : GraphicsItem(name, parent) {
-  geometries_.push_back(ImVec2(0, 0));
-}
+    : GraphicTextItem("", ImVec2(0, 0), name, parent) {}
 
-GraphicTextItem::GraphicTextItem(std::string text, std::string name,
+GraphicTextItem::GraphicTextItem(std::string text, ImVec2 pos, std::string name,
                                  GraphicsItem* parent)
-    : GraphicTextItem(name, parent) {
+    : GraphicsItem(name, parent) {
+  geometries_.push_back(pos);
   setText(text);
   setCorner(0);
+  setBackgroud(false);
 }
 
 void GraphicTextItem::setText(std::string text) { text_ = text; }
@@ -226,3 +226,82 @@ void GraphicTextItem::clipSelf(ImRect r) {
 }
 
 bool GraphicTextItem::hitTest(ImVec2 p) { return lastRect_.Contains(p); }
+
+Ruler::Ruler(bool horizontal, int min, int max, int major, int minor,
+             float size, std::string name, GraphicsItem* parent)
+    : GraphicsItem(name, parent), orientation_(horizontal) {
+  // create ruler items
+  ImRect bg =
+      (horizontal) ? ImRect(min, 0, max, size) : ImRect(0, min, size, max);
+  ImRect line = (horizontal) ? ImRect(min, 0, max, 0) : ImRect(0, min, 0, max);
+  GraphicRectItem* bgItem = new GraphicRectItem(bg.Min, bg.Max, "", this);
+  GraphicLineItem* lineItem = new GraphicLineItem(line.Min, line.Max, "", this);
+  addChild(bgItem);
+  addChild(lineItem);
+
+  GraphicsItem* tickGroup = new GraphicsItem("", this);
+  GraphicsItem* textGroup = new GraphicsItem("", this);
+  addChild(tickGroup);
+  addChild(textGroup);
+
+  for (int i = min; i <= max; i++) {
+    if (i % major == 0) {
+      ImRect tick = (horizontal) ? ImRect(i, 0, i, -majorSize_)
+                                 : ImRect(0, i, -majorSize_, i);
+      ImVec2 textPos = (horizontal) ? ImVec2(i, 0) : ImVec2(0, i);
+      GraphicLineItem* tickItem =
+          new GraphicLineItem(tick.Min, tick.Max, "", this);
+      GraphicTextItem* textItem =
+          new GraphicTextItem(std::to_string(i), textPos, "", this);
+      tickGroup->addChild(tickItem);
+      textGroup->addChild(textItem);
+    } else if (i % minor == 0) {
+      ImRect tick = (horizontal) ? ImRect(i, 0, i, -minorSize_)
+                                 : ImRect(0, i, -minorSize_, i);
+      GraphicLineItem* tickItem =
+          new GraphicLineItem(tick.Min, tick.Max, "", this);
+      tickGroup->addChild(tickItem);
+    }
+  }
+
+  ImRect highlightTick = (horizontal) ? ImRect(0, 0, 0, -majorSize_)
+                                      : ImRect(0, 0, -majorSize_, 0);
+  highlightItem_ =
+      new GraphicLineItem(highlightTick.Min, highlightTick.Max, "", this);
+  tickGroup->addChild(highlightItem_);
+
+  // coloring
+  for (auto item : tickGroup->children_) {
+    item->lineColor_ = lineColor_;
+  }
+  for (auto item : textGroup->children_) {
+    item->lineColor_ = lineColor_;
+  }
+  bgItem->fillColor_ = backgroundColor_;
+  lineItem->lineColor_ = lineColor_;
+  highlightItem_->lineColor_ = highlightColor_;
+
+  // positioning
+  ImVec2 linePos =
+      (horizontal) ? ImVec2(0, size - padding) : ImVec2(size - padding, 0);
+  lineItem->setPos(linePos);
+  tickGroup->setPos(linePos);
+
+  findable_ = false;
+}
+
+void Ruler::highlight(int value) {
+  ImVec2 pos = (orientation_) ? ImVec2(value, 0) : ImVec2(0, value);
+  highlightItem_->setPos(pos);
+}
+
+Ruler::~Ruler() {
+  delete children_[0];  // bg
+  delete children_[1];  // line
+  for (auto item : children_[2]->children_) {
+    delete item;  // tick
+  }
+  for (auto item : children_[3]->children_) {
+    delete item;  // text
+  }
+}

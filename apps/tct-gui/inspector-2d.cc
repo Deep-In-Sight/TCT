@@ -1,5 +1,7 @@
 #include "inspector-2d.h"
 
+#include "graphics-item-impl.h"
+#include "graphics-item.h"
 #include "utility.h"
 
 Inspector2D::Inspector2D() {

@@ -1,5 +1,6 @@
 #include "graphics-view.h"
 
+#include "graphics-item-impl.h"
 #include "utility.h"
 
 GraphicsScene::GraphicsScene() { rootItem_ = new GraphicsItem(); }
@@ -31,6 +32,10 @@ void GraphicsView::moveViewTo(ImVec2 p) {
 }
 
 void nodeEdit(GraphicsItem* item, int level = 0) {
+  if (item->name_.empty() && item->children_.empty()) {
+    return;
+  }
+
   char name[50];
   for (int i = 0; i < level; i++) {
     name[i] = '\t';
@@ -72,6 +77,13 @@ void nodeEdit(GraphicsItem* item, int level = 0) {
   }
   if (ImGui::ColorEdit4("lineColor", &lineColor.x)) {
     item->lineColor_ = ImColor(lineColor);
+  }
+  Ruler* ruler = dynamic_cast<Ruler*>(item);
+  if (ruler != nullptr) {
+    static int highlight = 0;
+    if (ImGui::DragInt("highlight", &highlight, 1, -10000, 10000)) {
+      ruler->highlight(highlight);
+    }
   }
 
   if (ImGui::Button("Reset")) {

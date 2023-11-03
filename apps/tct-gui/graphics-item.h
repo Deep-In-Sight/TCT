@@ -198,6 +198,8 @@ struct GraphicsItem {
   ImColor lineColor_;
   ImColor fillColor_;
   float lineWidth_;
+
+  bool findable_;
 };
 
 GraphicsItem* findItem(GraphicsItem* item, ImVec2 point);

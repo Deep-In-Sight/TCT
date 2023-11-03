@@ -22,6 +22,8 @@ GraphicsItem::GraphicsItem(std::string name, GraphicsItem* parent) {
   lineColor_ = IM_COL32(255, 255, 255, 255);
   fillColor_ = IM_COL32(255, 255, 255, 255);
   lineWidth_ = 1.0f;
+
+  findable_ = true;
 }
 
 GraphicsItem::~GraphicsItem() {
@@ -173,9 +175,17 @@ void GraphicsItem::paintSelf() {}
 
 void GraphicsItem::clipSelf(ImRect r) {}
 
-bool GraphicsItem::hitTest(ImVec2 p) { return false; }
+bool GraphicsItem::hitTest(ImVec2 p) {
+  // empty item cannot be hit
+  return false;
+}
 
 GraphicsItem* findItem(GraphicsItem* item, ImVec2 point) {
+  // disable hit test for itself and all its children
+  if (item->findable_ == false) {
+    return nullptr;
+  }
+
   GraphicsItem* ret = nullptr;
   // test young children first
   for (auto it = item->children_.rbegin(); it != item->children_.rend(); it++) {

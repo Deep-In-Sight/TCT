@@ -47,7 +47,7 @@ struct GraphicImageItem : public GraphicsItem {
 };
 
 struct GraphicTextItem : public GraphicsItem {
-  GraphicTextItem(std::string text, std::string name = "",
+  GraphicTextItem(std::string text, ImVec2 pos, std::string name = "",
                   GraphicsItem* parent = nullptr);
   GraphicTextItem(std::string name = "", GraphicsItem* parent = nullptr);
   void setText(std::string text);
@@ -60,4 +60,32 @@ struct GraphicTextItem : public GraphicsItem {
   std::string text_;
   int corner_;
   ImRect lastRect_;
+};
+
+struct Ruler : public GraphicsItem {
+  /**
+   * @brief Construct a new Ruler graphic item
+   *
+   * @param horizontal horizontal or vertical
+   * @param min
+   * @param max
+   * @param major
+   * @param minor
+   * @param size height of horizontal ruler or width of vertical ruler
+   * @param name
+   * @param parent
+   */
+  Ruler(bool horizontal, int min = -1000, int max = 1000, int major = 100,
+        int minor = 10, float size = 40, std::string name = "",
+        GraphicsItem* parent = nullptr);
+  ~Ruler();
+  bool orientation_;
+  void highlight(int value);
+  GraphicLineItem* highlightItem_;
+  ImColor backgroundColor_ = ImColor(255, 255, 255, 125);
+  ImColor highlightColor_ = ImColor(255, 0, 0, 255);
+  ImColor lineColor_ = ImColor(0, 0, 0, 255);
+  float majorSize_ = 5.0f;
+  float minorSize_ = 2.0f;
+  float padding = 2.0f;
 };

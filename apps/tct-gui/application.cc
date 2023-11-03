@@ -90,8 +90,11 @@ void Application::Run() {
   GraphicsScene scene;
   cv::Mat img = cv::imread("./data/images/MyImage01.jpg");
   GraphicImageItem image1(img, "image1");
-  GraphicTextItem text1("Some Text", "text1", &image1);
+  Ruler ruler1(true, -10000, 10000, 100, 10, 40, "ruler1");
+  Ruler ruler2(false, -10000, 10000, 100, 10, 40, "ruler2");
+  GraphicTextItem text1("Some Text", ImVec2(0, 0), "text1", &image1);
   text1.setBackgroud(true);
+
   GraphicRectItem rect1(ImVec2(0.0f, 0.0f), ImVec2(40.0f, 40.0f), "rect1",
                         &image1);
   GraphicLineItem vline1(ImVec2(0, 0), ImVec2(0, 40), "vline1");
@@ -109,6 +112,10 @@ void Application::Run() {
   hline3.lineColor_ = IMCOL32_RED;
 
   scene.addItem(&image1);
+  scene.addItem(&ruler1);
+  scene.addItem(&ruler2);
+  ruler1.setPos(ImVec2(0, -45));
+  ruler2.setPos(ImVec2(-45, 0));
   rect1.setPos(ImVec2(100, 100));
   rect1.addChild(&vline1);
   rect1.addChild(&vline2);
