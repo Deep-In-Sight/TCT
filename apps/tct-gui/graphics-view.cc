@@ -12,7 +12,10 @@ void GraphicsScene::paint() { rootItem_->paint(); }
 
 GraphicsItem* GraphicsScene::itemAt(ImVec2 p) { return findItem(rootItem_, p); }
 
-GraphicsView::GraphicsView(GraphicsScene* scene) { scene_ = scene; }
+GraphicsView::GraphicsView(GraphicsScene* scene, bool enableDebug) {
+  scene_ = scene;
+  debug_ = enableDebug;
+}
 
 GraphicsView::~GraphicsView() {}
 
@@ -38,13 +41,15 @@ void nodeEdit(GraphicsItem* item, int level = 0) {
     sprintf(name + level, "%s", item->name_.c_str());
   }
   ImGui::SeparatorText(name);
-  ImGui::BeginChild(name, ImVec2(0, 180));
+  ImGui::BeginChild(name, ImVec2(0, 250));
   ImVec2 pos = item->pos_;
   ImVec2 origin = item->origin_;
   ImVec2 scale = ImVec2(item->T_.sx_, item->T_.sy_);
   ImVec2 translate = ImVec2(item->T_.dx_, item->T_.dy_);
   ImVec2 clipRectMin = item->clipRect_.Min;
   ImVec2 clipRectMax = item->clipRect_.Max;
+  ImVec4 fillColor = item->fillColor_;
+  ImVec4 lineColor = item->lineColor_;
 
   if (ImGui::DragFloat2("pos", &pos.x)) {
     item->setPos(pos);
@@ -62,6 +67,12 @@ void nodeEdit(GraphicsItem* item, int level = 0) {
       ImGui::DragFloat2("clipRectMax", &clipRectMax.x)) {
     item->clip(ImRect(clipRectMin, clipRectMax));
   }
+  if (ImGui::ColorEdit4("fillColor", &fillColor.x)) {
+    item->fillColor_ = ImColor(fillColor);
+  }
+  if (ImGui::ColorEdit4("lineColor", &lineColor.x)) {
+    item->lineColor_ = ImColor(lineColor);
+  }
 
   if (ImGui::Button("Reset")) {
     item->setPos(ImVec2(0.0f, 0.0f));
@@ -78,27 +89,27 @@ void nodeEdit(GraphicsItem* item, int level = 0) {
 };
 
 void GraphicsView::ImGuiDraw() {
-  ImGui::Begin("GraphicsView");
-  static ImVec2 lastPos, lastSize;
-  static bool changeLook = false;
-  if (lastPos != ImGui::GetWindowPos() || lastSize != ImGui::GetWindowSize() ||
-      changeLook) {
-    lastPos = ImGui::GetWindowPos();
-    lastSize = ImGui::GetWindowSize();
-    changeLook = false;
-    ImGuiLayout();
+  static ImVec2 lastPos, lastSize, lastLook;
+  bool relayout = true;
+  if (ImGui::Begin("GraphicsView")) {
+    if (lastPos != ImGui::GetWindowPos() ||
+        lastSize != ImGui::GetWindowSize() || lastLook != lookAt_) {
+      lastPos = ImGui::GetWindowPos();
+      lastSize = ImGui::GetWindowSize();
+      lastLook = lookAt_;
+      ImGuiLayout();
+    }
+    scene_->paint();
   }
-
-  scene_->paint();
   ImGui::End();
 
-  ImGui::Begin("GraphicsViewEditor");
-  if (ImGui::DragFloat2("lookAt", &lookAt_.x)) {
-    changeLook = true;
+  if (debug_) {
+    if (ImGui::Begin("GraphicsViewEditor")) {
+      ImGui::DragFloat2("lookAt", &lookAt_.x);
+      nodeEdit(scene_->rootItem_);
+    }
+    ImGui::End();
   }
-  nodeEdit(scene_->rootItem_);
-  scene_->rootItem_->update();
-  ImGui::End();
 }
 
 void GraphicsView::ImGuiLayout() {

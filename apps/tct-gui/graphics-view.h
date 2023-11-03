@@ -14,7 +14,7 @@ struct GraphicsScene {
 };
 
 struct GraphicsView : public ImGuiWidget {
-  GraphicsView(GraphicsScene* scene);
+  GraphicsView(GraphicsScene* scene, bool enableDebug = false);
   ~GraphicsView();
 
   void lookAt(ImVec2 p);
@@ -25,4 +25,5 @@ struct GraphicsView : public ImGuiWidget {
 
   GraphicsScene* scene_;
   ImVec2 lookAt_;
+  bool debug_;
 };

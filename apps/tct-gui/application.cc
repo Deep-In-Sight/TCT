@@ -88,13 +88,18 @@ void Application::Create() {
 void Application::Run() {
   bool shouldClose = false;
   GraphicsScene scene;
-  GraphicRectItem rect1(ImVec2(0.0f, 0.0f), ImVec2(400.0f, 400.0f), "rect1");
-  GraphicLineItem vline1(ImVec2(0, 0), ImVec2(0, 400), "vline1");
-  GraphicLineItem vline2(ImVec2(0, 0), ImVec2(0, 200), "vline2");
-  GraphicLineItem vline3(ImVec2(0, 0), ImVec2(0, 100), "vline3");
-  GraphicLineItem hline1(ImVec2(0, 0), ImVec2(400, 0), "hline1");
-  GraphicLineItem hline2(ImVec2(0, 0), ImVec2(200, 0), "hline2");
-  GraphicLineItem hline3(ImVec2(0, 0), ImVec2(100, 0), "hline3");
+  cv::Mat img = cv::imread("./data/images/MyImage01.jpg");
+  GraphicImageItem image1(img, "image1");
+  GraphicTextItem text1("Some Text", "text1", &image1);
+  text1.setBackgroud(true);
+  GraphicRectItem rect1(ImVec2(0.0f, 0.0f), ImVec2(40.0f, 40.0f), "rect1",
+                        &image1);
+  GraphicLineItem vline1(ImVec2(0, 0), ImVec2(0, 40), "vline1");
+  GraphicLineItem vline2(ImVec2(0, 0), ImVec2(0, 20), "vline2");
+  GraphicLineItem vline3(ImVec2(0, 0), ImVec2(0, 10), "vline3");
+  GraphicLineItem hline1(ImVec2(0, 0), ImVec2(40, 0), "hline1");
+  GraphicLineItem hline2(ImVec2(0, 0), ImVec2(20, 0), "hline2");
+  GraphicLineItem hline3(ImVec2(0, 0), ImVec2(10, 0), "hline3");
   rect1.fillColor_ = IMCOL32_GREEN;
   vline1.lineColor_ = IMCOL32_RED;
   vline2.lineColor_ = IMCOL32_RED;
@@ -103,23 +108,24 @@ void Application::Run() {
   hline2.lineColor_ = IMCOL32_RED;
   hline3.lineColor_ = IMCOL32_RED;
 
-  scene.addItem(&rect1);
+  scene.addItem(&image1);
+  rect1.setPos(ImVec2(100, 100));
   rect1.addChild(&vline1);
   rect1.addChild(&vline2);
   rect1.addChild(&vline3);
   rect1.addChild(&hline1);
   rect1.addChild(&hline2);
   rect1.addChild(&hline3);
-  vline1.setPos(ImVec2(200, 0));
-  vline2.setPos(ImVec2(300, 200));
-  vline3.setPos(ImVec2(350, 300));
-  hline1.setPos(ImVec2(0, 200));
-  hline2.setPos(ImVec2(200, 300));
-  hline3.setPos(ImVec2(300, 350));
+  vline1.setPos(ImVec2(20, 0));
+  vline2.setPos(ImVec2(30, 20));
+  vline3.setPos(ImVec2(35, 30));
+  hline1.setPos(ImVec2(0, 20));
+  hline2.setPos(ImVec2(20, 30));
+  hline3.setPos(ImVec2(30, 35));
 
   // scene.rootItem_->clip(ImRect(-50, -50, 200, 200));
 
-  auto view = std::make_shared<GraphicsView>(&scene);
+  auto view = std::make_shared<GraphicsView>(&scene, true);
   children.push_back(std::dynamic_pointer_cast<ImGuiWidget>(view));
   view->lookAt(ImVec2(0.0f, 0.0f));
 

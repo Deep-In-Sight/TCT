@@ -112,3 +112,117 @@ bool GraphicPolygonItem::hitTest(ImVec2 p) {
   }
   return polygonContain(sceneGeometries_, p);
 }
+
+GraphicImageItem::GraphicImageItem(std::string name, GraphicsItem* parent)
+    : GraphicsItem(name, parent) {
+  imageSize_ = ImVec2(0, 0);
+  geometries_.push_back(ImVec2(0, 0));
+  geometries_.push_back(ImVec2(0, 0));
+  uv0 = ImVec2(0.0f, 0.0f);
+  uv1 = ImVec2(1.0f, 1.0f);
+}
+
+GraphicImageItem::GraphicImageItem(cv::Mat& image, std::string name,
+                                   GraphicsItem* parent)
+    : GraphicImageItem(name, parent) {
+  setImage(image);
+}
+
+void GraphicImageItem::setImage(cv::Mat& image) {
+  UploadCvMatToGpuTexture(image, (GLuint*)&imageTextureId_, &imageSize_);
+  if (imageSize_ != geometries_[1]) {
+    geometries_[1] = imageSize_;
+    update();
+  }
+}
+
+void GraphicImageItem::paintSelf() {
+  if (imageTextureId_ == 0) {
+    return;
+  }
+  ImVec2 pmin = sceneGeometries_[0];
+  ImVec2 pmax = sceneGeometries_[1];
+  ImGui::GetWindowDrawList()->AddImage(imageTextureId_, pmin, pmax, uv0, uv1);
+}
+
+void GraphicImageItem::clipSelf(ImRect r) {
+  bool ret;
+  ImVec2 pmin = sceneGeometries_[0];
+  ImVec2 pmax = sceneGeometries_[1];
+  ImVec2 size = pmax - pmin;
+  ImRect rect = ImRect(pmin, pmax);
+  rect.ClipWithFull(r);
+  uv0 = (rect.Min - pmin) / size;
+  uv1 = (rect.Max - pmin) / size;
+  sceneGeometries_[0] = rect.Min;
+  sceneGeometries_[1] = rect.Max;
+}
+
+bool GraphicImageItem::hitTest(ImVec2 p) {
+  if (sceneGeometries_.size() < 2) {
+    return false;
+  }
+  ImVec2 pmin = sceneGeometries_[0];
+  ImVec2 pmax = sceneGeometries_[1];
+  return ImRect(pmin, pmax).Contains(p);
+}
+
+void GraphicImageItem::setFitMode(FitMode mode) {}
+
+GraphicTextItem::GraphicTextItem(std::string name, GraphicsItem* parent)
+    : GraphicsItem(name, parent) {
+  geometries_.push_back(ImVec2(0, 0));
+}
+
+GraphicTextItem::GraphicTextItem(std::string text, std::string name,
+                                 GraphicsItem* parent)
+    : GraphicTextItem(name, parent) {
+  setText(text);
+  setCorner(0);
+}
+
+void GraphicTextItem::setText(std::string text) { text_ = text; }
+
+/**
+ * @brief put the anchor of text box at corner number 0/1/2/3, 0 starts from
+ * topleft and go clockwise..
+ *
+ * @param corner
+ */
+void GraphicTextItem::setCorner(int corner) { corner_ = corner % 4; }
+
+void GraphicTextItem::setBackgroud(bool enable) { background_ = enable; }
+
+void GraphicTextItem::paintSelf() {
+  ImVec2 p = sceneGeometries_[0];
+  ImVec2 size = ImGui::CalcTextSize(text_.c_str());
+  ImVec2 displayPos;
+  switch (corner_) {
+    case 0:
+      displayPos = p;
+      break;
+    case 1:
+      displayPos = p + ImVec2(-size.x, 0);
+      break;
+    case 2:
+      displayPos = p + ImVec2(-size.x, -size.y);
+      break;
+    case 3:
+      displayPos = p + ImVec2(0, -size.y);
+      break;
+    default:
+      break;
+  }
+  lastRect_ = ImRect(displayPos, displayPos + size);
+  if (background_) {
+    ImGui::GetWindowDrawList()->AddRectFilled(displayPos, displayPos + size,
+                                              fillColor_, 0, 0);
+  }
+  ImGui::GetWindowDrawList()->AddText(displayPos, lineColor_, text_.c_str());
+}
+
+void GraphicTextItem::clipSelf(ImRect r) {
+  // do nothing until we came up with a way to clip text
+}
+
+bool GraphicTextItem::hitTest(ImVec2 p) { return lastRect_.Contains(p); }
