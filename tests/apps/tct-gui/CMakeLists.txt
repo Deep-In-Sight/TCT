@@ -7,7 +7,7 @@ set(IMGUI_INCLUDE_DIRS ${IMGUI_DIR} ${IMGUI_DIR}/backends)
 
 set(TCT_DIR ${CMAKE_SOURCE_DIR}/apps/tct-gui)
 set(TCT_SRCS ${TCT_DIR}/graphics-item.cc ${TCT_DIR}/transform.cc
-             ${TCT_DIR}/graphics-item-impl.cc)
+             ${TCT_DIR}/graphics-item-impl.cc ${TCT_DIR}/utility.cc)
 
 set(TCT_TEST_SRCS gtest-main.cc graphics-item.cc transform.cc ${TCT_SRCS}
                   ${IMGUI_SRCS})
@@ -15,7 +15,8 @@ set(TCT_TEST_SRCS gtest-main.cc graphics-item.cc transform.cc ${TCT_SRCS}
 set(TCT_TEST_INCLUDES ${PROJECT_BINARY_DIR} ${PROJECT_SOURCE_DIR}/apps/tct-gui
                       ${OPENCV_INCLUDE_DIRS} ${IMGUI_INCLUDE_DIRS})
 
-set(TCT_TEST_LINK_LIBS GTest::gtest_main GTest::gmock_main ${OpenCV_LIBS})
+set(TCT_TEST_LINK_LIBS GTest::gtest_main GTest::gmock_main ${OpenCV_LIBS} glfw
+                       GL)
 
 if(DEFINED TCT_SRCS)
   message(STATUS "TCT_SRCS: ${TCT_SRCS}")

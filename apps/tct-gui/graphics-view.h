@@ -6,11 +6,11 @@ struct GraphicsScene {
   GraphicsScene();
   ~GraphicsScene();
 
-  void addItem(GraphicsItem* item);
+  void addItem(GraphicsItemPtr item);
   void paint();
-  GraphicsItem* itemAt(ImVec2 p);
+  GraphicsItemPtr itemAt(ImVec2 p);
 
-  GraphicsItem* rootItem_;
+  GraphicsItemPtr rootItem_;
 };
 
 struct GraphicsView : public ImGuiWidget {

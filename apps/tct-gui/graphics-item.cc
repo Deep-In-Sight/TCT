@@ -6,13 +6,9 @@
 
 #define UNCLIP_RECT ImRect(-1e4, -1e4, 1e4, 1e4)
 
-GraphicsItem::GraphicsItem(std::string name, GraphicsItem* parent) {
+GraphicsItem::GraphicsItem(std::string name) {
   name_ = name;
-  parent_ = parent;
-
-  if (parent != nullptr) {
-    parent_->addChild(this);
-  }
+  parent_ = nullptr;
 
   T_ = Transform(1.0f, 1.0f, 0.0f, 0.0f);
   pos_ = ImVec2(0.0f, 0.0f);
@@ -26,11 +22,7 @@ GraphicsItem::GraphicsItem(std::string name, GraphicsItem* parent) {
   findable_ = true;
 }
 
-GraphicsItem::~GraphicsItem() {
-  if (parent_) {
-    parent_->removeChild(this);
-  }
-}
+GraphicsItem::~GraphicsItem() {}
 
 void GraphicsItem::transform(Transform T) {
   T_ = T;
@@ -100,13 +92,13 @@ ImVec2 GraphicsItem::mapFromItem(GraphicsItem* item, ImVec2 p) {
   return mapFromScene(item->mapToScene(p));
 }
 
-void GraphicsItem::addChild(GraphicsItem* child) {
+void GraphicsItem::addChild(std::shared_ptr<GraphicsItem> child) {
   children_.push_back(child);
   child->parent_ = this;
   child->update();
 }
 
-void GraphicsItem::removeChild(GraphicsItem* child) {
+void GraphicsItem::removeChild(std::shared_ptr<GraphicsItem> child) {
   auto it = std::find(children_.begin(), children_.end(), child);
   if (it != children_.end()) {
     children_.erase(it);
@@ -180,7 +172,7 @@ bool GraphicsItem::hitTest(ImVec2 p) {
   return false;
 }
 
-GraphicsItem* findItem(GraphicsItem* item, ImVec2 point) {
+GraphicsItemPtr findItem(GraphicsItemPtr item, ImVec2 point) {
   // disable hit test for itself and all its children
   if (item->findable_ == false) {
     return nullptr;
@@ -189,13 +181,13 @@ GraphicsItem* findItem(GraphicsItem* item, ImVec2 point) {
   GraphicsItem* ret = nullptr;
   // test young children first
   for (auto it = item->children_.rbegin(); it != item->children_.rend(); it++) {
-    GraphicsItem* ret = findItem(*it, point);
+    GraphicsItemPtr ret = findItem(*it, point);
     if (ret != nullptr) {
       return ret;
     }
   }
   // if child not found, test itself
-  return item->hitTest(point) ? item : nullptr;
+  return item->hitTest(point) ? item : GraphicsItemPtr();
 };
 
 float intersect_with_yline(float x1, float y1, float x2, float y2, float y) {

@@ -3,6 +3,7 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -25,8 +26,10 @@ struct Transform {
  * @brief construct block for the graphic scene.
  *
  */
+struct GraphicsItem;
+using GraphicsItemPtr = std::shared_ptr<GraphicsItem>;
 struct GraphicsItem {
-  GraphicsItem(std::string name = "", GraphicsItem* parent = nullptr);
+  GraphicsItem(std::string name = "");
   ~GraphicsItem();
   /**
    * @brief Set the transformation matrix about the transformation origin point.
@@ -137,13 +140,13 @@ struct GraphicsItem {
    *
    * @param child
    */
-  void addChild(GraphicsItem* child);
+  void addChild(std::shared_ptr<GraphicsItem> child);
   /**
    * @brief remove a child from this item.
    *
    * @param child
    */
-  void removeChild(GraphicsItem* child);
+  void removeChild(std::shared_ptr<GraphicsItem> child);
 
   /**
    * @brief update the geometries of the item and all the children.
@@ -187,7 +190,7 @@ struct GraphicsItem {
 
   std::string name_;
   GraphicsItem* parent_;
-  std::vector<GraphicsItem*> children_;
+  std::vector<std::shared_ptr<GraphicsItem>> children_;
   Transform T_;
   std::vector<ImVec2> geometries_;
   std::vector<ImVec2> sceneGeometries_;
@@ -202,7 +205,7 @@ struct GraphicsItem {
   bool findable_;
 };
 
-GraphicsItem* findItem(GraphicsItem* item, ImVec2 point);
+GraphicsItemPtr findItem(GraphicsItemPtr item, ImVec2 point);
 
 typedef std::vector<ImVec2> Polygon;
 

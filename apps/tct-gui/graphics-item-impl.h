@@ -4,8 +4,7 @@
 #include "graphics-item.h"
 
 struct GraphicLineItem : public GraphicsItem {
-  GraphicLineItem(ImVec2 p1, ImVec2 p2, std::string name = "",
-                  GraphicsItem* parent = nullptr);
+  GraphicLineItem(ImVec2 p1, ImVec2 p2, std::string name = "");
   void paintSelf() override;
   void clipSelf(ImRect r) override;
   bool hitTest(ImVec2 p) override;
@@ -15,16 +14,14 @@ struct GraphicLineItem : public GraphicsItem {
 };
 
 struct GraphicRectItem : public GraphicsItem {
-  GraphicRectItem(ImVec2 p1, ImVec2 p2, std::string name = "",
-                  GraphicsItem* parent = nullptr);
+  GraphicRectItem(ImVec2 p1, ImVec2 p2, std::string name = "");
   void paintSelf() override;
   void clipSelf(ImRect r) override;
   bool hitTest(ImVec2 p) override;
 };
 
 struct GraphicPolygonItem : public GraphicsItem {
-  GraphicPolygonItem(std::vector<ImVec2> points, std::string name = "",
-                     GraphicsItem* parent = nullptr);
+  GraphicPolygonItem(std::vector<ImVec2> points, std::string name = "");
   void paintSelf() override;
   void clipSelf(ImRect r) override;
   bool hitTest(ImVec2 p) override;
@@ -33,9 +30,8 @@ struct GraphicPolygonItem : public GraphicsItem {
 enum class FitMode { kFill, kStretch, kOriginal };
 
 struct GraphicImageItem : public GraphicsItem {
-  GraphicImageItem(std::string name = "", GraphicsItem* parent = nullptr);
-  GraphicImageItem(cv::Mat& image, std::string name = "",
-                   GraphicsItem* parent = nullptr);
+  GraphicImageItem(std::string name = "");
+  GraphicImageItem(cv::Mat& image, std::string name = "");
   void setImage(cv::Mat& image);
   void paintSelf() override;
   void clipSelf(ImRect r) override;
@@ -47,9 +43,8 @@ struct GraphicImageItem : public GraphicsItem {
 };
 
 struct GraphicTextItem : public GraphicsItem {
-  GraphicTextItem(std::string text, ImVec2 pos, std::string name = "",
-                  GraphicsItem* parent = nullptr);
-  GraphicTextItem(std::string name = "", GraphicsItem* parent = nullptr);
+  GraphicTextItem(std::string text, ImVec2 pos, std::string name = "");
+  GraphicTextItem(std::string name = "");
   void setText(std::string text);
   void setCorner(int corner);
   void setBackgroud(bool enable);
@@ -76,12 +71,11 @@ struct Ruler : public GraphicsItem {
    * @param parent
    */
   Ruler(bool horizontal, int min = -1000, int max = 1000, int major = 100,
-        int minor = 10, float size = 40, std::string name = "",
-        GraphicsItem* parent = nullptr);
+        int minor = 10, float size = 40, std::string name = "");
   ~Ruler();
   bool orientation_;
   void highlight(int value);
-  GraphicLineItem* highlightItem_;
+  GraphicsItemPtr highlightItem_;
   ImColor backgroundColor_ = ImColor(255, 255, 255, 125);
   ImColor highlightColor_ = ImColor(255, 0, 0, 255);
   ImColor lineColor_ = ImColor(0, 0, 0, 255);

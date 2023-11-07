@@ -3,15 +3,17 @@
 #include "graphics-item-impl.h"
 #include "utility.h"
 
-GraphicsScene::GraphicsScene() { rootItem_ = new GraphicsItem(); }
+GraphicsScene::GraphicsScene() { rootItem_ = std::make_shared<GraphicsItem>(); }
 
-GraphicsScene::~GraphicsScene() { delete rootItem_; }
+GraphicsScene::~GraphicsScene() {}
 
-void GraphicsScene::addItem(GraphicsItem* item) { rootItem_->addChild(item); }
+void GraphicsScene::addItem(GraphicsItemPtr item) { rootItem_->addChild(item); }
 
 void GraphicsScene::paint() { rootItem_->paint(); }
 
-GraphicsItem* GraphicsScene::itemAt(ImVec2 p) { return findItem(rootItem_, p); }
+GraphicsItemPtr GraphicsScene::itemAt(ImVec2 p) {
+  return findItem(rootItem_, p);
+}
 
 GraphicsView::GraphicsView(GraphicsScene* scene, bool enableDebug) {
   scene_ = scene;
@@ -31,7 +33,7 @@ void GraphicsView::moveViewTo(ImVec2 p) {
   scene_->rootItem_->setPos(pos);
 }
 
-void nodeEdit(GraphicsItem* item, int level = 0) {
+void nodeEdit(GraphicsItemPtr item, int level = 0) {
   if (item->name_.empty() && item->children_.empty()) {
     return;
   }
@@ -78,7 +80,7 @@ void nodeEdit(GraphicsItem* item, int level = 0) {
   if (ImGui::ColorEdit4("lineColor", &lineColor.x)) {
     item->lineColor_ = ImColor(lineColor);
   }
-  Ruler* ruler = dynamic_cast<Ruler*>(item);
+  Ruler* ruler = dynamic_cast<Ruler*>(item.get());
   if (ruler != nullptr) {
     static int highlight = 0;
     if (ImGui::DragInt("highlight", &highlight, 1, -10000, 10000)) {

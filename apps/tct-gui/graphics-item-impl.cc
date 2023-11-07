@@ -2,9 +2,8 @@
 
 #include "utility.h"
 
-GraphicLineItem::GraphicLineItem(ImVec2 p1, ImVec2 p2, std::string name,
-                                 GraphicsItem* parent)
-    : GraphicsItem(name, parent) {
+GraphicLineItem::GraphicLineItem(ImVec2 p1, ImVec2 p2, std::string name)
+    : GraphicsItem(name) {
   geometries_.push_back(p1);
   geometries_.push_back(p2);
 }
@@ -49,9 +48,8 @@ bool GraphicLineItem::hitTest(ImVec2 p) {
   return d <= hitTestMargin_ * hitTestMargin_;
 }
 
-GraphicRectItem::GraphicRectItem(ImVec2 pmin, ImVec2 pmax, std::string name,
-                                 GraphicsItem* parent)
-    : GraphicsItem(name, parent) {
+GraphicRectItem::GraphicRectItem(ImVec2 pmin, ImVec2 pmax, std::string name)
+    : GraphicsItem(name) {
   geometries_.push_back(pmin);
   geometries_.push_back(pmax);
 }
@@ -86,8 +84,8 @@ void GraphicRectItem::clipSelf(ImRect r) {
 }
 
 GraphicPolygonItem::GraphicPolygonItem(std::vector<ImVec2> points,
-                                       std::string name, GraphicsItem* parent)
-    : GraphicsItem(name, parent) {
+                                       std::string name)
+    : GraphicsItem(name) {
   geometries_ = points;
 }
 
@@ -113,8 +111,7 @@ bool GraphicPolygonItem::hitTest(ImVec2 p) {
   return polygonContain(sceneGeometries_, p);
 }
 
-GraphicImageItem::GraphicImageItem(std::string name, GraphicsItem* parent)
-    : GraphicsItem(name, parent) {
+GraphicImageItem::GraphicImageItem(std::string name) : GraphicsItem(name) {
   imageSize_ = ImVec2(0, 0);
   geometries_.push_back(ImVec2(0, 0));
   geometries_.push_back(ImVec2(0, 0));
@@ -122,9 +119,8 @@ GraphicImageItem::GraphicImageItem(std::string name, GraphicsItem* parent)
   uv1 = ImVec2(1.0f, 1.0f);
 }
 
-GraphicImageItem::GraphicImageItem(cv::Mat& image, std::string name,
-                                   GraphicsItem* parent)
-    : GraphicImageItem(name, parent) {
+GraphicImageItem::GraphicImageItem(cv::Mat& image, std::string name)
+    : GraphicImageItem(name) {
   setImage(image);
 }
 
@@ -169,13 +165,12 @@ bool GraphicImageItem::hitTest(ImVec2 p) {
 
 void GraphicImageItem::setFitMode(FitMode mode) {}
 
-GraphicTextItem::GraphicTextItem(std::string name, GraphicsItem* parent)
-    : GraphicTextItem("", ImVec2(0, 0), name, parent) {}
+GraphicTextItem::GraphicTextItem(std::string name)
+    : GraphicTextItem("", ImVec2(0, 0), name) {}
 
-GraphicTextItem::GraphicTextItem(std::string text, ImVec2 pos, std::string name,
-                                 GraphicsItem* parent)
-    : GraphicsItem(name, parent) {
-  geometries_.push_back(pos);
+GraphicTextItem::GraphicTextItem(std::string text, ImVec2 pos, std::string name)
+    : GraphicsItem(name) {
+  pos_ = pos;
   setText(text);
   setCorner(0);
   setBackgroud(false);
@@ -187,38 +182,30 @@ void GraphicTextItem::setText(std::string text) { text_ = text; }
  * @brief put the anchor of text box at corner number 0/1/2/3, 0 starts from
  * topleft and go clockwise..
  *
+ * 0────1─────2
+ * │          │
+ * 7   text   3
+ * │          │
+ * 6────5─────4
+ *
  * @param corner
  */
-void GraphicTextItem::setCorner(int corner) { corner_ = corner % 4; }
+void GraphicTextItem::setCorner(int corner) { corner_ = corner % 8; }
 
 void GraphicTextItem::setBackgroud(bool enable) { background_ = enable; }
 
 void GraphicTextItem::paintSelf() {
-  ImVec2 p = sceneGeometries_[0];
   ImVec2 size = ImGui::CalcTextSize(text_.c_str());
-  ImVec2 displayPos;
-  switch (corner_) {
-    case 0:
-      displayPos = p;
-      break;
-    case 1:
-      displayPos = p + ImVec2(-size.x, 0);
-      break;
-    case 2:
-      displayPos = p + ImVec2(-size.x, -size.y);
-      break;
-    case 3:
-      displayPos = p + ImVec2(0, -size.y);
-      break;
-    default:
-      break;
-  }
-  lastRect_ = ImRect(displayPos, displayPos + size);
+  int w = size.x, h = size.y;
+  int c = corner_;
+  float x = (c == 0 || c == 7 || c == 6) ? 0 : (c == 1 || c == 5) ? -w / 2 : -w;
+  float y = (c == 0 || c == 1 || c == 2) ? 0 : (c == 3 || c == 7) ? -h / 2 : -h;
+  lastRect_ = ImRect(x, y, x + w, y + h);
   if (background_) {
-    ImGui::GetWindowDrawList()->AddRectFilled(displayPos, displayPos + size,
+    ImGui::GetWindowDrawList()->AddRectFilled(lastRect_.Min, lastRect_.Max,
                                               fillColor_, 0, 0);
   }
-  ImGui::GetWindowDrawList()->AddText(displayPos, lineColor_, text_.c_str());
+  ImGui::GetWindowDrawList()->AddText(lastRect_.Min, lineColor_, text_.c_str());
 }
 
 void GraphicTextItem::clipSelf(ImRect r) {
@@ -228,19 +215,19 @@ void GraphicTextItem::clipSelf(ImRect r) {
 bool GraphicTextItem::hitTest(ImVec2 p) { return lastRect_.Contains(p); }
 
 Ruler::Ruler(bool horizontal, int min, int max, int major, int minor,
-             float size, std::string name, GraphicsItem* parent)
-    : GraphicsItem(name, parent), orientation_(horizontal) {
+             float size, std::string name)
+    : GraphicsItem(name), orientation_(horizontal) {
   // create ruler items
   ImRect bg =
       (horizontal) ? ImRect(min, 0, max, size) : ImRect(0, min, size, max);
   ImRect line = (horizontal) ? ImRect(min, 0, max, 0) : ImRect(0, min, 0, max);
-  GraphicRectItem* bgItem = new GraphicRectItem(bg.Min, bg.Max, "", this);
-  GraphicLineItem* lineItem = new GraphicLineItem(line.Min, line.Max, "", this);
+  auto bgItem = std::make_shared<GraphicRectItem>(bg.Min, bg.Max);
+  auto lineItem = std::make_shared<GraphicLineItem>(line.Min, line.Max);
   addChild(bgItem);
   addChild(lineItem);
 
-  GraphicsItem* tickGroup = new GraphicsItem("", this);
-  GraphicsItem* textGroup = new GraphicsItem("", this);
+  auto tickGroup = std::make_shared<GraphicsItem>();
+  auto textGroup = std::make_shared<GraphicsItem>();
   addChild(tickGroup);
   addChild(textGroup);
 
@@ -249,25 +236,23 @@ Ruler::Ruler(bool horizontal, int min, int max, int major, int minor,
       ImRect tick = (horizontal) ? ImRect(i, 0, i, -majorSize_)
                                  : ImRect(0, i, -majorSize_, i);
       ImVec2 textPos = (horizontal) ? ImVec2(i, 0) : ImVec2(0, i);
-      GraphicLineItem* tickItem =
-          new GraphicLineItem(tick.Min, tick.Max, "", this);
-      GraphicTextItem* textItem =
-          new GraphicTextItem(std::to_string(i), textPos, "", this);
+      auto tickItem = std::make_shared<GraphicLineItem>(tick.Min, tick.Max);
+      auto textItem =
+          std::make_shared<GraphicTextItem>(std::to_string(i), textPos);
       tickGroup->addChild(tickItem);
       textGroup->addChild(textItem);
     } else if (i % minor == 0) {
       ImRect tick = (horizontal) ? ImRect(i, 0, i, -minorSize_)
                                  : ImRect(0, i, -minorSize_, i);
-      GraphicLineItem* tickItem =
-          new GraphicLineItem(tick.Min, tick.Max, "", this);
+      auto tickItem = std::make_shared<GraphicLineItem>(tick.Min, tick.Max);
       tickGroup->addChild(tickItem);
     }
   }
 
   ImRect highlightTick = (horizontal) ? ImRect(0, 0, 0, -majorSize_)
                                       : ImRect(0, 0, -majorSize_, 0);
-  highlightItem_ =
-      new GraphicLineItem(highlightTick.Min, highlightTick.Max, "", this);
+  auto highlightItem_ =
+      std::make_shared<GraphicLineItem>(highlightTick.Min, highlightTick.Max);
   tickGroup->addChild(highlightItem_);
 
   // coloring
@@ -295,13 +280,4 @@ void Ruler::highlight(int value) {
   highlightItem_->setPos(pos);
 }
 
-Ruler::~Ruler() {
-  delete children_[0];  // bg
-  delete children_[1];  // line
-  for (auto item : children_[2]->children_) {
-    delete item;  // tick
-  }
-  for (auto item : children_[3]->children_) {
-    delete item;  // text
-  }
-}
+Ruler::~Ruler() {}
