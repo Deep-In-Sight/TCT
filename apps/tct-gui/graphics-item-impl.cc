@@ -150,6 +150,7 @@ void GraphicImageItem::clipSelf(ImRect r) {
   rect.ClipWithFull(r);
   uv0 = (rect.Min - pmin) / size;
   uv1 = (rect.Max - pmin) / size;
+  beforeClippedGeometries_ = sceneGeometries_;
   sceneGeometries_[0] = rect.Min;
   sceneGeometries_[1] = rect.Max;
 }
@@ -163,7 +164,12 @@ bool GraphicImageItem::hitTest(ImVec2 p) {
   return ImRect(pmin, pmax).Contains(p);
 }
 
-void GraphicImageItem::setFitMode(FitMode mode) {}
+ImVec2 GraphicImageItem::toOriginalUV(ImVec2 p) {
+  auto pmin = beforeClippedGeometries_[0];
+  auto pmax = beforeClippedGeometries_[1];
+  auto size = pmax - pmin;
+  return (p - pmin) / size * imageSize_;
+}
 
 GraphicTextItem::GraphicTextItem(std::string name)
     : GraphicTextItem("", ImVec2(0, 0), name) {}
@@ -172,7 +178,7 @@ GraphicTextItem::GraphicTextItem(std::string text, ImVec2 pos, std::string name)
     : GraphicsItem(name) {
   pos_ = pos;
   setText(text);
-  setCorner(0);
+  setAnchor(0);
   setBackgroud(false);
 }
 
@@ -190,29 +196,29 @@ void GraphicTextItem::setText(std::string text) { text_ = text; }
  *
  * @param corner
  */
-void GraphicTextItem::setCorner(int corner) { corner_ = corner % 8; }
+void GraphicTextItem::setAnchor(int anchor) { anchor_ = anchor % 8; }
 
 void GraphicTextItem::setBackgroud(bool enable) { background_ = enable; }
 
 void GraphicTextItem::paintSelf() {
   ImVec2 size = ImGui::CalcTextSize(text_.c_str());
   int w = size.x, h = size.y;
-  int c = corner_;
+  int c = anchor_;
   float x = (c == 0 || c == 7 || c == 6) ? 0 : (c == 1 || c == 5) ? -w / 2 : -w;
   float y = (c == 0 || c == 1 || c == 2) ? 0 : (c == 3 || c == 7) ? -h / 2 : -h;
-  lastRect_ = ImRect(x, y, x + w, y + h);
+  bb_ = ImRect(x, y, x + w, y + h);
   if (background_) {
-    ImGui::GetWindowDrawList()->AddRectFilled(lastRect_.Min, lastRect_.Max,
-                                              fillColor_, 0, 0);
+    ImGui::GetWindowDrawList()->AddRectFilled(bb_.Min, bb_.Max, fillColor_, 0,
+                                              0);
   }
-  ImGui::GetWindowDrawList()->AddText(lastRect_.Min, lineColor_, text_.c_str());
+  ImGui::GetWindowDrawList()->AddText(bb_.Min, lineColor_, text_.c_str());
 }
 
 void GraphicTextItem::clipSelf(ImRect r) {
   // do nothing until we came up with a way to clip text
 }
 
-bool GraphicTextItem::hitTest(ImVec2 p) { return lastRect_.Contains(p); }
+bool GraphicTextItem::hitTest(ImVec2 p) { return bb_.Contains(p); }
 
 Ruler::Ruler(bool horizontal, int min, int max, int major, int minor,
              float size, std::string name)
@@ -272,7 +278,7 @@ Ruler::Ruler(bool horizontal, int min, int max, int major, int minor,
   lineItem->setPos(linePos);
   tickGroup->setPos(linePos);
 
-  findable_ = false;
+  isClickable_ = false;
 }
 
 void Ruler::highlight(int value) {

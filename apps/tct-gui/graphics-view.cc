@@ -15,7 +15,12 @@ GraphicsItemPtr GraphicsScene::itemAt(ImVec2 p) {
   return findItem(rootItem_, p);
 }
 
-GraphicsView::GraphicsView(GraphicsScene* scene, bool enableDebug) {
+GraphicsItemPtr GraphicsScene::getItemByName(const std::string& name) {
+  return findItem(rootItem_, name);
+}
+
+GraphicsView::GraphicsView(std::shared_ptr<GraphicsScene> scene,
+                           bool enableDebug) {
   scene_ = scene;
   debug_ = enableDebug;
 }

@@ -6,7 +6,7 @@
 
 #define UNCLIP_RECT ImRect(-1e4, -1e4, 1e4, 1e4)
 
-GraphicsItem::GraphicsItem(std::string name) {
+GraphicsItem::GraphicsItem(const std::string& name) {
   name_ = name;
   parent_ = nullptr;
 
@@ -19,7 +19,8 @@ GraphicsItem::GraphicsItem(std::string name) {
   fillColor_ = IM_COL32(255, 255, 255, 255);
   lineWidth_ = 1.0f;
 
-  findable_ = true;
+  isClickable_ = true;
+  isHidden_ = false;
 }
 
 GraphicsItem::~GraphicsItem() {}
@@ -92,13 +93,13 @@ ImVec2 GraphicsItem::mapFromItem(GraphicsItem* item, ImVec2 p) {
   return mapFromScene(item->mapToScene(p));
 }
 
-void GraphicsItem::addChild(std::shared_ptr<GraphicsItem> child) {
+void GraphicsItem::addChild(GraphicsItemPtr child) {
   children_.push_back(child);
   child->parent_ = this;
   child->update();
 }
 
-void GraphicsItem::removeChild(std::shared_ptr<GraphicsItem> child) {
+void GraphicsItem::removeChild(GraphicsItemPtr child) {
   auto it = std::find(children_.begin(), children_.end(), child);
   if (it != children_.end()) {
     children_.erase(it);
@@ -118,6 +119,12 @@ void GraphicsItem::removeChild(std::shared_ptr<GraphicsItem> child) {
  *
  */
 void GraphicsItem::update() {
+  // skip updating the geometries if this item is hidden (for itself and all the
+  // children)
+  if (isHidden_) {
+    return;
+  }
+
   // 1. calculate the combined transformation matrix
   Transform T;  // I
   GraphicsItem* item = this;
@@ -157,6 +164,8 @@ void GraphicsItem::update() {
 }
 
 void GraphicsItem::paint() {
+  if (isHidden_) return;
+
   paintSelf();
   for (auto child : children_) {
     child->paint();
@@ -174,7 +183,7 @@ bool GraphicsItem::hitTest(ImVec2 p) {
 
 GraphicsItemPtr findItem(GraphicsItemPtr item, ImVec2 point) {
   // disable hit test for itself and all its children
-  if (item->findable_ == false) {
+  if (item->isClickable_ == false) {
     return nullptr;
   }
 
@@ -188,6 +197,19 @@ GraphicsItemPtr findItem(GraphicsItemPtr item, ImVec2 point) {
   }
   // if child not found, test itself
   return item->hitTest(point) ? item : GraphicsItemPtr();
+};
+
+GraphicsItemPtr findItem(GraphicsItemPtr item, const std::string& name) {
+  if (item->name_ == name) {
+    return item;
+  }
+  for (auto child : item->children_) {
+    GraphicsItemPtr ret = findItem(child, name);
+    if (ret != nullptr) {
+      return ret;
+    }
+  }
+  return GraphicsItemPtr();
 };
 
 float intersect_with_yline(float x1, float y1, float x2, float y2, float y) {

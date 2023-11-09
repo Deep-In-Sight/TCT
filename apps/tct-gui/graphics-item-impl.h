@@ -27,8 +27,6 @@ struct GraphicPolygonItem : public GraphicsItem {
   bool hitTest(ImVec2 p) override;
 };
 
-enum class FitMode { kFill, kStretch, kOriginal };
-
 struct GraphicImageItem : public GraphicsItem {
   GraphicImageItem(std::string name = "");
   GraphicImageItem(cv::Mat& image, std::string name = "");
@@ -36,8 +34,9 @@ struct GraphicImageItem : public GraphicsItem {
   void paintSelf() override;
   void clipSelf(ImRect r) override;
   bool hitTest(ImVec2 p) override;
-  void setFitMode(FitMode mode);
+  ImVec2 toOriginalUV(ImVec2 uv);
   ImVec2 imageSize_;
+  std::vector<ImVec2> beforeClippedGeometries_;
   ImTextureID imageTextureId_;
   ImVec2 uv0, uv1;
 };
@@ -46,15 +45,15 @@ struct GraphicTextItem : public GraphicsItem {
   GraphicTextItem(std::string text, ImVec2 pos, std::string name = "");
   GraphicTextItem(std::string name = "");
   void setText(std::string text);
-  void setCorner(int corner);
+  void setAnchor(int anchor);
   void setBackgroud(bool enable);
   void paintSelf() override;
   void clipSelf(ImRect r) override;
   bool hitTest(ImVec2 p) override;
   bool background_;
   std::string text_;
-  int corner_;
-  ImRect lastRect_;
+  int anchor_;
+  ImRect bb_;
 };
 
 struct Ruler : public GraphicsItem {

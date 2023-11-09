@@ -29,8 +29,8 @@ struct Transform {
 struct GraphicsItem;
 using GraphicsItemPtr = std::shared_ptr<GraphicsItem>;
 struct GraphicsItem {
-  GraphicsItem(std::string name = "");
-  ~GraphicsItem();
+  GraphicsItem(const std::string& name = "");
+  virtual ~GraphicsItem();
   /**
    * @brief Set the transformation matrix about the transformation origin point.
    * T = [[sx, 0, dx],
@@ -140,13 +140,13 @@ struct GraphicsItem {
    *
    * @param child
    */
-  void addChild(std::shared_ptr<GraphicsItem> child);
+  void addChild(GraphicsItemPtr child);
   /**
    * @brief remove a child from this item.
    *
    * @param child
    */
-  void removeChild(std::shared_ptr<GraphicsItem> child);
+  void removeChild(GraphicsItemPtr child);
 
   /**
    * @brief update the geometries of the item and all the children.
@@ -190,7 +190,7 @@ struct GraphicsItem {
 
   std::string name_;
   GraphicsItem* parent_;
-  std::vector<std::shared_ptr<GraphicsItem>> children_;
+  std::vector<GraphicsItemPtr> children_;
   Transform T_;
   std::vector<ImVec2> geometries_;
   std::vector<ImVec2> sceneGeometries_;
@@ -202,10 +202,12 @@ struct GraphicsItem {
   ImColor fillColor_;
   float lineWidth_;
 
-  bool findable_;
+  bool isClickable_;
+  bool isHidden_;
 };
 
 GraphicsItemPtr findItem(GraphicsItemPtr item, ImVec2 point);
+GraphicsItemPtr findItem(GraphicsItemPtr item, const std::string& name);
 
 typedef std::vector<ImVec2> Polygon;
 

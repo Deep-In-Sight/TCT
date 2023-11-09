@@ -2,6 +2,7 @@
 
 #include <GLFW/glfw3.h>
 #include <imgui.h>
+#include <imgui_internal.h>
 
 #include <opencv2/core.hpp>
 
@@ -23,4 +24,12 @@ static inline bool operator==(const ImVec2& lhs, const ImVec2& rhs) {
 
 static inline bool operator!=(const ImVec2& lhs, const ImVec2& rhs) {
   return lhs.x != rhs.x || lhs.y != rhs.y;
+}
+
+static inline bool operator==(const ImRect& lhs, const ImRect& rhs) {
+  return lhs.Min == rhs.Min && lhs.Max == rhs.Max;
+}
+
+static inline bool operator!=(const ImRect& lhs, const ImRect& rhs) {
+  return lhs.Min != rhs.Min || lhs.Max != rhs.Max;
 }
