@@ -110,17 +110,17 @@ void nodeEdit(GraphicsItemPtr item, int level = 0) {
 void GraphicsView::ImGuiDraw() {
   static ImVec2 lastPos, lastSize, lastLook;
   bool relayout = true;
-  if (ImGui::Begin("GraphicsView")) {
-    if (lastPos != ImGui::GetWindowPos() ||
-        lastSize != ImGui::GetWindowSize() || lastLook != lookAt_) {
-      lastPos = ImGui::GetWindowPos();
-      lastSize = ImGui::GetWindowSize();
-      lastLook = lookAt_;
-      ImGuiLayout();
-    }
-    scene_->paint();
+  // if (ImGui::Begin("GraphicsView")) {
+  if (lastPos != ImGui::GetWindowPos() || lastSize != ImGui::GetWindowSize() ||
+      lastLook != lookAt_) {
+    lastPos = ImGui::GetWindowPos();
+    lastSize = ImGui::GetWindowSize();
+    lastLook = lookAt_;
+    ImGuiLayout();
   }
-  ImGui::End();
+  scene_->paint();
+  // }
+  // ImGui::End();
 
   if (debug_) {
     if (ImGui::Begin("GraphicsViewEditor")) {

@@ -6,7 +6,9 @@
 
 GraphicsLayout::GraphicsLayout(const std::string& name, ImVec2 preferredSize,
                                ImVec4 margins)
-    : GraphicsItem(name), margins_(margins), preferredSize_(preferredSize) {}
+    : GraphicsItem(name), margins_(margins), preferredSize_(preferredSize) {
+  isFixedSize_ = (preferredSize.x > 0 || preferredSize.y > 0);
+}
 
 void GraphicsLayout::layout() {}
 
@@ -82,7 +84,7 @@ void GraphicsHBoxLayout::layout() {
       // layout the children inside first
       childLayout->layout();
       childLayout->setPos(pos);
-      childLayout->clip(ImRect(pos, pos + childLayout->preferredSize_));
+      childLayout->clip(ImRect(ImVec2(0, 0), childLayout->preferredSize_));
       if (childLayout->preferredSize_.y > maxChildHeight) {
         maxChildHeight = childLayout->preferredSize_.y;
       }
@@ -90,7 +92,7 @@ void GraphicsHBoxLayout::layout() {
     }
   }
 
-  if (preferredSize_.x == 0) {
+  if (!isFixedSize_) {
     preferredSize_.x = pos.x + margins_.z;
     preferredSize_.y = pos.y + maxChildHeight + margins_.w;
   }
@@ -109,14 +111,15 @@ void GraphicsVBoxLayout::layout() {
       // layout the children inside first
       childLayout->layout();
       childLayout->setPos(pos);
-      pos = pos + ImVec2(0.0f, childLayout->preferredSize_.y);
+      childLayout->clip(ImRect(ImVec2(0, 0), childLayout->preferredSize_));
       if (childLayout->preferredSize_.x > maxChildWidth) {
         maxChildWidth = childLayout->preferredSize_.x;
       }
+      pos = pos + ImVec2(0.0f, childLayout->preferredSize_.y);
     }
   }
 
-  if (preferredSize_.y == 0) {
+  if (!isFixedSize_) {
     preferredSize_.x = pos.x + maxChildWidth + margins_.z;
     preferredSize_.y = pos.y + margins_.w;
   }
@@ -171,17 +174,24 @@ void GraphicsGridLayout::layout() {
       auto childLayout = dynamic_cast<GraphicsLayout*>(child);
       if (childLayout != nullptr && !childLayout->isHidden_) {
         childLayout->setPos(colPos);
-        childLayout->clip(ImRect(colPos, colPos + childLayout->preferredSize_));
+        childLayout->clip(ImRect(ImVec2(0, 0), childLayout->preferredSize_));
         colPos = colPos + ImVec2(maxChildWidth[col], 0.0f);
       }
     }
     rowPos = rowPos + ImVec2(0.0f, maxChildHeight[row]);
   }
 
-  if (preferredSize_.x == 0) {
+  if (!isFixedSize_) {
     preferredSize_.x = colPos.x + margins_.z;
-  }
-  if (preferredSize_.y == 0) {
     preferredSize_.y = rowPos.y + margins_.w;
   }
+}
+
+std::shared_ptr<GraphicsLayout> GraphicsGridLayout::operator()(int row,
+                                                               int col) {
+  int index = row * cols_ + col;
+  if (index >= children_.size()) {
+    return nullptr;
+  }
+  return std::dynamic_pointer_cast<GraphicsLayout>(children_[index]);
 }

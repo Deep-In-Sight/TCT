@@ -181,6 +181,13 @@ bool GraphicsItem::hitTest(ImVec2 p) {
   return false;
 }
 
+GraphicsItemPtr GraphicsItem::operator[](int index) {
+  if (index < 0 || index >= children_.size()) {
+    return nullptr;
+  }
+  return children_[index];
+}
+
 GraphicsItemPtr findItem(GraphicsItemPtr item, ImVec2 point) {
   // disable hit test for itself and all its children
   if (item->isClickable_ == false) {

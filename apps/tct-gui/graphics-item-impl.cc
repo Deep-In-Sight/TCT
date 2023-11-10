@@ -176,7 +176,7 @@ GraphicTextItem::GraphicTextItem(std::string name)
 
 GraphicTextItem::GraphicTextItem(std::string text, ImVec2 pos, std::string name)
     : GraphicsItem(name) {
-  pos_ = pos;
+  geometries_.push_back(pos);
   setText(text);
   setAnchor(0);
   setBackgroud(false);
@@ -201,12 +201,14 @@ void GraphicTextItem::setAnchor(int anchor) { anchor_ = anchor % 8; }
 void GraphicTextItem::setBackgroud(bool enable) { background_ = enable; }
 
 void GraphicTextItem::paintSelf() {
+  if (sceneGeometries_.empty()) return;
   ImVec2 size = ImGui::CalcTextSize(text_.c_str());
   int w = size.x, h = size.y;
   int c = anchor_;
   float x = (c == 0 || c == 7 || c == 6) ? 0 : (c == 1 || c == 5) ? -w / 2 : -w;
   float y = (c == 0 || c == 1 || c == 2) ? 0 : (c == 3 || c == 7) ? -h / 2 : -h;
   bb_ = ImRect(x, y, x + w, y + h);
+  bb_.Translate(sceneGeometries_[0]);
   if (background_) {
     ImGui::GetWindowDrawList()->AddRectFilled(bb_.Min, bb_.Max, fillColor_, 0,
                                               0);
@@ -216,6 +218,9 @@ void GraphicTextItem::paintSelf() {
 
 void GraphicTextItem::clipSelf(ImRect r) {
   // do nothing until we came up with a way to clip text
+  if (!r.Contains(sceneGeometries_[0])) {
+    sceneGeometries_.clear();
+  }
 }
 
 bool GraphicTextItem::hitTest(ImVec2 p) { return bb_.Contains(p); }
@@ -226,16 +231,18 @@ Ruler::Ruler(bool horizontal, int min, int max, int major, int minor,
   // create ruler items
   ImRect bg =
       (horizontal) ? ImRect(min, 0, max, size) : ImRect(0, min, size, max);
-  ImRect line = (horizontal) ? ImRect(min, 0, max, 0) : ImRect(0, min, 0, max);
-  auto bgItem = std::make_shared<GraphicRectItem>(bg.Min, bg.Max);
-  auto lineItem = std::make_shared<GraphicLineItem>(line.Min, line.Max);
+  auto bgItem = std::make_shared<GraphicRectItem>(bg.Min, bg.Max, name);
+  auto fgItem = std::make_shared<GraphicsItem>();
   addChild(bgItem);
-  addChild(lineItem);
+  addChild(fgItem);
 
+  ImRect line = (horizontal) ? ImRect(min, 0, max, 0) : ImRect(0, min, 0, max);
+  auto lineItem = std::make_shared<GraphicLineItem>(line.Min, line.Max);
   auto tickGroup = std::make_shared<GraphicsItem>();
   auto textGroup = std::make_shared<GraphicsItem>();
-  addChild(tickGroup);
-  addChild(textGroup);
+  fgItem->addChild(lineItem);
+  fgItem->addChild(tickGroup);
+  fgItem->addChild(textGroup);
 
   for (int i = min; i <= max; i++) {
     if (i % major == 0) {
@@ -263,12 +270,13 @@ Ruler::Ruler(bool horizontal, int min, int max, int major, int minor,
 
   // coloring
   for (auto item : tickGroup->children_) {
-    item->lineColor_ = lineColor_;
+    item->lineColor_ = tickColor_;
   }
   for (auto item : textGroup->children_) {
-    item->lineColor_ = lineColor_;
+    item->lineColor_ = textColor_;
   }
   bgItem->fillColor_ = backgroundColor_;
+  bgItem->lineColor_ = ImColor(0, 0, 0, 0);
   lineItem->lineColor_ = lineColor_;
   highlightItem_->lineColor_ = highlightColor_;
 
@@ -278,7 +286,7 @@ Ruler::Ruler(bool horizontal, int min, int max, int major, int minor,
   lineItem->setPos(linePos);
   tickGroup->setPos(linePos);
 
-  isClickable_ = false;
+  fgItem->isClickable_ = false;
 }
 
 void Ruler::highlight(int value) {

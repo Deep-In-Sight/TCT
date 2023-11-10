@@ -180,6 +180,8 @@ struct GraphicsItem {
    */
   virtual bool hitTest(ImVec2 p);
 
+  GraphicsItemPtr operator[](int index);
+
   // virtual void contextMenu() = 0;
   // virtual void focusInEvent() = 0;
   // virtual void focusOutEvent() = 0;

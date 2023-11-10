@@ -20,6 +20,7 @@ struct GraphicsLayout : public GraphicsItem {
   ImVec4 margins_;
   // width, height
   ImVec2 preferredSize_;
+  bool isFixedSize_;
 };
 
 struct GraphicsHBoxLayout : public GraphicsLayout {
@@ -47,6 +48,7 @@ struct GraphicsGridLayout : public GraphicsLayout {
                      ImVec2 preferredSize = ImVec2(0, 0),
                      ImVec4 margins = ImVec4(0, 0, 0, 0));
   void layout() override;
+  std::shared_ptr<GraphicsLayout> operator()(int row, int col);
   int rows_;
   int cols_;
 };

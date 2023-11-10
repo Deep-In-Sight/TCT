@@ -77,8 +77,10 @@ struct Ruler : public GraphicsItem {
   GraphicsItemPtr highlightItem_;
   ImColor backgroundColor_ = ImColor(255, 255, 255, 125);
   ImColor highlightColor_ = ImColor(255, 0, 0, 255);
-  ImColor lineColor_ = ImColor(0, 0, 0, 255);
+  ImColor tickColor_ = ImColor(255, 255, 255, 255);
+  ImColor textColor_ = ImColor(255, 255, 255, 255);
+  ImColor lineColor_ = ImColor(255, 255, 255, 255);
   float majorSize_ = 5.0f;
   float minorSize_ = 2.0f;
-  float padding = 2.0f;
+  float padding = 4.0f;
 };
