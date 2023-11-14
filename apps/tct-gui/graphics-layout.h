@@ -15,7 +15,7 @@ struct GraphicsLayout : public GraphicsItem {
                  ImVec2 preferredSize = ImVec2(0, 0),
                  ImVec4 margins = ImVec4(0, 0, 0, 0));
   virtual void layout();
-  std::string printLayout();
+  std::string toString();
   // left, top, right, bottom
   ImVec4 margins_;
   // width, height

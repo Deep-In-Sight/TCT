@@ -87,65 +87,6 @@ void Application::Create() {
 
 void Application::Run() {
   bool shouldClose = false;
-  GraphicsScene scene;
-  cv::Mat img = cv::imread("./data/images/MyImage01.jpg");
-  auto image1 = std::make_shared<GraphicImageItem>(img, "image1");
-  auto ruler1 =
-      std::make_shared<Ruler>(true, -10000, 10000, 100, 10, 40, "ruler1");
-  auto ruler2 =
-      std::make_shared<Ruler>(false, -10000, 10000, 100, 10, 40, "ruler2");
-  auto text1 =
-      std::make_shared<GraphicTextItem>("Some Text", ImVec2(0, 0), "text1");
-  image1->addChild(text1);
-  text1->setBackgroud(true);
-
-  auto rect1 = std::make_shared<GraphicRectItem>(ImVec2(0.0f, 0.0f),
-                                                 ImVec2(40.0f, 40.0f), "rect1");
-  image1->addChild(rect1);
-  auto vline1 =
-      std::make_shared<GraphicLineItem>(ImVec2(0, 0), ImVec2(0, 40), "vline1");
-  auto vline2 =
-      std::make_shared<GraphicLineItem>(ImVec2(0, 0), ImVec2(0, 20), "vline2");
-  auto vline3 =
-      std::make_shared<GraphicLineItem>(ImVec2(0, 0), ImVec2(0, 10), "vline3");
-  auto hline1 =
-      std::make_shared<GraphicLineItem>(ImVec2(0, 0), ImVec2(40, 0), "hline1");
-  auto hline2 =
-      std::make_shared<GraphicLineItem>(ImVec2(0, 0), ImVec2(20, 0), "hline2");
-  auto hline3 =
-      std::make_shared<GraphicLineItem>(ImVec2(0, 0), ImVec2(10, 0), "hline3");
-  rect1->fillColor_ = IMCOL32_GREEN;
-  vline1->lineColor_ = IMCOL32_RED;
-  vline2->lineColor_ = IMCOL32_RED;
-  vline3->lineColor_ = IMCOL32_RED;
-  hline1->lineColor_ = IMCOL32_RED;
-  hline2->lineColor_ = IMCOL32_RED;
-  hline3->lineColor_ = IMCOL32_RED;
-
-  scene.addItem(image1);
-  scene.addItem(ruler1);
-  scene.addItem(ruler2);
-  ruler1->setPos(ImVec2(0, -45));
-  ruler2->setPos(ImVec2(-45, 0));
-  rect1->setPos(ImVec2(100, 100));
-  rect1->addChild(vline1);
-  rect1->addChild(vline2);
-  rect1->addChild(vline3);
-  rect1->addChild(hline1);
-  rect1->addChild(hline2);
-  rect1->addChild(hline3);
-  vline1->setPos(ImVec2(20, 0));
-  vline2->setPos(ImVec2(30, 20));
-  vline3->setPos(ImVec2(35, 30));
-  hline1->setPos(ImVec2(0, 20));
-  hline2->setPos(ImVec2(20, 30));
-  hline3->setPos(ImVec2(30, 35));
-
-  // scene.rootItem_->clip(ImRect(-50, -50, 200, 200));
-
-  auto view = std::make_shared<GraphicsView>(&scene, true);
-  children.push_back(std::dynamic_pointer_cast<ImGuiWidget>(view));
-  view->lookAt(ImVec2(0.0f, 0.0f));
 
   while (!shouldClose) {
     glfwPollEvents();

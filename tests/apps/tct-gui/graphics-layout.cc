@@ -71,7 +71,7 @@ TEST(GraphicsLayout, TestHorizontalLayouts) {
             64);  // auto: root margin + child1 size + child2 size
   EXPECT_EQ(root->preferredSize_.y, 32);  // auto: bigger size
 
-  std::cout << root->printLayout();
+  std::cout << root->toString();
 }
 
 TEST(GraphicsLayout, TestVerticalLayouts) {
@@ -141,7 +141,7 @@ TEST(GraphicsLayout, TestVerticalLayouts) {
   EXPECT_EQ(root->preferredSize_.y,
             64);  // auto: root margin + child1 size + child2 size
 
-  std::cout << root->printLayout();
+  std::cout << root->toString();
 }
 
 TEST(GraphicsLayout, TestMixedLayouts) {
@@ -210,7 +210,7 @@ TEST(GraphicsLayout, TestMixedLayouts) {
   EXPECT_EQ(root->preferredSize_.x, 54);  // auto: bigger size
   EXPECT_EQ(root->preferredSize_.y,
             34);  // auto: root margin + child1 size + child2 size
-  std::cout << root->printLayout();
+  std::cout << root->toString();
 }
 
 TEST(GraphicsLayout, TestGridLayout) {
@@ -344,5 +344,5 @@ TEST(GraphicsLayout, TestGridLayout) {
   EXPECT_EQ(root->preferredSize_.x, 46);
   EXPECT_EQ(root->preferredSize_.y, 46);
 
-  std::cout << root->printLayout();
+  std::cout << root->toString();
 }

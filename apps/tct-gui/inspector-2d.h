@@ -1,9 +1,11 @@
 #pragma once
 #include <memory>
 
+#include "graphics-view.h"
 #include "image-widget.h"
 #include "imgui-widget.h"
 
+struct InspectorGraphicsView;
 struct Inspector2D : public ImGuiWidget {
   Inspector2D();
   ~Inspector2D();
@@ -13,14 +15,13 @@ struct Inspector2D : public ImGuiWidget {
 
   void DrawMenu();
 
-  void onMouseMove(ImVec2 mousePos);
-  void onMouseScroll(ImVec2 mousePos, float scroll);
+  void handleMouse();
 
-  std::shared_ptr<ImageWidget> imageWidget;
-  std::shared_ptr<ImageWidget> imageWidget2;
+  std::shared_ptr<GraphicsScene> scene_;
+  std::shared_ptr<InspectorGraphicsView> view_;
 
   bool firstFrame;
   bool imageSizeChanged;
-  bool windowSizeChanged;
+  bool windowChanged;
   ViewMode viewMode;
 };

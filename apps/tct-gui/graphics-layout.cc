@@ -12,7 +12,7 @@ GraphicsLayout::GraphicsLayout(const std::string& name, ImVec2 preferredSize,
 
 void GraphicsLayout::layout() {}
 
-std::string GraphicsLayout::printLayout() {
+std::string GraphicsLayout::toString() {
   std::function<void(GraphicsLayout*, int, std::ostringstream&)>
       printLayoutRecursive = [&](GraphicsLayout* layout, int depth,
                                  std::ostringstream& layoutStr) {
