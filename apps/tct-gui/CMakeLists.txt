@@ -21,13 +21,13 @@ set(TCT_SRCS
     application.cc
     node-editor.cc
     inspector-2d.cc
-    image-widget.cc
     utility.cc
     graphics-item.cc
     graphics-layout.cc
     graphics-item-impl.cc
     graphics-view.cc
-    transform.cc)
+    transform.cc
+    inspector-graphics-view.cc)
 
 add_executable(tct)
 

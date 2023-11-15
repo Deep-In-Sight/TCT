@@ -1,6 +1,7 @@
 #include "graphics-item.h"
 
 #include <algorithm>
+#include <iostream>
 
 #include "utility.h"
 
@@ -38,14 +39,18 @@ void GraphicsItem::transform(Transform T, ImVec2 origin) {
 }
 
 void GraphicsItem::translate(float dx, float dy, bool additive) {
-  T_.dx_ = (additive) ? (T_.dx_ + dx) : dx;
-  T_.dy_ = (additive) ? (T_.dy_ + dy) : dy;
+  Transform T1(1.0f, 1.0f, -origin_.x, -origin_.y);
+  Transform T2(1.0f, 1.0f, origin_.x, origin_.y);
+  Transform T(1.0f, 1.0f, dx, dy);
+  T_ = (additive) ? T2 * T * T1 * T_ : T2 * T * T1;
   update();
 }
 
 void GraphicsItem::scale(float sx, float sy, bool multiplicative) {
-  T_.sx_ = (multiplicative) ? (T_.sx_ * sx) : sx;
-  T_.sy_ = (multiplicative) ? (T_.sy_ * sy) : sy;
+  Transform T1(1.0f, 1.0f, -origin_.x, -origin_.y);
+  Transform T2(1.0f, 1.0f, origin_.x, origin_.y);
+  Transform T(sx, sy, 0.0f, 0.0f);
+  T_ = (multiplicative) ? T2 * T * T1 * T_ : T2 * T * T1;
   update();
 }
 
@@ -63,7 +68,7 @@ void GraphicsItem::setPos(ImVec2 pos) {
 
 void GraphicsItem::setOrigin(ImVec2 p) {
   origin_ = p;
-  update();
+  // update();
 }
 
 ImVec2 GraphicsItem::mapToParent(ImVec2 p) { return p + pos_; }
@@ -130,12 +135,19 @@ void GraphicsItem::update() {
   GraphicsItem* item = this;
   // combine all the transformations from this item up to the root
   while (item != nullptr) {
-    Transform Tback(1.0f, 1.0f, -item->origin_.x, -item->origin_.y);
-    Transform Tforth(1.0f, 1.0f, item->origin_.x, item->origin_.y);
+    // Transform T1(1.0f, 1.0f, -item->origin_.x, -item->origin_.y);
+    // Transform T2(1.0f, 1.0f, item->origin_.x, item->origin_.y);
     Transform Tpos(1.0f, 1.0f, item->pos_.x, item->pos_.y);
     // translate -origin, apply item's T_, move back origin, then move to pos in
     // parent
-    T = Tpos * Tforth * item->T_ * Tback * T;
+    // if (item->accumulateTransform_) {
+    //   item->Tlast_ = T2 * item->T_ * T1 * item->Tlast_;
+    //   // to prevent further accumulation in next children
+    //   item->accumulateTransform_ = false;
+    // } else {
+    //   item->Tlast_ = T2 * item->T_ * T1;
+    // }
+    T = Tpos * item->T_ * T;
     item = item->parent_;
   }
 
@@ -190,7 +202,7 @@ GraphicsItemPtr GraphicsItem::operator[](int index) {
 
 GraphicsItemPtr findItem(GraphicsItemPtr item, ImVec2 point) {
   // disable hit test for itself and all its children
-  if (item->isClickable_ == false) {
+  if (!item->isClickable_ || item->isHidden_) {
     return nullptr;
   }
 

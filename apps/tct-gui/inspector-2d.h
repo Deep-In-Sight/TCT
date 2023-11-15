@@ -2,7 +2,6 @@
 #include <memory>
 
 #include "graphics-view.h"
-#include "image-widget.h"
 #include "imgui-widget.h"
 
 struct InspectorGraphicsView;
@@ -23,5 +22,4 @@ struct Inspector2D : public ImGuiWidget {
   bool firstFrame;
   bool imageSizeChanged;
   bool windowChanged;
-  ViewMode viewMode;
 };

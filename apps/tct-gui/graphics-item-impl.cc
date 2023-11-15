@@ -185,14 +185,13 @@ GraphicTextItem::GraphicTextItem(std::string text, ImVec2 pos, std::string name)
 void GraphicTextItem::setText(std::string text) { text_ = text; }
 
 /**
- * @brief put the anchor of text box at corner number 0/1/2/3, 0 starts from
- * topleft and go clockwise..
+ * @brief put the anchor of text box at corner number 0/1/2/3/4/5/6/7/8
  *
  * 0────1─────2
  * │          │
- * 7   text   3
+ * 3 te[4]xt  5
  * │          │
- * 6────5─────4
+ * 6────7─────8
  *
  * @param corner
  */
@@ -205,8 +204,8 @@ void GraphicTextItem::paintSelf() {
   ImVec2 size = ImGui::CalcTextSize(text_.c_str());
   int w = size.x, h = size.y;
   int c = anchor_;
-  float x = (c == 0 || c == 7 || c == 6) ? 0 : (c == 1 || c == 5) ? -w / 2 : -w;
-  float y = (c == 0 || c == 1 || c == 2) ? 0 : (c == 3 || c == 7) ? -h / 2 : -h;
+  float x = (c % 3 == 0) ? 0 : (c % 3 == 1) ? -w / 2 : -w;
+  float y = (c / 3 == 0) ? 0 : (c / 3 == 1) ? -h / 2 : -h;
   bb_ = ImRect(x, y, x + w, y + h);
   bb_.Translate(sceneGeometries_[0]);
   if (background_) {

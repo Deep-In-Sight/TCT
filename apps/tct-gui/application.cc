@@ -13,7 +13,6 @@
 
 #include "graphics-item-impl.h"
 #include "graphics-view.h"
-#include "image-widget.h"
 #include "inspector-2d.h"
 #include "node-editor.h"
 #include "utility.h"
