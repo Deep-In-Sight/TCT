@@ -164,6 +164,8 @@ struct GraphicsItem {
    *
    */
   virtual void paintSelf();
+  virtual void paintBegin();
+  virtual void paintEnd();
   /**
    * @brief allow each item to have its own way to clip itself.
    *

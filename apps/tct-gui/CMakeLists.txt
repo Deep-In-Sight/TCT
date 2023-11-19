@@ -1,3 +1,4 @@
+# IMGUI source and header files
 set(IMGUI_DIR ${CMAKE_SOURCE_DIR}/3rdparty/imgui)
 set(IMGUI_SRCS
     ${IMGUI_DIR}/imgui.cpp
@@ -9,6 +10,7 @@ set(IMGUI_SRCS
     ${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp)
 set(IMGUI_INCLUDE_DIRS ${IMGUI_DIR} ${IMGUI_DIR}/backends)
 
+# IMGUI Node Editor source and header files
 set(IMGUI_NODE_DIR ${CMAKE_SOURCE_DIR}/3rdparty/imgui-node-editor)
 set(IMGUI_NODE_SRCS
     ${IMGUI_NODE_DIR}/imgui_node_editor.cpp
@@ -16,6 +18,7 @@ set(IMGUI_NODE_SRCS
     ${IMGUI_NODE_DIR}/imgui_canvas.cpp ${IMGUI_NODE_DIR}/crude_json.cpp)
 set(IMGUI_NODE_INCLUDE_DIRS ${IMGUI_NODE_DIR})
 
+# TCT source and header files
 set(TCT_SRCS
     main.cc
     application.cc
@@ -32,11 +35,17 @@ set(TCT_SRCS
 add_executable(tct)
 
 target_sources(tct PRIVATE ${TCT_SRCS} ${IMGUI_SRCS} ${IMGUI_NODE_SRCS})
-target_link_libraries(tct nlohmann_json::nlohmann_json glfw dl GL
-                      ${OpenCV_LIBRARIES})
+target_link_libraries(
+  tct
+  sdk
+  nlohmann_json::nlohmann_json
+  glfw
+  dl
+  GL
+  ${OpenCV_LIBRARIES})
 target_include_directories(
   tct PRIVATE ${IMGUI_INCLUDE_DIRS} ${IMGUI_NODE_INCLUDE_DIRS}
-              ${OpenCV_INCLUDE_DIRS})
+              ${OpenCV_INCLUDE_DIRS} ${PROJECT_SOURCE_DIR}/lib)
 
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/data
      DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/)

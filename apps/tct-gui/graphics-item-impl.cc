@@ -1,5 +1,7 @@
 #include "graphics-item-impl.h"
 
+#include <iostream>
+
 #include "utility.h"
 
 GraphicLineItem::GraphicLineItem(ImVec2 p1, ImVec2 p2, std::string name)
@@ -125,6 +127,9 @@ GraphicImageItem::GraphicImageItem(cv::Mat& image, std::string name)
 }
 
 void GraphicImageItem::setImage(cv::Mat& image) {
+  if (image.empty()) {
+    throw std::runtime_error("empty image");
+  }
   UploadCvMatToGpuTexture(image, (GLuint*)&imageTextureId_, &imageSize_);
   if (imageSize_ != geometries_[1]) {
     geometries_[1] = imageSize_;
@@ -263,7 +268,7 @@ Ruler::Ruler(bool horizontal, int min, int max, int major, int minor,
 
   ImRect highlightTick = (horizontal) ? ImRect(0, 0, 0, -majorSize_)
                                       : ImRect(0, 0, -majorSize_, 0);
-  auto highlightItem_ =
+  highlightItem_ =
       std::make_shared<GraphicLineItem>(highlightTick.Min, highlightTick.Max);
   tickGroup->addChild(highlightItem_);
 
@@ -294,3 +299,14 @@ void Ruler::highlight(int value) {
 }
 
 Ruler::~Ruler() {}
+
+void Ruler::paintBegin() {
+  oldFontSize_ = ImGui::GetFont()->Scale;
+  ImGui::GetFont()->Scale *= 0.7;
+  ImGui::PushFont(ImGui::GetFont());
+}
+
+void Ruler::paintEnd() {
+  ImGui::GetFont()->Scale = oldFontSize_;
+  ImGui::PopFont();
+}

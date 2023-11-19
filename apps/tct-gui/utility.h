@@ -33,3 +33,5 @@ static inline bool operator==(const ImRect& lhs, const ImRect& rhs) {
 static inline bool operator!=(const ImRect& lhs, const ImRect& rhs) {
   return lhs.Min != rhs.Min || lhs.Max != rhs.Max;
 }
+
+std::vector<cv::Mat> splitChannels(const cv::Mat& image);

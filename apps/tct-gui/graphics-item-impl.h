@@ -72,6 +72,11 @@ struct Ruler : public GraphicsItem {
   Ruler(bool horizontal, int min = -1000, int max = 1000, int major = 100,
         int minor = 10, float size = 40, std::string name = "");
   ~Ruler();
+  void paintBegin() override;
+  void paintEnd() override;
+
+  float oldFontSize_;
+
   bool orientation_;
   void highlight(int value);
   GraphicsItemPtr highlightItem_;

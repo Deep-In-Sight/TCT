@@ -15,6 +15,9 @@
 #include "graphics-view.h"
 #include "inspector-2d.h"
 #include "node-editor.h"
+#include "sdk/tof/depth-calc.h"
+#include "sdk/tof/moving-average.h"
+#include "sdk/tof/playback-src.h"
 #include "utility.h"
 
 Application& Application::GetInstance() {
@@ -78,14 +81,41 @@ Application::~Application() {
 
 void Application::Create() {
   auto nodeEditor = std::make_shared<NodeEditor>();
-  auto inspector2D = std::make_shared<Inspector2D>();
+  // auto inspector2D = std::make_shared<Inspector2D>();
 
   children.push_back(std::dynamic_pointer_cast<ImGuiWidget>(nodeEditor));
-  children.push_back(std::dynamic_pointer_cast<ImGuiWidget>(inspector2D));
+  // children.push_back(std::dynamic_pointer_cast<ImGuiWidget>(inspector2D));
 }
 
 void Application::Run() {
   bool shouldClose = false;
+
+  // pipeline construct
+  auto src = new PlaybackSource("filesrc", false, false);
+  auto depthCalc = new DepthCalc("raw2depth");
+  auto ma = new MovingAverage("movingAverage");
+  auto inspector = new Inspector2D();
+  src->GetSourcePad()->Link(depthCalc->GetSinkPad());
+  depthCalc->GetSourcePad()->Link(ma->GetSinkPad());
+  ma->GetSourcePad()->AddObserver(inspector);
+
+  // pipeline config
+  src->SetFilename(
+      "/home/linh/workspace/jupyter/20230524_EK640_Singapore/save_frame/"
+      "37MHz_1.4m_73x4x480x640_16SC1.bin");
+  src->SetLoop(true);
+  src->SetFrameRate(30);
+  src->SetFormat(MatShape(4, 480, 640), CV_16SC1);
+  int fmodMHz = 37;
+  float offset = 1.4;
+  depthCalc->SetConfig(fmodMHz * 1e6, offset);
+  int MAwidth = 32;
+  ma->SetWindowSize(MAwidth);
+
+  // start pipeline
+  src->Start();
+
+  children.push_back(std::shared_ptr<ImGuiWidget>(inspector));
 
   while (!shouldClose) {
     glfwPollEvents();

@@ -41,7 +41,7 @@ class InspectorBitmap : public PadObserver {
    * channel.
    * @throw std::runtime_error if x or y is out of frame
    */
-  Vec2f GetDepthAmplitude(int x, int y);
+  Vec2f GetPixel(int x, int y);
 
  protected:
   /**
@@ -54,8 +54,6 @@ class InspectorBitmap : public PadObserver {
    * @param buffer
    */
   virtual void Render(Mat& frame) = 0;
-
- private:
   Mat frame_;
 };
 

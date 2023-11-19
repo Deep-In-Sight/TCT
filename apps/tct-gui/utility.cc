@@ -52,3 +52,20 @@ void UploadCvMatToGpuTexture(const cv::Mat& image, GLuint* pTextureId,
   // set image size
   if (pSize != nullptr) *pSize = ImVec2(rgba.cols, rgba.rows);
 }
+
+std::vector<cv::Mat> splitChannels(const cv::Mat& image) {
+  std::vector<cv::Mat> channels;
+  int channel, width, height;
+  auto size = image.size;  // not image.size()
+
+  channel = size.dims() > 2 ? size[0] : 1;
+  height = size.dims() > 2 ? size[1] : size[0];
+  width = size.dims() > 2 ? size[2] : size[1];
+
+  for (int c = 0; c < channel; c++) {
+    uint8_t* data = image.data + c * width * height * image.elemSize();
+    channels.push_back(cv::Mat(height, width, image.type(), data));
+  }
+
+  return channels;
+}

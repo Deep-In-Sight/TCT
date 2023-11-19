@@ -178,13 +178,19 @@ void GraphicsItem::update() {
 void GraphicsItem::paint() {
   if (isHidden_) return;
 
+  paintBegin();
+
   paintSelf();
   for (auto child : children_) {
     child->paint();
   }
+
+  paintEnd();
 }
 
 void GraphicsItem::paintSelf() {}
+void GraphicsItem::paintBegin() {}
+void GraphicsItem::paintEnd() {}
 
 void GraphicsItem::clipSelf(ImRect r) {}
 

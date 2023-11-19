@@ -1,5 +1,6 @@
 #include "inspector-graphics-view.h"
 
+#include "inspector-2d.h"
 #include "utility.h"
 /*
  * ┌────────hLayoutTop─────────────────────────────────────────────────────┐
@@ -144,10 +145,16 @@ void InspectorGraphicsView::setImageFitMode(ViewMode mode) {
   }
 }
 
-void InspectorGraphicsView::setImage(cv::Mat& image) {
-  // TODO: check Mat type and sidebyside mode
-  imageItems_[0]->setImage(image);
-  imageItems_[1]->setImage(image);
+void InspectorGraphicsView::setImages(std::vector<cv::Mat> images) {
+  imageItems_[0]->setImage(images[0]);
+  if (sideBySide_) {
+    if (images.size() > 1) {
+      imageItems_[1]->setImage(images[1]);
+    } else {
+      // TODO: write some text saying no data on the right side
+      enableSideBySide(false);
+    }
+  }
 }
 
 void InspectorGraphicsView::onMouseMove(ImVec2 mousePos) {
@@ -158,13 +165,25 @@ void InspectorGraphicsView::onMouseMove(ImVec2 mousePos) {
     mouseLabelItem_->isHidden_ = true;
     return;
   }
+  int index = (item == imageItems_[0]) ? 0 : 1;
 
   mouseLabelItem_->isHidden_ = false;
   ImVec2 mousePosImage = item->mapFromScene(mousePos);
   ImVec2 uv = ImFloor(item->toOriginalUV(mousePos));
-  mouseLabelItem_->setText(std::string("x:") + std::to_string((int)uv.x) +
-                           ",y:" + std::to_string((int)uv.y));
+
+  auto values = inspector_->GetPixel(uv.x, uv.y);
+
+  std::ostringstream label;
+  label << "Loc: [" << (int)uv.x << "," << (int)uv.y << "]" << std::endl
+        << "Depth: " << values[0] << std::endl
+        << "Intensity: " << values[1] << std::endl;
+  mouseLabelItem_->setText(label.str());
   mouseLabelItem_->setPos(mouseLabelItem_->parent_->mapFromScene(mousePos));
+
+  auto hRuler = hRulerItems_[index];
+  auto vRuler = vRulerItems_[index];
+  hRuler->highlight(uv.x);
+  vRuler->highlight(uv.y);
 }
 
 void InspectorGraphicsView::onMouseScroll(ImVec2 mousePos, float scroll) {

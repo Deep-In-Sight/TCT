@@ -7,6 +7,8 @@
 
 enum class ViewMode { kViewFit, kViewStretch, kViewOriginal };
 
+class Inspector2D;
+
 struct InspectorGraphicsView : public GraphicsView {
   InspectorGraphicsView(std::shared_ptr<GraphicsScene>& scene,
                         bool debug = false);
@@ -14,7 +16,8 @@ struct InspectorGraphicsView : public GraphicsView {
   void enableSideBySide(bool enable);
   void enableRulers(bool enable);
   void setImageFitMode(ViewMode mode);
-  void setImage(cv::Mat& image);
+  void setImages(std::vector<cv::Mat> images);
+  ImVec2 screenToImageUV(ImVec2 screenPos);
   std::shared_ptr<GraphicLineItem> addLineToImage(int channel, ImVec2 p1,
                                                   ImVec2 p2,
                                                   const std::string& name);
@@ -35,12 +38,14 @@ struct InspectorGraphicsView : public GraphicsView {
   ViewMode viewMode_;
   ImRect lastContentRect_;
   bool layoutChanged_;
-  float hRulerHeight_ = 25;
-  float vRulerWidth_ = 40;
+  float hRulerHeight_ = 20;
+  float vRulerWidth_ = 30;
   std::shared_ptr<GraphicsHBoxLayout> hLayoutTop_;
   std::shared_ptr<GraphicsGridLayout> grids_[2];
   std::shared_ptr<GraphicImageItem> imageItems_[2];
   std::shared_ptr<Ruler> hRulerItems_[2];
   std::shared_ptr<Ruler> vRulerItems_[2];
   std::shared_ptr<GraphicTextItem> mouseLabelItem_;
+
+  Inspector2D* inspector_;
 };

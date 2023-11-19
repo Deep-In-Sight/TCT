@@ -1,11 +1,16 @@
 #pragma once
+#include <sdk/inspector/inspector-bitmap.h>
+
 #include <memory>
+#include <mutex>
+#include <queue>
 
 #include "graphics-view.h"
 #include "imgui-widget.h"
 
 struct InspectorGraphicsView;
-struct Inspector2D : public ImGuiWidget {
+struct ColormapConfig;
+struct Inspector2D : public ImGuiWidget, public InspectorBitmap {
   Inspector2D();
   ~Inspector2D();
 
@@ -13,8 +18,12 @@ struct Inspector2D : public ImGuiWidget {
   void ImGuiLayout() override;
 
   void DrawMenu();
+  void ShowColormapSettingsPopup();
+  void ShowToolsSettingsPopup();
+  void HandleMouse();
 
-  void handleMouse();
+  void Render(cv::Mat& frame) override;
+  void OnFrameFormatChanged(const MatShape& shape, int type) override;
 
   std::shared_ptr<GraphicsScene> scene_;
   std::shared_ptr<InspectorGraphicsView> view_;
@@ -22,4 +31,10 @@ struct Inspector2D : public ImGuiWidget {
   bool firstFrame;
   bool imageSizeChanged;
   bool windowChanged;
+  std::vector<cv::Mat> currentImages_;
+
+  std::vector<ColormapConfig> cmapConfigs_;
+
+  bool frameRendered_;
+  std::mutex renderMutex_;
 };
