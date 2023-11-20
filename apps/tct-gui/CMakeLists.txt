@@ -10,6 +10,12 @@ set(IMGUI_SRCS
     ${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp)
 set(IMGUI_INCLUDE_DIRS ${IMGUI_DIR} ${IMGUI_DIR}/backends)
 
+# IMPLOT source and header files
+set(IMPLOT_DIR ${CMAKE_SOURCE_DIR}/3rdparty/implot)
+set(IMPLOT_SRCS ${IMPLOT_DIR}/implot.cpp ${IMPLOT_DIR}/implot_items.cpp
+                ${IMPLOT_DIR}/implot_demo.cpp)
+set(IMPLOT_INCLUDE_DIRS ${IMPLOT_DIR})
+
 # IMGUI Node Editor source and header files
 set(IMGUI_NODE_DIR ${CMAKE_SOURCE_DIR}/3rdparty/imgui-node-editor)
 set(IMGUI_NODE_SRCS
@@ -30,11 +36,13 @@ set(TCT_SRCS
     graphics-item-impl.cc
     graphics-view.cc
     transform.cc
-    inspector-graphics-view.cc)
+    inspector-graphics-view.cc
+    inspector-tools.cc)
 
 add_executable(tct)
 
-target_sources(tct PRIVATE ${TCT_SRCS} ${IMGUI_SRCS} ${IMGUI_NODE_SRCS})
+target_sources(tct PRIVATE ${TCT_SRCS} ${IMGUI_SRCS} ${IMGUI_NODE_SRCS}
+                           ${IMPLOT_SRCS})
 target_link_libraries(
   tct
   sdk
@@ -44,8 +52,10 @@ target_link_libraries(
   GL
   ${OpenCV_LIBRARIES})
 target_include_directories(
-  tct PRIVATE ${IMGUI_INCLUDE_DIRS} ${IMGUI_NODE_INCLUDE_DIRS}
-              ${OpenCV_INCLUDE_DIRS} ${PROJECT_SOURCE_DIR}/lib)
+  tct
+  PRIVATE ${IMGUI_INCLUDE_DIRS} ${IMGUI_NODE_INCLUDE_DIRS}
+          ${IMPLOT_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS}
+          ${PROJECT_SOURCE_DIR}/lib)
 
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/data
      DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/)

@@ -15,6 +15,8 @@ struct GraphicLineItem : public GraphicsItem {
 
 struct GraphicRectItem : public GraphicsItem {
   GraphicRectItem(ImVec2 p1, ImVec2 p2, std::string name = "");
+  void modify(ImVec2 p1, ImVec2 p2);
+  void modify(ImRect r);
   void paintSelf() override;
   void clipSelf(ImRect r) override;
   bool hitTest(ImVec2 p) override;
@@ -88,4 +90,15 @@ struct Ruler : public GraphicsItem {
   float majorSize_ = 5.0f;
   float minorSize_ = 2.0f;
   float padding = 4.0f;
+};
+
+struct CrossHairItem : public GraphicsItem {
+  CrossHairItem(std::string name = "", ImVec2 pos = ImVec2(0, 0));
+  void paintSelf() override;
+  void clipSelf(ImRect r) override;
+  bool hitTest(ImVec2 p) override;
+  ImVec2 pos_;
+  float sizeDiv2_ = 5.0f;
+  ImColor color_ = ImColor(255, 0, 0, 255);
+  float thickness_ = 1.0f;
 };

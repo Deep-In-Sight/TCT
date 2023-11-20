@@ -6,6 +6,7 @@
 #include "graphics-item-impl.h"
 #include "graphics-layout.h"
 #include "inspector-graphics-view.h"
+#include "inspector-tools.h"
 #include "utility.h"
 
 Inspector2D::Inspector2D() {
@@ -28,26 +29,27 @@ void Inspector2D::ImGuiDraw() {
   static ImGuiWindowFlags windowFlags = ImGuiWindowFlags_MenuBar |
                                         ImGuiWindowFlags_NoScrollbar |
                                         ImGuiWindowFlags_NoScrollWithMouse;
+  bool needRelayout;
 
-  bool needRelayout =
-      firstFrame || imageSizeChanged || windowChanged || view_->layoutChanged_;
   static ImVec2 lastWindowPos = ImVec2(0.0f, 0.0f);
   static ImVec2 lastWindowSize = ImVec2(0.0f, 0.0f);
   static ImVec2 lastMousePos = ImVec2(0.0f, 0.0f);
 
   if (ImGui::Begin("Inspector 2D", nullptr, windowFlags)) {
-    if (needRelayout) {
-      ImGuiLayout();
-    }
-
     {
       std::lock_guard<std::mutex> lock(renderMutex_);
+      needRelayout = firstFrame || imageSizeChanged || windowChanged ||
+                     view_->layoutChanged_;
       if (!frameRendered_) {
         if (!currentImages_.empty()) {
           view_->setImages(currentImages_);
         }
         frameRendered_ = true;
       }
+    }
+
+    if (needRelayout) {
+      ImGuiLayout();
     }
 
     // draw menus
@@ -73,6 +75,14 @@ void Inspector2D::ImGuiDraw() {
     }
   }
   ImGui::End();
+
+  for (auto& child : children) {
+    child->ImGuiDraw();
+    auto toolView = std::dynamic_pointer_cast<PlotViewWindow>(child);
+    if (toolView && !toolView->isOpened) {
+      view_->scene_->removeItem(toolView->graphicsItem);
+    }
+  }
 }
 
 void Inspector2D::ImGuiLayout() {
@@ -227,12 +237,16 @@ void Inspector2D::ShowToolsSettingsPopup() {
                         bool disableX = false, bool disableY = false) {
     auto xlabel = (name + ".X");
     auto ylabel = (name + ".Y");
+    int x = (int)p.x;
+    int y = (int)p.y;
     if (!disableX)
-      ImGui::DragInt(xlabel.c_str(), (int*)&p.x, 1.0f, 0,
+      ImGui::DragInt(xlabel.c_str(), (int*)&x, 1.0f, 0,
                      view_->imageItems_[0]->imageSize_.x);
     if (!disableY)
-      ImGui::DragInt(ylabel.c_str(), (int*)&p.y, 1.0f, 0,
+      ImGui::DragInt(ylabel.c_str(), (int*)&y, 1.0f, 0,
                      view_->imageItems_[0]->imageSize_.y);
+    p.x = x;
+    p.y = y;
   };
   auto editARect = [&](ImRect& r, const std::string& name,
                        bool disableMaxX = false, bool disableMaxY = false) {
@@ -251,9 +265,13 @@ void Inspector2D::ShowToolsSettingsPopup() {
   ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
   if (ImGui::BeginPopupModal("Tracker Settings", nullptr, popupFlags)) {
     static ImVec2 uv;
+    static int channel = 0;
+    static int id = 0;
+    ImGui::Combo("Channel", &channel, "Depth\0Amplitude\0");
     editAPoint(uv, "p");
     if (ImGui::Button("OK")) {
-      // TODO add a tracker
+      std::string name = "Tracker " + std::to_string(id++);
+      AddTracker(name, channel, uv);
       ImGui::CloseCurrentPopup();
     }
     if (ImGui::Button("Cancel")) {
@@ -265,7 +283,10 @@ void Inspector2D::ShowToolsSettingsPopup() {
   if (ImGui::BeginPopupModal("Scanner Settings", nullptr, popupFlags)) {
     static ImRect line;
     static int direction = 0;
+    static int channel = 0;
+    static int id = 0;
     ImGui::Combo("Direction", &direction, "Horizontal\0Vertical\0");
+    ImGui::Combo("Channel", &channel, "Depth\0Amplitude\0");
     bool horizontal = (direction == 0);
     if (horizontal)
       editARect(line, "Line", false, true);
@@ -273,7 +294,8 @@ void Inspector2D::ShowToolsSettingsPopup() {
       editARect(line, "Line", true, false);
 
     if (ImGui::Button("OK")) {
-      // TODO add a tracker
+      std::string name = "Scanner " + std::to_string(id++);
+      AddLineScanner(name, channel, line, horizontal);
       ImGui::CloseCurrentPopup();
     }
     if (ImGui::Button("Cancel")) {
@@ -284,9 +306,13 @@ void Inspector2D::ShowToolsSettingsPopup() {
   ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
   if (ImGui::BeginPopupModal("Histogram Settings", nullptr, popupFlags)) {
     static ImRect rect;
+    static int channel = 0;
+    static int id = 0;
+    ImGui::Combo("Channel", &channel, "Depth\0Amplitude\0");
     editARect(rect, "Roi");
     if (ImGui::Button("OK")) {
-      // TODO add a tracker
+      std::string name = "Histogram " + std::to_string(id++);
+      AddHistogram(name, channel, rect);
       ImGui::CloseCurrentPopup();
     }
     if (ImGui::Button("Cancel")) {
@@ -352,4 +378,56 @@ void Inspector2D::Render(cv::Mat& frame) {
 
 void Inspector2D::OnFrameFormatChanged(const MatShape& shape, int type) {
   imageSizeChanged = true;
+}
+
+void Inspector2D::AddLineScanner(const std::string& name, int channel,
+                                 ImRect line, bool isHorizontal) {
+  std::shared_ptr<ImGuiWidget> item;
+  if (isHorizontal) {
+    item = std::make_shared<HLineScannerView>(name);
+  } else {
+    item = std::make_shared<VLineScannerView>(name);
+  }
+
+  // auto scanner = std::dynamic_pointer_cast<InspectorScanner>(item);
+  // scanner->SelectChannel((DepthAmplitudeChannel)channel);
+
+  children.push_back(item);
+}
+
+void Inspector2D::AddHistogram(const std::string& name, int channel,
+                               ImRect rect) {
+  auto histogram = std::make_shared<HistogramView>(name);
+  this->GetPad()->AddObserver(histogram.get());
+  histogram->SelectChannel((DepthAmplitudeChannel)channel);
+  histogram->SetRoi(rect.Min.x, rect.Min.y, rect.Max.x, rect.Max.y);
+
+  auto rectItem = std::make_shared<GraphicRectItem>(rect.Min, rect.Max, name);
+  rectItem->fillColor_ = ImColor(0, 255, 0, 20);
+  rectItem->lineColor_ = ImColor(0, 255, 0, 255);
+
+  auto imageItem = view_->imageItems_[channel];
+  imageItem->addChild(rectItem);
+
+  histogram->graphicsItem = rectItem;
+  children.push_back(histogram);
+}
+
+void Inspector2D::AddTracker(const std::string& name, int channel,
+                             ImVec2 point) {
+  auto tracker = std::make_shared<TrackerView>(name);
+  this->GetPad()->AddObserver(tracker.get());
+  tracker->SelectChannel((DepthAmplitudeChannel)channel);
+  tracker->SetLocation(point.x, point.y);
+
+  // add a marker to image view
+  auto markerItem = std::make_shared<CrossHairItem>(name);
+  auto imageItem = view_->imageItems_[channel];
+  imageItem->addChild(markerItem);
+  markerItem->setPos(point);
+
+  // add a reference of the marker to the inspector tool, so it can move the
+  // marker around
+  tracker->graphicsItem = markerItem;
+  children.push_back(tracker);
 }

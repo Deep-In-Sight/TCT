@@ -63,7 +63,6 @@ class InspectorTracker : public PadObserver {
    */
   virtual void RenderPoint(float value) = 0;
 
- private:
   int point_x;
   int point_y;
   float point_val;

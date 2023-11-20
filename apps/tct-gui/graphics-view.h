@@ -7,6 +7,7 @@ struct GraphicsScene {
   ~GraphicsScene();
 
   void addItem(GraphicsItemPtr item);
+  void removeItem(GraphicsItemPtr item);
   void paint();
   GraphicsItemPtr itemAt(ImVec2 p);
   GraphicsItemPtr getItemByName(const std::string& name);

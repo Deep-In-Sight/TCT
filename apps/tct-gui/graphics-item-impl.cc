@@ -56,6 +56,14 @@ GraphicRectItem::GraphicRectItem(ImVec2 pmin, ImVec2 pmax, std::string name)
   geometries_.push_back(pmax);
 }
 
+void GraphicRectItem::modify(ImVec2 pmin, ImVec2 pmax) {
+  geometries_[0] = pmin;
+  geometries_[1] = pmax;
+  update();
+}
+
+void GraphicRectItem::modify(ImRect r) { modify(r.Min, r.Max); }
+
 void GraphicRectItem::paintSelf() {
   if (sceneGeometries_.size() < 2) {
     return;
@@ -309,4 +317,41 @@ void Ruler::paintBegin() {
 void Ruler::paintEnd() {
   ImGui::GetFont()->Scale = oldFontSize_;
   ImGui::PopFont();
+}
+
+CrossHairItem::CrossHairItem(std::string name, ImVec2 pos)
+    : GraphicsItem(name), pos_(pos) {
+  geometries_.push_back(ImVec2(0, 0));
+
+  lineColor_ = color_;
+  lineWidth_ = thickness_;
+}
+
+void CrossHairItem::paintSelf() {
+  ImVec2 p = sceneGeometries_[0];
+  auto pMin = p - ImVec2(sizeDiv2_, sizeDiv2_);
+  auto pMax = p + ImVec2(sizeDiv2_, sizeDiv2_);
+  ImRect r(pMin, pMax);
+
+  auto p1 = (r.GetTL() + r.GetTR()) / 2;
+  auto p2 = (r.GetBL() + r.GetBR()) / 2;
+  auto p3 = (r.GetTL() + r.GetBL()) / 2;
+  auto p4 = (r.GetTR() + r.GetBR()) / 2;
+
+  ImGui::GetWindowDrawList()->AddRect(r.Min, r.Max, lineColor_, 0, 0,
+                                      lineWidth_);
+  ImGui::GetWindowDrawList()->AddLine(p1, p2, lineColor_, lineWidth_);
+  ImGui::GetWindowDrawList()->AddLine(p3, p4, lineColor_, lineWidth_);
+}
+
+void CrossHairItem::clipSelf(ImRect r) {
+  ImRect rect(sceneGeometries_[0], sceneGeometries_[1]);
+  rect.ClipWithFull(r);
+  sceneGeometries_[0] = rect.Min;
+  sceneGeometries_[1] = rect.Max;
+}
+
+bool CrossHairItem::hitTest(ImVec2 p) {
+  ImRect rect(sceneGeometries_[0], sceneGeometries_[1]);
+  return rect.Contains(p);
 }

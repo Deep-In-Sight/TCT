@@ -25,6 +25,11 @@ struct Inspector2D : public ImGuiWidget, public InspectorBitmap {
   void Render(cv::Mat& frame) override;
   void OnFrameFormatChanged(const MatShape& shape, int type) override;
 
+  void AddLineScanner(const std::string& name, int channel, ImRect line,
+                      bool isHorizontal);
+  void AddHistogram(const std::string& name, int channel, ImRect rect);
+  void AddTracker(const std::string& name, int channel, ImVec2 point);
+
   std::shared_ptr<GraphicsScene> scene_;
   std::shared_ptr<InspectorGraphicsView> view_;
 

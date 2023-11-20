@@ -3,6 +3,7 @@
 #include <GLFW/glfw3.h>
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
+#include <implot.h>
 
 #include <fstream>
 #include <iostream>
@@ -59,6 +60,8 @@ Application::Application() {
   imguiContext = ImGui::CreateContext();
   ImGui::SetCurrentContext(imguiContext);
 
+  ImPlot::CreateContext();
+
   ImGuiIO& io = ImGui::GetIO();
   io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
   io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
@@ -73,6 +76,7 @@ Application::Application() {
 Application::~Application() {
   ImGui_ImplOpenGL3_Shutdown();
   ImGui_ImplGlfw_Shutdown();
+  ImPlot::DestroyContext();
   ImGui::DestroyContext();
 
   glfwDestroyWindow(glfwWindow);
@@ -100,9 +104,7 @@ void Application::Run() {
   ma->GetSourcePad()->AddObserver(inspector);
 
   // pipeline config
-  src->SetFilename(
-      "/home/linh/workspace/jupyter/20230524_EK640_Singapore/save_frame/"
-      "37MHz_1.4m_73x4x480x640_16SC1.bin");
+  src->SetFilename("./data/videos/37MHz_1.4m_73x4x480x640_16SC1.bin");
   src->SetLoop(true);
   src->SetFrameRate(30);
   src->SetFormat(MatShape(4, 480, 640), CV_16SC1);
@@ -133,6 +135,7 @@ void Application::Run() {
 
     ImGui::ShowMetricsWindow();
     ImGui::ShowDemoWindow();
+    ImPlot::ShowDemoWindow();
 
     ImGui::Render();
     int display_w, display_h;

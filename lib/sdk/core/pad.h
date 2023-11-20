@@ -106,7 +106,11 @@ class MatShape {
   int p_[6];
 };
 
+class Pad;
+
 class PadObserver {
+  friend class Pad;
+
  public:
   PadObserver();
   /**
@@ -137,10 +141,13 @@ class PadObserver {
    */
   void SelectChannel(DepthAmplitudeChannel channel);
 
+  Pad *GetPad();
+
  protected:
   DepthAmplitudeChannel channel_;
   MatShape mat_shape_;
   int mat_type_;
+  Pad *pad_;
 };
 
 /**

@@ -9,6 +9,13 @@ GraphicsScene::~GraphicsScene() {}
 
 void GraphicsScene::addItem(GraphicsItemPtr item) { rootItem_->addChild(item); }
 
+void GraphicsScene::removeItem(GraphicsItemPtr item) {
+  if (item->parent_ == nullptr) {
+    return;
+  }
+  item->parent_->removeChild(item);
+}
+
 void GraphicsScene::paint() { rootItem_->paint(); }
 
 GraphicsItemPtr GraphicsScene::itemAt(ImVec2 p) {
