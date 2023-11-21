@@ -44,23 +44,15 @@ struct PlotViewWindow : public ImGuiWidget {
   PlotViewWindow(const std::string& name);
 
   virtual void ImGuiDraw() override;
-  void ImGuiLayout() override;
 
-  bool isOpened = true;
-  int windowFlags = ImGuiWindowFlags_NoSavedSettings;
+  bool isOpened;
+  int windowFlags;
   std::shared_ptr<GraphicsItem> graphicsItem;
   std::mutex renderMutex_;
 };
 
-struct HLineScannerView : public PlotViewWindow, public InspectorHScanner {
-  HLineScannerView(const std::string& name);
-  void ImGuiDraw() override;
-  void RenderRange(const std::vector<float>& vec) override;
-  void OnFrameFormatChanged(const MatShape& shape, int type) override;
-};
-
-struct VLineScannerView : public PlotViewWindow, public InspectorVScanner {
-  VLineScannerView(const std::string& name);
+struct LineScannerView : public PlotViewWindow, public InspectorScanner {
+  LineScannerView(const std::string& name);
   void ImGuiDraw() override;
   void RenderRange(const std::vector<float>& vec) override;
   void OnFrameFormatChanged(const MatShape& shape, int type) override;

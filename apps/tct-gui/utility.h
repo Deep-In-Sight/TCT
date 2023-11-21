@@ -35,3 +35,23 @@ static inline bool operator!=(const ImRect& lhs, const ImRect& rhs) {
 }
 
 std::vector<cv::Mat> splitChannels(const cv::Mat& image);
+
+struct ImVec2i {
+  ImVec2i() : x(0), y(0) {}
+  ImVec2i(int x, int y) : x(x), y(y) {}
+  ImVec2i(const ImVec2& v) : x((int)v.x), y((int)v.y) {}
+
+  operator ImVec2() const { return ImVec2((float)x, (float)y); }
+
+  int x, y;
+};
+
+struct ImRecti {
+  ImRecti() : Min(0, 0), Max(0, 0) {}
+  ImRecti(int x0, int y0, int x1, int y1) : Min(x0, y0), Max(x1, y1) {}
+  ImRecti(const ImVec2i& min, const ImVec2i& max) : Min(min), Max(max) {}
+  ImRecti(const ImRect& r) : Min(r.Min), Max(r.Max) {}
+
+  operator ImRect() const { return ImRect(Min, Max); }
+  ImVec2i Min, Max;
+};

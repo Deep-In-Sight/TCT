@@ -15,8 +15,6 @@ struct GraphicLineItem : public GraphicsItem {
 
 struct GraphicRectItem : public GraphicsItem {
   GraphicRectItem(ImVec2 p1, ImVec2 p2, std::string name = "");
-  void modify(ImVec2 p1, ImVec2 p2);
-  void modify(ImRect r);
   void paintSelf() override;
   void clipSelf(ImRect r) override;
   bool hitTest(ImVec2 p) override;
@@ -93,7 +91,7 @@ struct Ruler : public GraphicsItem {
 };
 
 struct CrossHairItem : public GraphicsItem {
-  CrossHairItem(std::string name = "", ImVec2 pos = ImVec2(0, 0));
+  CrossHairItem(const std::string& name = "", ImVec2 pos = ImVec2(0, 0));
   void paintSelf() override;
   void clipSelf(ImRect r) override;
   bool hitTest(ImVec2 p) override;
@@ -101,4 +99,24 @@ struct CrossHairItem : public GraphicsItem {
   float sizeDiv2_ = 5.0f;
   ImColor color_ = ImColor(255, 0, 0, 255);
   float thickness_ = 1.0f;
+};
+
+struct InspectorMarker : public GraphicsItem {
+  InspectorMarker(const std::string& name = "");
+  void AddLabel(std::string text, ImVec2 pos, int anchor = 0);
+  void UpdateLabel(int labelIndex, ImVec2 pos, const std::string& text = "");
+  void EnableLabel(bool enable);
+  std::vector<std::shared_ptr<GraphicTextItem>> labels;
+};
+struct LineMarker : public InspectorMarker {
+  LineMarker(ImVec2 p1, ImVec2 p2, const std::string& name = "");
+  void modify(ImVec2 p1, ImVec2 p2);
+};
+struct RectMarker : public InspectorMarker {
+  RectMarker(ImVec2 p1, ImVec2 p2, const std::string& name = "");
+  void modify(ImVec2 p1, ImVec2 p2);
+};
+struct CrossHairMarker : public InspectorMarker {
+  CrossHairMarker(ImVec2 pos = ImVec2(0, 0), const std::string& name = "");
+  void modify(ImVec2 pos);
 };

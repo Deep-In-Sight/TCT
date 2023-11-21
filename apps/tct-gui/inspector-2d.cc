@@ -19,6 +19,7 @@ Inspector2D::Inspector2D() {
   firstFrame = true;
   imageSizeChanged = false;
   windowChanged = false;
+  markersDecorated = false;
 
   frameRendered_ = false;
 }
@@ -124,13 +125,14 @@ void Inspector2D::DrawMenu() {
         ImGui::EndMenu();  // end menu View / View Mode
       }
       ImGui::Separator();
-      if (ImGui::MenuItem("Zoom In", nullptr, nullptr)) {
-        // imageWidget->setZoom(0.1f);
+      if (ImGui::MenuItem("Marker Labels", nullptr, &markersDecorated)) {
+        for (auto& child : children) {
+          auto view = std::dynamic_pointer_cast<PlotViewWindow>(child);
+          auto marker =
+              std::dynamic_pointer_cast<InspectorMarker>(view->graphicsItem);
+          marker->EnableLabel(markersDecorated);
+        }
       }
-      if (ImGui::MenuItem("Zoom Out", nullptr, nullptr)) {
-        // imageWidget->setZoom(-0.1f);
-      }
-      ImGui::Separator();
       bool rulersEnabled = view_->rulersEnabled_;
       if (ImGui::MenuItem("Rulers", nullptr, &rulersEnabled)) {
         view_->enableRulers(rulersEnabled);
@@ -239,18 +241,21 @@ void Inspector2D::ShowToolsSettingsPopup() {
     auto ylabel = (name + ".Y");
     int x = (int)p.x;
     int y = (int)p.y;
+    ImGui::BeginGroup();
     if (!disableX)
       ImGui::DragInt(xlabel.c_str(), (int*)&x, 1.0f, 0,
                      view_->imageItems_[0]->imageSize_.x);
     if (!disableY)
       ImGui::DragInt(ylabel.c_str(), (int*)&y, 1.0f, 0,
                      view_->imageItems_[0]->imageSize_.y);
+    ImGui::EndGroup();
     p.x = x;
     p.y = y;
   };
   auto editARect = [&](ImRect& r, const std::string& name,
                        bool disableMaxX = false, bool disableMaxY = false) {
     editAPoint(r.Min, name + ".Min");
+    ImGui::SameLine();
     editAPoint(r.Max, name + ".Max", disableMaxX, disableMaxY);
     if (disableMaxX)
       r.Max.x = r.Min.x;
@@ -264,16 +269,19 @@ void Inspector2D::ShowToolsSettingsPopup() {
 
   ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
   if (ImGui::BeginPopupModal("Tracker Settings", nullptr, popupFlags)) {
+    ImGui::PushItemWidth(100);
     static ImVec2 uv;
     static int channel = 0;
     static int id = 0;
     ImGui::Combo("Channel", &channel, "Depth\0Amplitude\0");
     editAPoint(uv, "p");
+    ImGui::PopItemWidth();
     if (ImGui::Button("OK")) {
       std::string name = "Tracker " + std::to_string(id++);
       AddTracker(name, channel, uv);
       ImGui::CloseCurrentPopup();
     }
+    ImGui::SameLine();
     if (ImGui::Button("Cancel")) {
       ImGui::CloseCurrentPopup();
     }
@@ -282,22 +290,18 @@ void Inspector2D::ShowToolsSettingsPopup() {
   ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
   if (ImGui::BeginPopupModal("Scanner Settings", nullptr, popupFlags)) {
     static ImRect line;
-    static int direction = 0;
     static int channel = 0;
     static int id = 0;
-    ImGui::Combo("Direction", &direction, "Horizontal\0Vertical\0");
+    ImGui::PushItemWidth(100);
     ImGui::Combo("Channel", &channel, "Depth\0Amplitude\0");
-    bool horizontal = (direction == 0);
-    if (horizontal)
-      editARect(line, "Line", false, true);
-    else
-      editARect(line, "Line", true, false);
-
+    editARect(line, "Line", false, false);
+    ImGui::PopItemWidth();
     if (ImGui::Button("OK")) {
       std::string name = "Scanner " + std::to_string(id++);
-      AddLineScanner(name, channel, line, horizontal);
+      AddLineScanner(name, channel, line);
       ImGui::CloseCurrentPopup();
     }
+    ImGui::SameLine();
     if (ImGui::Button("Cancel")) {
       ImGui::CloseCurrentPopup();
     }
@@ -308,18 +312,22 @@ void Inspector2D::ShowToolsSettingsPopup() {
     static ImRect rect;
     static int channel = 0;
     static int id = 0;
+    ImGui::PushItemWidth(100);
     ImGui::Combo("Channel", &channel, "Depth\0Amplitude\0");
     editARect(rect, "Roi");
+    ImGui::PopItemWidth();
     if (ImGui::Button("OK")) {
       std::string name = "Histogram " + std::to_string(id++);
       AddHistogram(name, channel, rect);
       ImGui::CloseCurrentPopup();
     }
+    ImGui::SameLine();
     if (ImGui::Button("Cancel")) {
       ImGui::CloseCurrentPopup();
     }
     ImGui::EndPopup();
   }
+  // ImGui::PopItemWidth();
 }
 
 void Inspector2D::HandleMouse() {
@@ -381,18 +389,20 @@ void Inspector2D::OnFrameFormatChanged(const MatShape& shape, int type) {
 }
 
 void Inspector2D::AddLineScanner(const std::string& name, int channel,
-                                 ImRect line, bool isHorizontal) {
-  std::shared_ptr<ImGuiWidget> item;
-  if (isHorizontal) {
-    item = std::make_shared<HLineScannerView>(name);
-  } else {
-    item = std::make_shared<VLineScannerView>(name);
-  }
+                                 ImRect line) {
+  auto scanner = std::make_shared<LineScannerView>(name);
+  this->GetPad()->AddObserver(scanner.get());
+  scanner->SelectChannel((DepthAmplitudeChannel)channel);
+  scanner->SetRoi(line.Min.x, line.Min.y, line.Max.x, line.Max.y);
 
-  // auto scanner = std::dynamic_pointer_cast<InspectorScanner>(item);
-  // scanner->SelectChannel((DepthAmplitudeChannel)channel);
+  auto lineMarker = std::make_shared<LineMarker>(line.Min, line.Max, name);
+  lineMarker->EnableLabel(markersDecorated);
 
-  children.push_back(item);
+  auto imageItem = view_->imageItems_[channel];
+  imageItem->addChild(lineMarker);
+
+  scanner->graphicsItem = lineMarker;
+  children.push_back(scanner);
 }
 
 void Inspector2D::AddHistogram(const std::string& name, int channel,
@@ -402,9 +412,8 @@ void Inspector2D::AddHistogram(const std::string& name, int channel,
   histogram->SelectChannel((DepthAmplitudeChannel)channel);
   histogram->SetRoi(rect.Min.x, rect.Min.y, rect.Max.x, rect.Max.y);
 
-  auto rectItem = std::make_shared<GraphicRectItem>(rect.Min, rect.Max, name);
-  rectItem->fillColor_ = ImColor(0, 255, 0, 20);
-  rectItem->lineColor_ = ImColor(0, 255, 0, 255);
+  auto rectItem = std::make_shared<RectMarker>(rect.Min, rect.Max, name);
+  rectItem->EnableLabel(markersDecorated);
 
   auto imageItem = view_->imageItems_[channel];
   imageItem->addChild(rectItem);
@@ -421,10 +430,10 @@ void Inspector2D::AddTracker(const std::string& name, int channel,
   tracker->SetLocation(point.x, point.y);
 
   // add a marker to image view
-  auto markerItem = std::make_shared<CrossHairItem>(name);
+  auto markerItem = std::make_shared<CrossHairMarker>(point, name);
+  markerItem->EnableLabel(markersDecorated);
   auto imageItem = view_->imageItems_[channel];
   imageItem->addChild(markerItem);
-  markerItem->setPos(point);
 
   // add a reference of the marker to the inspector tool, so it can move the
   // marker around

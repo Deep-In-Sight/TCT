@@ -135,7 +135,6 @@ void Application::Run() {
 
     ImGui::ShowMetricsWindow();
     ImGui::ShowDemoWindow();
-    ImPlot::ShowDemoWindow();
 
     ImGui::Render();
     int display_w, display_h;

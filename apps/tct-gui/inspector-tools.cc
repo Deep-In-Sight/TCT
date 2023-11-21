@@ -5,6 +5,7 @@
 #include <opencv2/core/core.hpp>
 
 #include "graphics-item-impl.h"
+#include "utility.h"
 
 PlotViewWindow::PlotViewWindow(const std::string &name)
     : ImGuiWidget(name), isOpened(true) {
@@ -24,42 +25,57 @@ void PlotViewWindow::ImGuiDraw() {
   ImGui::End();
 }
 
-void PlotViewWindow::ImGuiLayout() {}
-
-HLineScannerView::HLineScannerView(const std::string &name)
+LineScannerView::LineScannerView(const std::string &name)
     : PlotViewWindow(name) {}
 
-void HLineScannerView::ImGuiDraw() {
+void LineScannerView::ImGuiDraw() {
   if (!isOpened) {
     return;
   }
 
   if (ImGui::Begin(name_.c_str(), &isOpened, windowFlags)) {
-    ImGui::Text("HLineScannerView");
+    int xmin = start_x_;
+    int ymin = start_y_;
+    int xmax = end_x_;
+    int ymax = end_y_;
+
+    ImGui::PushItemWidth(50);
+
+    ImGui::BeginGroup();
+    ImGui::DragInt("Line.Min.x", &xmin, 1.0f, 0, 640);
+    ImGui::DragInt("Line.Min.y", &ymin, 1.0f, 0, 480);
+    ImGui::EndGroup();
+    ImGui::SameLine();
+    ImGui::BeginGroup();
+    ImGui::DragInt("Line.Max.x", &xmax, 1.0f, 0, 640);
+    ImGui::DragInt("Line.Max.y", &ymax, 1.0f, 0, 480);
+    ImGui::EndGroup();
+
+    ImGui::PopItemWidth();
+
+    SetRoi(xmin, ymin, xmax, ymax);
+
+    auto line = dynamic_pointer_cast<LineMarker>(graphicsItem);
+    line->modify(ImVec2(xmin, ymin), ImVec2(xmax, ymax));
+
+    if (ImPlot::BeginPlot(name_.c_str())) {
+      auto ylabel = (channel_ == kDepthChannel) ? "depth" : "intensity";
+      ImPlot::SetupAxes("samples", ylabel, ImPlotAxisFlags_AutoFit,
+                        ImPlotAxisFlags_AutoFit);
+      ImPlot::SetNextFillStyle(IMPLOT_AUTO_COL, 0.5f);
+      ImPlot::PlotLine("LineScanner", &collected_[0], collected_.size());
+      ImPlot::EndPlot();
+    }
+
+    graphicsItem->update();
   }
+
   ImGui::End();
 }
 
-void HLineScannerView::RenderRange(const std::vector<float> &vec) {}
+void LineScannerView::RenderRange(const std::vector<float> &vec) {}
 
-void HLineScannerView::OnFrameFormatChanged(const MatShape &shape, int type) {}
-
-VLineScannerView::VLineScannerView(const std::string &name)
-    : PlotViewWindow(name) {}
-
-void VLineScannerView::ImGuiDraw() {
-  if (!isOpened) {
-    return;
-  }
-  if (ImGui::Begin(name_.c_str(), &isOpened, windowFlags)) {
-    ImGui::Text("VLineScannerView");
-  }
-  ImGui::End();
-}
-
-void VLineScannerView::RenderRange(const std::vector<float> &vec) {}
-
-void VLineScannerView::OnFrameFormatChanged(const MatShape &shape, int type) {}
+void LineScannerView::OnFrameFormatChanged(const MatShape &shape, int type) {}
 
 HistogramView::HistogramView(const std::string &name) : PlotViewWindow(name) {}
 
@@ -75,41 +91,35 @@ void HistogramView::ImGuiDraw() {
     float rangeMin = ranges_[0];
     float rangeMax = ranges_[1];
     int numBins = bins_;
-    ImGui::SetNextItemWidth(120);
-    ImGui::DragInt("x0", &x0, 1.0f, 0, 640);
+    ImGui::PushItemWidth(50);
+    ImGui::BeginGroup();
+    ImGui::DragInt("Roi.Min.x", &x0, 1.0f, 0, 640);
+    ImGui::DragInt("Roi.Min.y", &y0, 1.0f, 0, 480);
+    ImGui::EndGroup();
     ImGui::SameLine();
-    ImGui::SetNextItemWidth(120);
-    ImGui::DragInt("y0", &y0, 1.0f, 0, 480);
+    ImGui::BeginGroup();
+    ImGui::DragInt("Roi.Max.x", &x1, 1.0f, 0, 640);
+    ImGui::DragInt("Roi.Max.y", &y1, 1.0f, 0, 480);
+    ImGui::EndGroup();
     ImGui::SameLine();
-    ImGui::SetNextItemWidth(120);
-    ImGui::DragInt("x1", &x1, 1.0f, 0, 640);
-    ImGui::SameLine();
-    ImGui::SetNextItemWidth(120);
-    ImGui::DragInt("y1", &y1, 1.0f, 0, 480);
-    SetRoi(x0, y0, x1, y1);
-
-    ImGui::SetNextItemWidth(120);
+    ImGui::BeginGroup();
     ImGui::Checkbox("AutoRange", &isAutoRange_);
+    ImGui::DragInt("Bins", &numBins, 1.0f, 0, 500);
+    ImGui::EndGroup();
     if (!isAutoRange_) {
       ImGui::SameLine();
-      ImGui::SetNextItemWidth(120);
+      ImGui::BeginGroup();
       ImGui::DragFloat("Min", &rangeMin, 0.1f, 0, 100);
-      ImGui::SameLine();
-      ImGui::SetNextItemWidth(120);
       ImGui::DragFloat("Max", &rangeMax, 0.1f, 0, 100);
+      ImGui::EndGroup();
       SetRanges(rangeMin, rangeMax);
     }
-    ImGui::SameLine();
-    ImGui::SetNextItemWidth(100);
-    ImGui::DragInt("Bins", &numBins, 1.0f, 0, 500);
+    ImGui::PopItemWidth();
+
     SetBins(numBins);
-
-    auto rectItem = dynamic_pointer_cast<GraphicRectItem>(graphicsItem);
-    if (rectItem) {
-      rectItem->modify(ImRect(x0, y0, x1, y1));
-    }
-
-    static ImPlotAxisFlags flags = ImPlotAxisFlags_NoTickLabels;
+    SetRoi(x0, y0, x1, y1);
+    auto rect = dynamic_pointer_cast<RectMarker>(graphicsItem);
+    rect->modify(ImVec2(x0, y0), ImVec2(x1, y1));
 
     if (ImPlot::BeginPlot(name_.c_str())) {
       ImPlot::SetupAxes(nullptr, nullptr, ImPlotAxisFlags_AutoFit,
@@ -133,7 +143,7 @@ void HistogramView::RenderHistogram(const Mat &histogram) {
     float minRange = (min + max) / 2 - (max - min) / 2 * 1.2;
     float maxRange = (min + max) / 2 + (max - min) / 2 * 1.2;
     SetRanges(minRange, maxRange);
-    SetBins(50);
+    SetBins(200);
     firstRun = false;
   }
 }
@@ -151,11 +161,18 @@ void TrackerView::ImGuiDraw() {
   if (ImGui::Begin(name_.c_str(), &isOpened, windowFlags)) {
     int x = point_x;
     int y = point_y;
+
+    ImGui::PushItemWidth(50);
+
     ImGui::DragInt("x", &x, 1.0f, 0, 640);
     ImGui::SameLine();
     ImGui::DragInt("y", &y, 1.0f, 0, 480);
+
+    ImGui::PopItemWidth();
+
     SetLocation(x, y);
-    graphicsItem->setPos(ImVec2(x, y));
+    auto crosshair = dynamic_pointer_cast<CrossHairMarker>(graphicsItem);
+    crosshair->modify(ImVec2(x, y));
 
     static ImPlotAxisFlags flags = ImPlotAxisFlags_NoTickLabels;
 

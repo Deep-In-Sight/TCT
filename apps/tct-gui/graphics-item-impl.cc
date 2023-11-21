@@ -56,14 +56,6 @@ GraphicRectItem::GraphicRectItem(ImVec2 pmin, ImVec2 pmax, std::string name)
   geometries_.push_back(pmax);
 }
 
-void GraphicRectItem::modify(ImVec2 pmin, ImVec2 pmax) {
-  geometries_[0] = pmin;
-  geometries_[1] = pmax;
-  update();
-}
-
-void GraphicRectItem::modify(ImRect r) { modify(r.Min, r.Max); }
-
 void GraphicRectItem::paintSelf() {
   if (sceneGeometries_.size() < 2) {
     return;
@@ -319,7 +311,7 @@ void Ruler::paintEnd() {
   ImGui::PopFont();
 }
 
-CrossHairItem::CrossHairItem(std::string name, ImVec2 pos)
+CrossHairItem::CrossHairItem(const std::string& name, ImVec2 pos)
     : GraphicsItem(name), pos_(pos) {
   geometries_.push_back(ImVec2(0, 0));
 
@@ -354,4 +346,104 @@ void CrossHairItem::clipSelf(ImRect r) {
 bool CrossHairItem::hitTest(ImVec2 p) {
   ImRect rect(sceneGeometries_[0], sceneGeometries_[1]);
   return rect.Contains(p);
+}
+
+InspectorMarker::InspectorMarker(const std::string& name)
+    : GraphicsItem(name) {}
+
+void InspectorMarker::AddLabel(std::string text, ImVec2 pos, int anchor) {
+  auto label = std::make_shared<GraphicTextItem>(text, pos);
+  label->anchor_ = anchor;
+  label->background_ = true;
+  label->lineColor_ = ImColor(255, 255, 255, 255);
+  label->fillColor_ = ImColor(0, 0, 0, 255);
+  labels.push_back(label);
+  addChild(label);
+}
+
+void InspectorMarker::UpdateLabel(int labelIndex, ImVec2 pos,
+                                  const std::string& text) {
+  auto label = labels[labelIndex];
+  label->geometries_[0] = pos;
+  update();
+  label->setText(text);
+}
+
+void InspectorMarker::EnableLabel(bool enable) {
+  if (enable) {
+    for (auto item : labels) {
+      item->isHidden_ = false;
+    }
+  } else {
+    for (auto item : labels) {
+      item->isHidden_ = true;
+    }
+  }
+  update();
+}
+
+std::string toString(ImVec2 p) {
+  return std::to_string((int)p.x) + "," + std::to_string((int)p.y);
+}
+
+LineMarker::LineMarker(ImVec2 p1, ImVec2 p2, const std::string& name)
+    : InspectorMarker(name) {
+  auto line = std::make_shared<GraphicLineItem>(p1, p2);
+  line->lineColor_ = ImColor(0, 255, 0, 255);
+  line->lineWidth_ = 2.0f;
+  addChild(line);
+  AddLabel(toString(p1), p1, 4);
+  AddLabel(toString(p2), p2, 4);
+  AddLabel(name, (p1 + p2) / 2, 4);
+}
+
+void LineMarker::modify(ImVec2 p1, ImVec2 p2) {
+  auto lineItem = std::dynamic_pointer_cast<GraphicLineItem>(children_[0]);
+  lineItem->geometries_[0] = p1;
+  lineItem->geometries_[1] = p2;
+  UpdateLabel(0, p1, toString(p1));
+  UpdateLabel(1, p2, toString(p2));
+  UpdateLabel(2, (p1 + p2) / 2, name_);
+  update();
+}
+
+RectMarker::RectMarker(ImVec2 pmin, ImVec2 pmax, const std::string& name)
+    : InspectorMarker(name) {
+  auto rect = std::make_shared<GraphicRectItem>(pmin, pmax);
+  rect->fillColor_ = ImColor(0, 255, 0, 80);
+  rect->lineColor_ = ImColor(0, 255, 0, 255);
+  rect->lineWidth_ = 2.0f;
+  addChild(rect);
+  auto l1 = std::to_string((int)pmin.x) + "," + std::to_string((int)pmin.y);
+  auto l2 = std::to_string((int)pmax.x) + "," + std::to_string((int)pmax.y);
+  AddLabel(l1, pmin, 4);
+  AddLabel(l2, pmax, 4);
+  AddLabel(name, (pmin + pmax) / 2, 4);
+}
+
+void RectMarker::modify(ImVec2 p1, ImVec2 p2) {
+  auto rectItem = std::dynamic_pointer_cast<GraphicRectItem>(children_[0]);
+  rectItem->geometries_[0] = p1;
+  rectItem->geometries_[1] = p2;
+  UpdateLabel(0, p1, toString(p1));
+  UpdateLabel(1, p2, toString(p2));
+  UpdateLabel(2, (p1 + p2) / 2, name_);
+  update();
+}
+
+CrossHairMarker::CrossHairMarker(ImVec2 pos, const std::string& name)
+    : InspectorMarker(name) {
+  auto crossHair = std::make_shared<CrossHairItem>(name, pos);
+  addChild(crossHair);
+
+  AddLabel("", pos, 6);
+  AddLabel(name, pos, 0);
+  UpdateLabel(0, pos, toString(pos));
+}
+
+void CrossHairMarker::modify(ImVec2 pos) {
+  auto crossHair = std::dynamic_pointer_cast<CrossHairItem>(children_[0]);
+  crossHair->setPos(pos);
+  UpdateLabel(0, pos, toString(pos));
+  UpdateLabel(1, pos, name_);
 }

@@ -158,14 +158,14 @@ void InspectorGraphicsView::setImages(std::vector<cv::Mat> images) {
 }
 
 void InspectorGraphicsView::onMouseMove(ImVec2 mousePos) {
-  auto item =
-      std::dynamic_pointer_cast<GraphicImageItem>(scene_->itemAt(mousePos));
-
-  if (item != imageItems_[0] && item != imageItems_[1]) {
+  bool hit0 = imageItems_[0]->hitTest(mousePos);
+  bool hit1 = imageItems_[1]->hitTest(mousePos);
+  if (!hit0 && !hit1) {
     mouseLabelItem_->isHidden_ = true;
     return;
   }
-  int index = (item == imageItems_[0]) ? 0 : 1;
+  int index = (hit0) ? 0 : 1;
+  auto item = imageItems_[index];
 
   mouseLabelItem_->isHidden_ = false;
   ImVec2 mousePosImage = item->mapFromScene(mousePos);
@@ -187,18 +187,23 @@ void InspectorGraphicsView::onMouseMove(ImVec2 mousePos) {
 }
 
 void InspectorGraphicsView::onMouseScroll(ImVec2 mousePos, float scroll) {
-  auto item =
-      std::dynamic_pointer_cast<GraphicImageItem>(scene_->itemAt(mousePos));
-  if (item != imageItems_[0] && item != imageItems_[1]) {
+  // we zoom when mouse is hovered on the image "area", meaning both image and
+  // the markers on it. If we use itemAt to check if mouse is hitting only the
+  // image then we have to disable isClickable_ on the markers, which is not
+  // ideal, because we may want to do something with the markers using mouse
+  // later
+  bool hit0 = imageItems_[0]->hitTest(mousePos);
+  bool hit1 = imageItems_[1]->hitTest(mousePos);
+  if (!hit0 && !hit1) {
     return;
   }
 
-  int index = (item == imageItems_[0]) ? 0 : 1;
+  int index = (hit0) ? 0 : 1;
+  auto item = imageItems_[index];
   float zoom = ImPow(10, scroll / 100.0f);
   auto origin = item->mapFromScene(mousePos);
 
   _zoomImage(ImVec2(zoom, zoom), origin, index, false);
-  // item->setOrigin(oldOrigin);
 }
 
 void InspectorGraphicsView::_zoomImage(ImVec2 zoomXY, ImVec2 origin,
