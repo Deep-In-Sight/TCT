@@ -1,4 +1,4 @@
-#include "inspector-2d.h"
+#include "inspector-bitmap-view.h"
 
 #include <iostream>
 #include <opencv2/imgcodecs.hpp>
@@ -6,10 +6,10 @@
 #include "graphics-item-impl.h"
 #include "graphics-layout.h"
 #include "inspector-graphics-view.h"
-#include "inspector-tools.h"
+#include "inspector-plot-view.h"
 #include "utility.h"
 
-Inspector2D::Inspector2D() {
+InspectorBitmapView::InspectorBitmapView() {
   scene_ = std::make_shared<GraphicsScene>();
   view_ = std::make_shared<InspectorGraphicsView>(scene_);
   view_->inspector_ = this;
@@ -26,9 +26,9 @@ Inspector2D::Inspector2D() {
   plotContext_ = ImPlot::CreateContext();
 }
 
-Inspector2D::~Inspector2D() { ImPlot::DestroyContext(); }
+InspectorBitmapView::~InspectorBitmapView() { ImPlot::DestroyContext(); }
 
-void Inspector2D::ImGuiDraw() {
+void InspectorBitmapView::ImGuiDraw() {
   static ImGuiWindowFlags windowFlags =
       ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoTitleBar |
       ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
@@ -85,21 +85,25 @@ void Inspector2D::ImGuiDraw() {
 
   for (auto& child : children) {
     child->ImGuiDraw();
-    auto toolView = std::dynamic_pointer_cast<PlotViewWindow>(child);
+    auto toolView = std::dynamic_pointer_cast<PlotWidget>(child);
     if (toolView && !toolView->isOpened) {
-      view_->scene_->removeItem(toolView->graphicsItem);
+      view_->scene_->removeItem(toolView->markerItem);
     }
   }
+
+  ImPlot::ShowDemoWindow();
+  ImGui::ShowDemoWindow();
+  ImGui::ShowMetricsWindow();
 }
 
-void Inspector2D::ImGuiLayout() {
+void InspectorBitmapView::ImGuiLayout() {
   contentRect = ImRect(ImGui::GetWindowContentRegionMin(),
                        ImGui::GetWindowContentRegionMax());
   view_->contentRect = contentRect;
   view_->ImGuiLayout();
 }
 
-void Inspector2D::DrawMenu() {
+void InspectorBitmapView::DrawMenu() {
   bool showColormapPopup = false;
   bool showToolsScannerPopup = false;
   bool showToolsTrackerPopup = false;
@@ -133,9 +137,8 @@ void Inspector2D::DrawMenu() {
       ImGui::Separator();
       if (ImGui::MenuItem("Marker Labels", nullptr, &markersDecorated)) {
         for (auto& child : children) {
-          auto view = std::dynamic_pointer_cast<PlotViewWindow>(child);
-          auto marker =
-              std::dynamic_pointer_cast<InspectorMarker>(view->graphicsItem);
+          auto view = std::dynamic_pointer_cast<PlotWidget>(child);
+          auto marker = view->markerItem;
           marker->EnableLabel(markersDecorated);
         }
       }
@@ -173,12 +176,15 @@ void Inspector2D::DrawMenu() {
     ImGui::OpenPopup("Colormap Settings");
   }
   if (showToolsTrackerPopup) {
+    plotConfig_ = std::make_shared<PointTrackerPlotConfigWidget>();
     ImGui::OpenPopup("Tracker Settings");
   }
   if (showToolsScannerPopup) {
+    plotConfig_ = std::make_shared<LineScannerPlotConfigWidget>();
     ImGui::OpenPopup("Scanner Settings");
   }
   if (showToolsHistogramPopup) {
+    plotConfig_ = std::make_shared<HistogramPlotConfigWidget>();
     ImGui::OpenPopup("Histogram Settings");
   }
   ShowColormapSettingsPopup();
@@ -193,7 +199,7 @@ struct ColormapConfig {
   cv::ColormapTypes cmapType = cv::COLORMAP_JET;
 };
 
-void Inspector2D::ShowColormapSettingsPopup() {
+void InspectorBitmapView::ShowColormapSettingsPopup() {
   auto center = contentRect.GetCenter() + ImGui::GetWindowPos();
   ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
@@ -231,56 +237,25 @@ void Inspector2D::ShowColormapSettingsPopup() {
   }
 }
 
-void Inspector2D::ShowToolsSettingsPopup() {
+void InspectorBitmapView::ShowToolsSettingsPopup() {
   auto center = contentRect.GetCenter() + ImGui::GetWindowPos();
 
   auto popupFlags =
       ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings;
 
-  auto editAPoint = [&](ImVec2& p, const std::string& name,
-                        bool disableX = false, bool disableY = false) {
-    auto xlabel = (name + ".X");
-    auto ylabel = (name + ".Y");
-    int x = (int)p.x;
-    int y = (int)p.y;
-    ImGui::BeginGroup();
-    if (!disableX)
-      ImGui::DragInt(xlabel.c_str(), (int*)&x, 1.0f, 0,
-                     view_->imageItems_[0]->imageSize_.x);
-    if (!disableY)
-      ImGui::DragInt(ylabel.c_str(), (int*)&y, 1.0f, 0,
-                     view_->imageItems_[0]->imageSize_.y);
-    ImGui::EndGroup();
-    p.x = x;
-    p.y = y;
-  };
-  auto editARect = [&](ImRect& r, const std::string& name,
-                       bool disableMaxX = false, bool disableMaxY = false) {
-    editAPoint(r.Min, name + ".Min");
-    ImGui::SameLine();
-    editAPoint(r.Max, name + ".Max", disableMaxX, disableMaxY);
-    if (disableMaxX)
-      r.Max.x = r.Min.x;
-    else if (r.Min.x > r.Max.x)
-      std::swap(r.Min.x, r.Max.x);
-    if (disableMaxY)
-      r.Max.y = r.Min.y;
-    else if (r.Min.y > r.Max.y)
-      std::swap(r.Min.y, r.Max.y);
-  };
-
   ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
   if (ImGui::BeginPopupModal("Tracker Settings", nullptr, popupFlags)) {
-    ImGui::PushItemWidth(100);
-    static ImVec2 uv;
     static int channel = 0;
     static int id = 0;
     ImGui::Combo("Channel", &channel, "Depth\0Amplitude\0");
-    editAPoint(uv, "p");
-    ImGui::PopItemWidth();
+
+    plotConfig_->ImGuiDraw();
+
     if (ImGui::Button("OK")) {
       std::string name = "Tracker " + std::to_string(id++);
-      AddTracker(name, channel, uv);
+      auto tc =
+          std::dynamic_pointer_cast<PointTrackerPlotConfigWidget>(plotConfig_);
+      AddTracker(name, channel, tc->point);
       ImGui::CloseCurrentPopup();
     }
     ImGui::SameLine();
@@ -291,16 +266,17 @@ void Inspector2D::ShowToolsSettingsPopup() {
   }
   ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
   if (ImGui::BeginPopupModal("Scanner Settings", nullptr, popupFlags)) {
-    static ImRect line;
     static int channel = 0;
     static int id = 0;
-    ImGui::PushItemWidth(100);
     ImGui::Combo("Channel", &channel, "Depth\0Amplitude\0");
-    editARect(line, "Line", false, false);
-    ImGui::PopItemWidth();
+
+    plotConfig_->ImGuiDraw();
+
     if (ImGui::Button("OK")) {
       std::string name = "Scanner " + std::to_string(id++);
-      AddLineScanner(name, channel, line);
+      auto sc =
+          std::dynamic_pointer_cast<LineScannerPlotConfigWidget>(plotConfig_);
+      AddLineScanner(name, channel, sc->line);
       ImGui::CloseCurrentPopup();
     }
     ImGui::SameLine();
@@ -311,16 +287,18 @@ void Inspector2D::ShowToolsSettingsPopup() {
   }
   ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
   if (ImGui::BeginPopupModal("Histogram Settings", nullptr, popupFlags)) {
-    static ImRect rect;
     static int channel = 0;
     static int id = 0;
-    ImGui::PushItemWidth(100);
     ImGui::Combo("Channel", &channel, "Depth\0Amplitude\0");
-    editARect(rect, "Roi");
-    ImGui::PopItemWidth();
+
+    plotConfig_->ImGuiDraw();
+
     if (ImGui::Button("OK")) {
       std::string name = "Histogram " + std::to_string(id++);
-      AddHistogram(name, channel, rect);
+      auto hc =
+          std::dynamic_pointer_cast<HistogramPlotConfigWidget>(plotConfig_);
+      AddHistogram(name, channel, hc->rect, hc->isAutoRange, hc->ranges[0],
+                   hc->ranges[1], hc->bins);
       ImGui::CloseCurrentPopup();
     }
     ImGui::SameLine();
@@ -329,10 +307,9 @@ void Inspector2D::ShowToolsSettingsPopup() {
     }
     ImGui::EndPopup();
   }
-  // ImGui::PopItemWidth();
 }
 
-void Inspector2D::HandleMouse() {
+void InspectorBitmapView::HandleMouse() {
   auto& io = ImGui::GetIO();
 
   if (ImGui::IsWindowHovered()) {
@@ -354,7 +331,7 @@ void Inspector2D::HandleMouse() {
 
 // implement the InspectorBitmap interface.
 
-void Inspector2D::Render(cv::Mat& frame) {
+void InspectorBitmapView::Render(cv::Mat& frame) {
   static bool firstImage = true;
   auto images = splitChannels(frame_);
 
@@ -386,16 +363,20 @@ void Inspector2D::Render(cv::Mat& frame) {
   }
 }
 
-void Inspector2D::OnFrameFormatChanged(const MatShape& shape, int type) {
+void InspectorBitmapView::OnFrameFormatChanged(const MatShape& shape,
+                                               int type) {
   imageSizeChanged = true;
 }
 
-void Inspector2D::AddLineScanner(const std::string& name, int channel,
-                                 ImRect line) {
-  auto scanner = std::make_shared<LineScannerView>(name);
+void InspectorBitmapView::AddLineScanner(const std::string& name, int channel,
+                                         ImRect line) {
+  auto scanner = std::make_shared<LineScannerPlotWidget>(name);
   this->GetPad()->AddObserver(scanner.get());
   scanner->SelectChannel((DepthAmplitudeChannel)channel);
   scanner->SetRoi(line.Min.x, line.Min.y, line.Max.x, line.Max.y);
+
+  scanner->configWidget = plotConfig_;
+  plotConfig_->plotWidget = scanner;
 
   auto lineMarker = std::make_shared<LineMarker>(line.Min, line.Max, name);
   lineMarker->EnableLabel(markersDecorated);
@@ -403,16 +384,23 @@ void Inspector2D::AddLineScanner(const std::string& name, int channel,
   auto imageItem = view_->imageItems_[channel];
   imageItem->addChild(lineMarker);
 
-  scanner->graphicsItem = lineMarker;
+  scanner->markerItem = lineMarker;
   children.push_back(scanner);
 }
 
-void Inspector2D::AddHistogram(const std::string& name, int channel,
-                               ImRect rect) {
-  auto histogram = std::make_shared<HistogramView>(name);
+void InspectorBitmapView::AddHistogram(const std::string& name, int channel,
+                                       ImRect rect, bool isAutoRange, float min,
+                                       float max, int bins) {
+  auto histogram = std::make_shared<HistogramPlotWidget>(name);
   this->GetPad()->AddObserver(histogram.get());
   histogram->SelectChannel((DepthAmplitudeChannel)channel);
   histogram->SetRoi(rect.Min.x, rect.Min.y, rect.Max.x, rect.Max.y);
+  histogram->SetAutoRange(isAutoRange);
+  histogram->SetRanges(min, max);
+  histogram->SetBins(bins);
+
+  histogram->configWidget = plotConfig_;
+  plotConfig_->plotWidget = histogram;
 
   auto rectItem = std::make_shared<RectMarker>(rect.Min, rect.Max, name);
   rectItem->EnableLabel(markersDecorated);
@@ -420,16 +408,19 @@ void Inspector2D::AddHistogram(const std::string& name, int channel,
   auto imageItem = view_->imageItems_[channel];
   imageItem->addChild(rectItem);
 
-  histogram->graphicsItem = rectItem;
+  histogram->markerItem = rectItem;
   children.push_back(histogram);
 }
 
-void Inspector2D::AddTracker(const std::string& name, int channel,
-                             ImVec2 point) {
-  auto tracker = std::make_shared<TrackerView>(name);
+void InspectorBitmapView::AddTracker(const std::string& name, int channel,
+                                     ImVec2 point) {
+  auto tracker = std::make_shared<PointTrackerPlotWidget>(name);
   this->GetPad()->AddObserver(tracker.get());
   tracker->SelectChannel((DepthAmplitudeChannel)channel);
   tracker->SetLocation(point.x, point.y);
+
+  tracker->configWidget = plotConfig_;
+  plotConfig_->plotWidget = tracker;
 
   // add a marker to image view
   auto markerItem = std::make_shared<CrossHairMarker>(point, name);
@@ -439,6 +430,6 @@ void Inspector2D::AddTracker(const std::string& name, int channel,
 
   // add a reference of the marker to the inspector tool, so it can move the
   // marker around
-  tracker->graphicsItem = markerItem;
+  tracker->markerItem = markerItem;
   children.push_back(tracker);
 }

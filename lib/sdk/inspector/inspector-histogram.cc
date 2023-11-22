@@ -56,11 +56,21 @@ void InspectorHistogram::GetRoi(int& x, int& y, int& x2, int& y2) {
 }
 
 void InspectorHistogram::SetBins(int num_bins) { bins_ = num_bins; }
+void InspectorHistogram::GetBins(int& num_bins) { num_bins = bins_; }
+
+void InspectorHistogram::SetAutoRange(bool isAutoRange) {
+  isAutoRange_ = isAutoRange;
+}
+bool InspectorHistogram::isAutoRange() { return isAutoRange_; }
 
 void InspectorHistogram::SetRanges(float min, float max) {
   ranges_[0] = min;
   ranges_[1] = max;
-  isAutoRange_ = false;
+}
+
+void InspectorHistogram::GetRanges(float& min, float& max) {
+  min = ranges_[0];
+  max = ranges_[1];
 }
 
 std::vector<float> InspectorHistogram::GetEdges() {

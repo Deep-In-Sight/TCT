@@ -69,3 +69,5 @@ struct ScrollingBuffer {
 };
 
 void CreateFontAtlas();
+
+void HelpMarker(const char* desc);

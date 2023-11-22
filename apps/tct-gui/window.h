@@ -1,19 +1,19 @@
 #pragma once
 #include <GLFW/glfw3.h>
-#include <imgui.h>
 
 #include <memory>
 #include <vector>
 
+struct ImGuiContext;
 struct ImGuiWidget;
-struct ImGuiGLWFWindow {
-  ImGuiGLWFWindow(const std::string& title, int width, int height, int x,
-                  int y);
-  ~ImGuiGLWFWindow();
+
+struct Window {
+  Window(const std::string& title, int width, int height, int x, int y);
+  ~Window();
 
   void AddChild(std::shared_ptr<ImGuiWidget> child);
   void RemoveChild(std::shared_ptr<ImGuiWidget> child);
-  bool RenderWindow();
+  bool Render();
 
   std::vector<std::shared_ptr<ImGuiWidget>> children_;
   GLFWwindow* glfwWindow_;

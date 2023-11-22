@@ -69,8 +69,13 @@ class InspectorHistogram : public PadObserver {
    * @param num_bins number of bins
    */
   void SetBins(int num_bins);
+  void GetBins(int& bin);
 
   void SetRanges(float min, float max);
+  void GetRanges(float& min, float& max);
+
+  void SetAutoRange(bool isAutoRange);
+  bool isAutoRange();
 
   /**
    * @brief Get the bins' edges of the histogram

@@ -1,26 +1,16 @@
 #include "application.h"
 
 #include <GLFW/glfw3.h>
-#include <backends/imgui_impl_glfw.h>
-#include <backends/imgui_impl_opengl3.h>
-#include <implot.h>
 
 #include <fstream>
-#include <iostream>
-#include <opencv2/core.hpp>
-#include <opencv2/imgcodecs.hpp>
-#include <opencv2/imgproc.hpp>
-#include <thread>
 
-#include "graphics-item-impl.h"
-#include "graphics-view.h"
-#include "imgui-window.h"
-#include "inspector-2d.h"
+#include "inspector-bitmap-view.h"
 #include "node-editor.h"
 #include "sdk/tof/depth-calc.h"
 #include "sdk/tof/moving-average.h"
 #include "sdk/tof/playback-src.h"
 #include "utility.h"
+#include "window.h"
 
 Application& Application::GetInstance() {
   static Application instance;
@@ -49,8 +39,7 @@ void Application::Create() {
   auto x = mainWindowConfig["x"].get<int>();
   auto y = mainWindowConfig["y"].get<int>();
 
-  auto mainWindow =
-      std::make_shared<ImGuiGLWFWindow>(title, width, height, x, y);
+  auto mainWindow = std::make_shared<Window>(title, width, height, x, y);
   auto nodeEditor = std::make_shared<NodeEditor>();
   mainWindow->AddChild(nodeEditor);
 
@@ -64,7 +53,7 @@ void Application::Run() {
   auto src = new PlaybackSource("filesrc", false, false);
   auto depthCalc = new DepthCalc("raw2depth");
   auto ma = new MovingAverage("movingAverage");
-  auto inspector = new Inspector2D();
+  auto inspector = new InspectorBitmapView();
   src->GetSourcePad()->Link(depthCalc->GetSinkPad());
   depthCalc->GetSourcePad()->Link(ma->GetSinkPad());
   ma->GetSourcePad()->AddObserver(inspector);
@@ -80,8 +69,7 @@ void Application::Run() {
   int MAwidth = 32;
   ma->SetWindowSize(MAwidth);
 
-  auto inspectorWindow =
-      std::make_shared<ImGuiGLWFWindow>("Inspector", 1280, 600, 0, 0);
+  auto inspectorWindow = std::make_shared<Window>("Inspector", 1280, 600, 0, 0);
   inspectorWindow->AddChild(std::shared_ptr<ImGuiWidget>(inspector));
 
   children.push_back(inspectorWindow);
@@ -93,7 +81,7 @@ void Application::Run() {
     glfwPollEvents();
 
     for (auto window : children) {
-      shouldClose |= window->RenderWindow();
+      shouldClose |= window->Render();
     }
   }
 }

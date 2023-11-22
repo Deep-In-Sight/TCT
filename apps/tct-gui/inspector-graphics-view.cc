@@ -1,6 +1,6 @@
 #include "inspector-graphics-view.h"
 
-#include "inspector-2d.h"
+#include "inspector-bitmap-view.h"
 #include "utility.h"
 /*
  * ┌────────hLayoutTop─────────────────────────────────────────────────────┐

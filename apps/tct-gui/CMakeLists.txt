@@ -28,9 +28,9 @@ set(IMGUI_NODE_INCLUDE_DIRS ${IMGUI_NODE_DIR})
 set(TCT_SRCS
     main.cc
     application.cc
-    imgui-window.cc
+    window.cc
     node-editor.cc
-    inspector-2d.cc
+    inspector-bitmap-view.cc
     utility.cc
     graphics-item.cc
     graphics-layout.cc
@@ -38,7 +38,7 @@ set(TCT_SRCS
     graphics-view.cc
     transform.cc
     inspector-graphics-view.cc
-    inspector-tools.cc)
+    inspector-plot-view.cc)
 
 add_executable(tct)
 

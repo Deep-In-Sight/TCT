@@ -12,9 +12,11 @@
 
 struct InspectorGraphicsView;
 struct ColormapConfig;
-struct Inspector2D : public ImGuiWidget, public InspectorBitmap {
-  Inspector2D();
-  ~Inspector2D();
+struct PlotConfigWidget;
+
+struct InspectorBitmapView : public ImGuiWidget, public InspectorBitmap {
+  InspectorBitmapView();
+  ~InspectorBitmapView();
 
   void ImGuiDraw() override;
   void ImGuiLayout() override;
@@ -28,8 +30,11 @@ struct Inspector2D : public ImGuiWidget, public InspectorBitmap {
   void OnFrameFormatChanged(const MatShape& shape, int type) override;
 
   void AddLineScanner(const std::string& name, int channel, ImRect line);
-  void AddHistogram(const std::string& name, int channel, ImRect rect);
+  void AddHistogram(const std::string& name, int channel, ImRect rect,
+                    bool isAutoRange, float min, float max, int bins);
   void AddTracker(const std::string& name, int channel, ImVec2 point);
+
+  std::shared_ptr<PlotConfigWidget> plotConfig_;
 
   std::shared_ptr<GraphicsScene> scene_;
   std::shared_ptr<InspectorGraphicsView> view_;

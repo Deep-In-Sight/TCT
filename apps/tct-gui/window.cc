@@ -1,4 +1,4 @@
-#include "imgui-window.h"
+#include "window.h"
 
 #include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
@@ -6,7 +6,7 @@
 #include "imgui-widget.h"
 #include "utility.h"
 
-ImGuiGLWFWindow::ImGuiGLWFWindow(const std::string& title, int width,
+Window::Window(const std::string& title, int width,
                                  int height, int x, int y) {
   // Create a window
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -38,7 +38,7 @@ ImGuiGLWFWindow::ImGuiGLWFWindow(const std::string& title, int width,
   CreateFontAtlas();
 }
 
-ImGuiGLWFWindow::~ImGuiGLWFWindow() {
+Window::~Window() {
   ImGui_ImplOpenGL3_Shutdown();
   ImGui_ImplGlfw_Shutdown();
   ImGui::DestroyContext();
@@ -46,16 +46,16 @@ ImGuiGLWFWindow::~ImGuiGLWFWindow() {
   glfwDestroyWindow(glfwWindow_);
 }
 
-void ImGuiGLWFWindow::AddChild(std::shared_ptr<ImGuiWidget> child) {
+void Window::AddChild(std::shared_ptr<ImGuiWidget> child) {
   children_.push_back(child);
 }
 
-void ImGuiGLWFWindow::RemoveChild(std::shared_ptr<ImGuiWidget> child) {
+void Window::RemoveChild(std::shared_ptr<ImGuiWidget> child) {
   children_.erase(std::remove(children_.begin(), children_.end(), child),
                   children_.end());
 }
 
-bool ImGuiGLWFWindow::RenderWindow() {
+bool Window::Render() {
   glfwMakeContextCurrent(glfwWindow_);
   ImGui::SetCurrentContext(imguiContext_);
 
