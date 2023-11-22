@@ -55,3 +55,17 @@ struct ImRecti {
   operator ImRect() const { return ImRect(Min, Max); }
   ImVec2i Min, Max;
 };
+
+struct ScrollingBuffer {
+  ScrollingBuffer(int max_size = 2000);
+  void AddPoint(float x, float y);
+  void Erase();
+  bool IsEmpty();
+
+  int MaxSize;
+  int Offset;
+  ImVector<ImVec2> Data;
+  int Total;
+};
+
+void CreateFontAtlas();

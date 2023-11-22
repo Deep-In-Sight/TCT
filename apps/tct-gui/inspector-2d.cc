@@ -13,8 +13,8 @@ Inspector2D::Inspector2D() {
   scene_ = std::make_shared<GraphicsScene>();
   view_ = std::make_shared<InspectorGraphicsView>(scene_);
   view_->inspector_ = this;
-  auto image = cv::imread("./data/images/MyImage01.jpg");
-  // view_->setImage(image);
+  cmapConfigs_.emplace_back();
+  cmapConfigs_.emplace_back();
 
   firstFrame = true;
   imageSizeChanged = false;
@@ -22,19 +22,25 @@ Inspector2D::Inspector2D() {
   markersDecorated = false;
 
   frameRendered_ = false;
+
+  plotContext_ = ImPlot::CreateContext();
 }
 
-Inspector2D::~Inspector2D() {}
+Inspector2D::~Inspector2D() { ImPlot::DestroyContext(); }
 
 void Inspector2D::ImGuiDraw() {
-  static ImGuiWindowFlags windowFlags = ImGuiWindowFlags_MenuBar |
-                                        ImGuiWindowFlags_NoScrollbar |
-                                        ImGuiWindowFlags_NoScrollWithMouse;
+  static ImGuiWindowFlags windowFlags =
+      ImGuiWindowFlags_MenuBar | ImGuiWindowFlags_NoTitleBar |
+      ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
+      ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse |
+      ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBringToFrontOnFocus;
+
   bool needRelayout;
 
-  static ImVec2 lastWindowPos = ImVec2(0.0f, 0.0f);
-  static ImVec2 lastWindowSize = ImVec2(0.0f, 0.0f);
-  static ImVec2 lastMousePos = ImVec2(0.0f, 0.0f);
+  ImPlot::SetCurrentContext(plotContext_);
+
+  ImGui::SetNextWindowPos(ImGui::GetMainViewport()->Pos);
+  ImGui::SetNextWindowSize(ImGui::GetMainViewport()->WorkSize);
 
   if (ImGui::Begin("Inspector 2D", nullptr, windowFlags)) {
     {
@@ -188,10 +194,6 @@ struct ColormapConfig {
 };
 
 void Inspector2D::ShowColormapSettingsPopup() {
-  if (cmapConfigs_.empty()) {
-    cmapConfigs_.emplace_back();
-    cmapConfigs_.emplace_back();
-  }
   auto center = contentRect.GetCenter() + ImGui::GetWindowPos();
   ImGui::SetNextWindowPos(center, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 

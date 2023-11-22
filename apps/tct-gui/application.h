@@ -15,6 +15,7 @@ struct DepthInspector;
 struct ImageDisplay;
 struct GLFWwindow;
 struct ImGuiContext;
+struct ImGuiGLWFWindow;
 
 struct Application {
   static Application& GetInstance();
@@ -23,21 +24,12 @@ struct Application {
   void Create();
   void Run();
   const nlohmann::json& GetConfig();
-  GLuint GetTexture(const std::string& name);
 
  private:
   Application();
-  void LoadResources();
-  void CreateFontAtlas();
-  void CreateTextures();
-
-  GLFWwindow* glfwWindow;
-  ImGuiContext* imguiContext;
 
   nlohmann::json appConfig;
   std::unordered_map<std::string, GLuint> textures;
 
-  std::vector<std::shared_ptr<ImGuiWidget>> children;
+  std::vector<std::shared_ptr<ImGuiGLWFWindow>> children;
 };
-
-void LoadIcon(const char* filename, GLuint* textureId, ImVec2* size);

@@ -1,4 +1,6 @@
 #pragma once
+#define IMGUI_DEFINE_MATH_OPERATORS
+#include <implot.h>
 #include <sdk/inspector/inspector-bitmap.h>
 
 #include <memory>
@@ -40,6 +42,12 @@ struct Inspector2D : public ImGuiWidget, public InspectorBitmap {
 
   std::vector<ColormapConfig> cmapConfigs_;
 
+  ImPlotContext* plotContext_;
+
   bool frameRendered_;
   std::mutex renderMutex_;
+
+  ImVec2 lastWindowPos = ImVec2(0.0f, 0.0f);
+  ImVec2 lastWindowSize = ImVec2(0.0f, 0.0f);
+  ImVec2 lastMousePos = ImVec2(0.0f, 0.0f);
 };

@@ -28,6 +28,7 @@ set(IMGUI_NODE_INCLUDE_DIRS ${IMGUI_NODE_DIR})
 set(TCT_SRCS
     main.cc
     application.cc
+    imgui-window.cc
     node-editor.cc
     inspector-2d.cc
     utility.cc
