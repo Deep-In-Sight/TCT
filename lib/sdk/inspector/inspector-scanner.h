@@ -23,11 +23,10 @@
 
 #include <vector>
 
-enum ScanDirection { kScanHorizontal = 0, kScanVertical };
-
 class InspectorScanner : public PadObserver {
  public:
-  InspectorScanner(ScanDirection dir = kScanHorizontal);
+  InspectorScanner();
+  InspectorScanner(int x1, int y1, int x2, int y2);
 
   /**
    * @brief set the range of the scanner. This range is inclusive-start and
@@ -36,18 +35,20 @@ class InspectorScanner : public PadObserver {
    *
    * @param x1 start point x
    * @param y1 start point y
-   * @param xy2 end point x or y
+   * @param x2 end point x
+   * @param y2 end point y
    */
-  void SetRoi(int x1, int y1, int xy2);
+  void SetRoi(int x1, int y1, int x2, int y2);
 
   /**
    * @brief Get the range of the scanner
    *
    * @param x1 start point x
    * @param y1 start point y
-   * @param xy2 end point x or y
+   * @param x2 end point x
+   * @param y2 end point y
    */
-  void GetRoi(int& x1, int& y1, int& xy2);
+  void GetRoi(int& x1, int& y1, int& x2, int& y2);
 
   void OnNewFrame(Mat& frame) override;
 
@@ -69,23 +70,17 @@ class InspectorScanner : public PadObserver {
    */
   virtual void RenderRange(const std::vector<float>& vec) = 0;
 
- private:
   int start_x_;
   int start_y_;
-  int end_xy_;
-  ScanDirection dir_;
+  int end_x_;
+  int end_y_;
 
   vector<float> collected_;
+
+ private:
 };
 
-class InspectorHScanner : public InspectorScanner {
- public:
-  InspectorHScanner();
-};
-
-class InspectorVScanner : public InspectorScanner {
- public:
-  InspectorVScanner();
-};
+void liang_barsky_clipper(int& x1, int& y1, int& x2, int& y2, int xmin,
+                          int ymin, int xmax, int ymax);
 
 #endif  //__INSPECTOR_SCANNER_H__

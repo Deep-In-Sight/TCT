@@ -29,7 +29,7 @@ void InspectorBitmap::OnNewFrame(Mat& frame) {
   Render(frame);
 }
 
-Vec2f InspectorBitmap::GetDepthAmplitude(int x, int y) {
+Vec2f InspectorBitmap::GetPixel(int x, int y) {
   if (x < 0 || x >= frame_.size[2] || y < 0 || y >= frame_.size[1]) {
     throw std::runtime_error("out of frame");
   }

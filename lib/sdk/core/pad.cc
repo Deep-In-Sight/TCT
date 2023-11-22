@@ -289,6 +289,7 @@ void Pad::AddObserver(PadObserver *observer) {
     }
   }
   observers_.push_back(observer);
+  observer->pad_ = this;
   observer->SetFrameFormat(mat_shape_, mat_type_);
 }
 
@@ -362,3 +363,5 @@ void PadObserver::SelectChannel(DepthAmplitudeChannel channel) {
   }
   channel_ = channel;
 }
+
+Pad *PadObserver::GetPad() { return pad_; }

@@ -25,6 +25,10 @@
 
 InspectorHistogram::InspectorHistogram() {
   roi_ = Rect(0, 0, mat_shape_[2], mat_shape_[1]);
+  ranges_[0] = 0;
+  ranges_[1] = 0;
+  bins_ = 50;
+  isAutoRange_ = true;
 }
 
 void InspectorHistogram::SetRoi(int x, int y, int x2, int y2) {
@@ -51,10 +55,22 @@ void InspectorHistogram::GetRoi(int& x, int& y, int& x2, int& y2) {
   y2 = roi_.y + roi_.height - 1;
 }
 
-void InspectorHistogram::SetBins(float min, float max, int num_bins) {
+void InspectorHistogram::SetBins(int num_bins) { bins_ = num_bins; }
+void InspectorHistogram::GetBins(int& num_bins) { num_bins = bins_; }
+
+void InspectorHistogram::SetAutoRange(bool isAutoRange) {
+  isAutoRange_ = isAutoRange;
+}
+bool InspectorHistogram::isAutoRange() { return isAutoRange_; }
+
+void InspectorHistogram::SetRanges(float min, float max) {
   ranges_[0] = min;
   ranges_[1] = max;
-  bins_ = num_bins;
+}
+
+void InspectorHistogram::GetRanges(float& min, float& max) {
+  min = ranges_[0];
+  max = ranges_[1];
 }
 
 std::vector<float> InspectorHistogram::GetEdges() {
@@ -82,7 +98,7 @@ const Mat& InspectorHistogram::CalculateHistogram(Mat& frame) {
     data = &frame.data[width * height * frame.elemSize()];
   }
   Mat m(height, width, mat_type_, data);
-  Mat roi = m(roi_);
+  Mat roi = m(roi_).clone();  // to make it continuous
 
   int nimages = 1;
   int channels[] = {0};
@@ -91,7 +107,9 @@ const Mat& InspectorHistogram::CalculateHistogram(Mat& frame) {
   int histSize[] = {bins_};
   const float* ranges[] = {ranges_};
 
-  calcHist(&roi, nimages, channels, mask, histogram_, 1, histSize, ranges, true,
-           false);
+  // calcHist(&roi, nimages, channels, mask, histogram_, 1, histSize, ranges,
+  // true,
+  //          false);
+  histogram_ = roi;
   return histogram_;
 }

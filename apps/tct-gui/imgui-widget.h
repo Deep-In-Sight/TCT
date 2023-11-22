@@ -6,6 +6,7 @@
 #include <vector>
 
 struct ImGuiWidget {
+  ImGuiWidget(const std::string& name = "") : name_(name){};
   /**
    * @brief call the ImGui functions to draw the widget and its children
    *
@@ -15,7 +16,7 @@ struct ImGuiWidget {
    * @brief call all child widgets' ImGuiGetPreferedSize to calculate the
    * contentRect of this widget.
    */
-  virtual void ImGuiLayout() = 0;
+  virtual void ImGuiLayout(){};
 
   // virtual ImRect ImGuiGetPreferedSize() = 0;
 
@@ -23,4 +24,5 @@ struct ImGuiWidget {
   // window it belong to. (as oppose to relative to its immediate parent)
   ImRect contentRect;
   std::vector<std::shared_ptr<ImGuiWidget>> children;
+  std::string name_;
 };

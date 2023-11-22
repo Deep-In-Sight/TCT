@@ -8,6 +8,7 @@ static logger* logger_ = stdout_color_mt("MovingAverage").get();
 MovingAverage::MovingAverage(const string& name) : BaseTransform(name) {
   windowSize_ = 4;
   listCount_ = 0;
+  logger_->set_level(level::warn);
 }
 
 MovingAverage::~MovingAverage() {}
