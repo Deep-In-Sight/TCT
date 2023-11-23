@@ -398,8 +398,8 @@ void NodeEditor::ImGuiDraw() {
         }
       }
     }
-    ed::EndCreate();
   }
+  ed::EndCreate();
 
   // Handle deletion action
   // ---------------------------------------------------------------------------

@@ -312,7 +312,7 @@ void InspectorBitmapView::ShowToolsSettingsPopup() {
 void InspectorBitmapView::HandleMouse() {
   auto& io = ImGui::GetIO();
 
-  if (ImGui::IsWindowHovered()) {
+  if (ImGui::IsWindowFocused() && ImGui::IsWindowHovered()) {
     auto mousePos = io.MousePos;
     view_->onMouseMove(mousePos);
 

@@ -6,8 +6,8 @@
 #include "imgui-widget.h"
 #include "utility.h"
 
-Window::Window(const std::string& title, int width,
-                                 int height, int x, int y) {
+Window::Window(const std::string& title, int width, int height, int x, int y,
+               bool vsync) {
   // Create a window
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
@@ -18,8 +18,16 @@ Window::Window(const std::string& title, int width,
   if (!glfwWindow_) {
     throw std::runtime_error("Failed to create GLFW window");
   }
+  glfwSwapInterval(vsync ? 1 : 0);
+
   glfwSetWindowPos(glfwWindow_, x, y);
   glfwMakeContextCurrent(glfwWindow_);
+
+  int display_w, display_h;
+  ImVec4 cc = ImVec4(0.35f, 0.35f, 0.35f, 1.00f);
+  glfwGetFramebufferSize(glfwWindow_, &display_w, &display_h);
+  glViewport(0, 0, display_w, display_h);
+  glClearColor(cc.x, cc.y, cc.z, cc.w);
 
   // Initialize ImGui
   IMGUI_CHECKVERSION();
@@ -69,11 +77,6 @@ bool Window::Render() {
 
   ImGui::Render();
 
-  int display_w, display_h;
-  ImVec4 cc = ImVec4(0.35f, 0.35f, 0.35f, 1.00f);
-  glfwGetFramebufferSize(glfwWindow_, &display_w, &display_h);
-  glViewport(0, 0, display_w, display_h);
-  glClearColor(cc.x, cc.y, cc.z, cc.w);
   glClear(GL_COLOR_BUFFER_BIT);
   ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
