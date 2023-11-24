@@ -8,7 +8,8 @@ struct ImGuiContext;
 struct ImGuiWidget;
 
 struct Window {
-  Window(const std::string& title, int width, int height, int x, int y);
+  Window(const std::string& title, int width, int height, int x, int y,
+         bool vsync = false);
   ~Window();
 
   void AddChild(std::shared_ptr<ImGuiWidget> child);

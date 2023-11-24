@@ -39,7 +39,7 @@ void Application::Create() {
   auto x = mainWindowConfig["x"].get<int>();
   auto y = mainWindowConfig["y"].get<int>();
 
-  auto mainWindow = std::make_shared<Window>(title, width, height, x, y);
+  auto mainWindow = std::make_shared<Window>(title, width, height, x, y, true);
   auto nodeEditor = std::make_shared<NodeEditor>();
   mainWindow->AddChild(nodeEditor);
 
