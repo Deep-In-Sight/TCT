@@ -5,6 +5,7 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgproc.hpp>
 
+#include "IconsFontAwesome5.h"
 #include "application.h"
 
 void UploadCvMatToGpuTexture(const cv::Mat& image, GLuint* pTextureId,
@@ -118,6 +119,23 @@ void CreateFontAtlas() {
 
   io.Fonts->AddFontFromFileTTF(fontFile.c_str(), fontConfig.SizePixels,
                                &fontConfig);
+
+  // for icons
+  float baseFontSize = 18.0f;  // 13.0f is the size of the default font. Change
+                               // to the font size you use.
+  float iconFontSize =
+      baseFontSize * 2.0f /
+      3.0f;  // FontAwesome fonts need to have their sizes reduced by 2.0f/3.0f
+             // in order to align correctly
+  static const ImWchar icons_ranges[] = {ICON_MIN_FA, ICON_MAX_16_FA, 0};
+  ImFontConfig icons_config;
+  icons_config.MergeMode = true;
+  icons_config.PixelSnapH = true;
+  icons_config.GlyphMinAdvanceX = iconFontSize;
+  io.Fonts->AddFontFromFileTTF("data/fonts/" FONT_ICON_FILE_NAME_FAS,
+                               iconFontSize, &icons_config, icons_ranges);
+  // use FONT_ICON_FILE_NAME_FAR if you want regular instead of solid
+
   io.Fonts->Build();
 }
 
