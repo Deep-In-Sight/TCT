@@ -1,57 +1,10 @@
 #include "window.h"
 
-#include <backends/imgui_impl_glfw.h>
 #include <backends/imgui_impl_opengl3.h>
 
 #include "imgui-widget.h"
+#include "imgui_impl_glfw.h"
 #include "utility.h"
-
-void WindowFocusCallback(GLFWwindow* window, int focused) {
-  ImGuiContext* ctx = (ImGuiContext*)glfwGetWindowUserPointer(window);
-  ImGui::SetCurrentContext(ctx);
-  ImGui_ImplGlfw_WindowFocusCallback(window, focused);
-}
-void CursorEnterCallback(GLFWwindow* window, int entered) {
-  ImGuiContext* ctx = (ImGuiContext*)glfwGetWindowUserPointer(window);
-  ImGui::SetCurrentContext(ctx);
-  ImGui_ImplGlfw_CursorEnterCallback(window, entered);
-}
-void CursorPosCallback(GLFWwindow* window, double x, double y) {
-  ImGuiContext* ctx = (ImGuiContext*)glfwGetWindowUserPointer(window);
-  ImGui::SetCurrentContext(ctx);
-  ImGui_ImplGlfw_CursorPosCallback(window, x, y);
-}
-void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
-  ImGuiContext* ctx = (ImGuiContext*)glfwGetWindowUserPointer(window);
-  ImGui::SetCurrentContext(ctx);
-  ImGui_ImplGlfw_MouseButtonCallback(window, button, action, mods);
-}
-void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
-  ImGuiContext* ctx = (ImGuiContext*)glfwGetWindowUserPointer(window);
-  ImGui::SetCurrentContext(ctx);
-  ImGui_ImplGlfw_ScrollCallback(window, xoffset, yoffset);
-}
-void KeyCallback(GLFWwindow* window, int key, int scancode, int action,
-                 int mods) {
-  ImGuiContext* ctx = (ImGuiContext*)glfwGetWindowUserPointer(window);
-  ImGui::SetCurrentContext(ctx);
-  ImGui_ImplGlfw_KeyCallback(window, key, scancode, action, mods);
-}
-void CharCallback(GLFWwindow* window, unsigned int c) {
-  ImGuiContext* ctx = (ImGuiContext*)glfwGetWindowUserPointer(window);
-  ImGui::SetCurrentContext(ctx);
-  ImGui_ImplGlfw_CharCallback(window, c);
-}
-
-void installUserCallbacks(GLFWwindow* window) {
-  glfwSetWindowFocusCallback(window, WindowFocusCallback);
-  glfwSetCursorEnterCallback(window, CursorEnterCallback);
-  glfwSetCursorPosCallback(window, CursorPosCallback);
-  glfwSetMouseButtonCallback(window, MouseButtonCallback);
-  glfwSetScrollCallback(window, ScrollCallback);
-  glfwSetKeyCallback(window, KeyCallback);
-  glfwSetCharCallback(window, CharCallback);
-}
 
 Window::Window(const std::string& title, int width, int height, int x, int y,
                bool vsync) {
@@ -87,9 +40,8 @@ Window::Window(const std::string& title, int width, int height, int x, int y,
   io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
   ImGui::StyleColorsDark();
 
-  ImGui_ImplGlfw_InitForOpenGL(glfwWindow_, false);
   glfwSetWindowUserPointer(glfwWindow_, (void*)imguiContext_);
-  installUserCallbacks(glfwWindow_);
+  ImGui_ImplGlfw_InitForOpenGL(glfwWindow_, true);
 
   ImGui_ImplOpenGL3_Init("#version 130");
 

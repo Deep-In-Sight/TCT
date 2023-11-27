@@ -48,7 +48,8 @@ void Application::Create() {
 
 void Application::Run() {
   bool shouldClose = false;
-
+#define PIPELINE_TEST 1
+#if PIPELINE_TEST
   // pipeline construct
   auto src = new PlaybackSource("filesrc", false, false);
   auto depthCalc = new DepthCalc("raw2depth");
@@ -76,6 +77,7 @@ void Application::Run() {
 
   // start pipeline
   src->Start();
+#endif
 
   while (!shouldClose) {
     glfwPollEvents();

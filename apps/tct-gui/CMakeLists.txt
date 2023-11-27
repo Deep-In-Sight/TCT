@@ -6,7 +6,7 @@ set(IMGUI_SRCS
     ${IMGUI_DIR}/imgui_draw.cpp
     ${IMGUI_DIR}/imgui_tables.cpp
     ${IMGUI_DIR}/imgui_widgets.cpp
-    ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp
+    # ${IMGUI_DIR}/backends/imgui_impl_glfw.cpp
     ${IMGUI_DIR}/backends/imgui_impl_opengl3.cpp)
 set(IMGUI_INCLUDE_DIRS ${IMGUI_DIR} ${IMGUI_DIR}/backends)
 
@@ -26,6 +26,7 @@ set(IMGUI_NODE_INCLUDE_DIRS ${IMGUI_NODE_DIR})
 
 # TCT source and header files
 set(TCT_SRCS
+    imgui_impl_glfw.cpp
     main.cc
     application.cc
     window.cc
