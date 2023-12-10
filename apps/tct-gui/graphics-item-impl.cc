@@ -185,6 +185,7 @@ GraphicTextItem::GraphicTextItem(std::string text, ImVec2 pos, std::string name)
   setText(text);
   setAnchor(0);
   setBackgroud(false);
+  setFontScale(1.0f);
 }
 
 void GraphicTextItem::setText(std::string text) { text_ = text; }
@@ -203,6 +204,8 @@ void GraphicTextItem::setText(std::string text) { text_ = text; }
 void GraphicTextItem::setAnchor(int anchor) { anchor_ = anchor % 8; }
 
 void GraphicTextItem::setBackgroud(bool enable) { background_ = enable; }
+
+void GraphicTextItem::setFontScale(float scale) { fontScale_ = scale; }
 
 void GraphicTextItem::paintSelf() {
   if (sceneGeometries_.empty()) return;
@@ -228,6 +231,17 @@ void GraphicTextItem::clipSelf(ImRect r) {
 }
 
 bool GraphicTextItem::hitTest(ImVec2 p) { return bb_.Contains(p); }
+
+void GraphicTextItem::paintBegin() {
+  oldFontScale_ = ImGui::GetFont()->Scale;
+  ImGui::GetFont()->Scale = fontScale_;
+  ImGui::PushFont(ImGui::GetFont());
+}
+
+void GraphicTextItem::paintEnd() {
+  ImGui::GetFont()->Scale = oldFontScale_;
+  ImGui::PopFont();
+}
 
 Ruler::Ruler(bool horizontal, int min, int max, int major, int minor,
              float size, std::string name)
@@ -301,13 +315,13 @@ void Ruler::highlight(int value) {
 Ruler::~Ruler() {}
 
 void Ruler::paintBegin() {
-  oldFontSize_ = ImGui::GetFont()->Scale;
+  oldFontScale_ = ImGui::GetFont()->Scale;
   ImGui::GetFont()->Scale *= 0.7;
   ImGui::PushFont(ImGui::GetFont());
 }
 
 void Ruler::paintEnd() {
-  ImGui::GetFont()->Scale = oldFontSize_;
+  ImGui::GetFont()->Scale = oldFontScale_;
   ImGui::PopFont();
 }
 

@@ -1,6 +1,5 @@
 #pragma once
 
-#define IMGUI_DEFINE_MATH_OPERATORS
 #include <implot.h>
 #include <sdk/inspector/inspector-histogram.h>
 #include <sdk/inspector/inspector-scanner.h>
@@ -33,6 +32,7 @@ struct PlotConfigWidget : public ImGuiWidget {
   void editAPoint(ImVec2i& p, const ImRecti& bb, const std::string& name,
                   bool horiz = false);
   void editARect(ImRecti& r, const ImRecti& bb, const std::string& name);
+  bool isFullRange = false;
 };
 
 struct LineScannerPlotWidget : public PlotWidget, public InspectorScanner {

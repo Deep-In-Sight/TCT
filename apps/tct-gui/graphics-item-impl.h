@@ -47,13 +47,19 @@ struct GraphicTextItem : public GraphicsItem {
   void setText(std::string text);
   void setAnchor(int anchor);
   void setBackgroud(bool enable);
+  void setFontScale(float scale = 1.0f);
   void paintSelf() override;
   void clipSelf(ImRect r) override;
   bool hitTest(ImVec2 p) override;
+  void paintBegin() override;
+  void paintEnd() override;
+
   bool background_;
   std::string text_;
   int anchor_;
   ImRect bb_;
+  float fontScale_;
+  float oldFontScale_;
 };
 
 struct Ruler : public GraphicsItem {
@@ -75,7 +81,7 @@ struct Ruler : public GraphicsItem {
   void paintBegin() override;
   void paintEnd() override;
 
-  float oldFontSize_;
+  float oldFontScale_;
 
   bool orientation_;
   void highlight(int value);

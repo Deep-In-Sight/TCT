@@ -12,6 +12,5 @@ FetchContent_MakeAvailable(googletest)
 
 include(GoogleTest)
 
-add_subdirectory(gst-tof)
 add_subdirectory(sdk)
 add_subdirectory(apps)

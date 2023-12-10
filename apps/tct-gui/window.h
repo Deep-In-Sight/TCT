@@ -19,4 +19,6 @@ struct Window {
   std::vector<std::shared_ptr<ImGuiWidget>> children_;
   GLFWwindow* glfwWindow_;
   ImGuiContext* imguiContext_;
+  std::string title_;
+  static int windowCount_;
 };

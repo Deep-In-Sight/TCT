@@ -13,15 +13,16 @@ set(SDK_SRCS
     tof/playback-src.cc
     tof/depth-calc.cc
     tof/moving-average.cc
+    tof/unprojection.cc
     calib/fisheye.cc
     tof/camera-src.cc)
 
-find_package(Eigen3 REQUIRED)
+# find_package(Eigen3 REQUIRED)
 
 set(SDK_INCLUDES ${PROJECT_BINARY_DIR} ${PROJECT_SOURCE_DIR}/lib
-                 ${GST_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS})
+                 ${OpenCV_INCLUDE_DIRS})
 
-set(SDK_LINK_LIBS m Threads::Threads ${GST_LIBRARIES} ${OpenCV_LIBRARIES})
+set(SDK_LINK_LIBS m Threads::Threads ${OpenCV_LIBRARIES})
 
 add_library(sdk SHARED ${SDK_SRCS})
 target_include_directories(sdk PUBLIC ${SDK_INCLUDES})

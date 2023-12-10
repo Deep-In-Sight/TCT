@@ -181,9 +181,9 @@
 #define GLFW_HAS_FOCUS_WINDOW \
   (GLFW_VERSION_COMBINED >= 3200)  // 3.2+ glfwFocusWindow
 #define GLFW_HAS_FOCUS_ON_SHOW \
-  (GLFW_VERSION_COMBINED >= 3300)  // 3.3+ GLFW_FOCUS_ON_SHOW
+  (GLFW_VERSION_COMBINED >= 3301)  // 3.3+ GLFW_FOCUS_ON_SHOW
 #define GLFW_HAS_MONITOR_WORK_AREA \
-  (GLFW_VERSION_COMBINED >= 3300)  // 3.3+ glfwGetMonitorWorkarea
+  (GLFW_VERSION_COMBINED >= 3301)  // 3.3+ glfwGetMonitorWorkarea
 #define GLFW_HAS_OSX_WINDOW_POS_FIX \
   (GLFW_VERSION_COMBINED >=         \
    3301)  // 3.3.1+ Fixed: Resizing window repositions it on MacOS #1553

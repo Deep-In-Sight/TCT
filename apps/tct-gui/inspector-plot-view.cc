@@ -23,6 +23,11 @@ void PlotConfigWidget::editAPoint(ImVec2i &p, const ImRecti &bb,
 };
 void PlotConfigWidget::editARect(ImRecti &r, const ImRecti &bb,
                                  const std::string &name) {
+  ImGui::Checkbox("Full Range", &isFullRange);
+  if (isFullRange) {
+    r.Min = bb.Min;
+    r.Max = bb.Max;
+  }
   editAPoint(r.Min, bb, name + ".Min");
   ImGui::SameLine();
   editAPoint(r.Max, bb, name + ".Max");

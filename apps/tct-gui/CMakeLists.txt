@@ -24,11 +24,17 @@ set(IMGUI_NODE_SRCS
     ${IMGUI_NODE_DIR}/imgui_canvas.cpp ${IMGUI_NODE_DIR}/crude_json.cpp)
 set(IMGUI_NODE_INCLUDE_DIRS ${IMGUI_NODE_DIR})
 
+# IMGUI file dialog
+set(IMGUI_FILE_DIALOG_DIR ${CMAKE_SOURCE_DIR}/3rdparty/ImGuiFileDialog)
+set(IMGUI_FILE_DIALOG_SRCS ${IMGUI_FILE_DIALOG_DIR}/ImGuiFileDialog.cpp)
+set(IMGUI_FILE_DIALOG_INCLUDE_DIRS ${IMGUI_FILE_DIALOG_DIR})
+
 # TCT source and header files
 set(TCT_SRCS
     imgui_impl_glfw.cpp
     main.cc
     application.cc
+    element-wrapper.cc
     window.cc
     node-editor.cc
     inspector-bitmap-view.cc
@@ -39,12 +45,13 @@ set(TCT_SRCS
     graphics-view.cc
     transform.cc
     inspector-graphics-view.cc
-    inspector-plot-view.cc)
+    inspector-plot-view.cc
+    pointcloud-view.cc)
 
 add_executable(tct)
 
 target_sources(tct PRIVATE ${TCT_SRCS} ${IMGUI_SRCS} ${IMGUI_NODE_SRCS}
-                           ${IMPLOT_SRCS})
+                           ${IMPLOT_SRCS} ${IMGUI_FILE_DIALOG_SRCS})
 target_link_libraries(
   tct
   sdk
@@ -52,12 +59,14 @@ target_link_libraries(
   glfw
   dl
   GL
-  ${OpenCV_LIBRARIES})
+  ${OpenCV_LIBRARIES}
+  Open3D::Open3D)
+
 target_include_directories(
   tct
   PRIVATE ${IMGUI_INCLUDE_DIRS} ${IMGUI_NODE_INCLUDE_DIRS}
-          ${IMPLOT_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS}
-          ${PROJECT_SOURCE_DIR}/lib)
+          ${IMPLOT_INCLUDE_DIRS} ${IMGUI_FILE_DIALOG_INCLUDE_DIRS}
+          ${OpenCV_INCLUDE_DIRS} ${PROJECT_SOURCE_DIR}/lib)
 
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/data
      DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/)

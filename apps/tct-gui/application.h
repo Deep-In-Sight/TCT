@@ -1,8 +1,8 @@
 #pragma once
 
+#include <list>
 #include <memory>
 #include <string>
-#include <vector>
 
 #include "nlohmann/json.hpp"
 
@@ -15,11 +15,14 @@ struct Application {
   void Create();
   void Run();
   const nlohmann::json& GetConfig();
+  void AddWindow(std::shared_ptr<Window> window);
+  void RemoveWindow(std::shared_ptr<Window> window);
+  std::shared_ptr<Window> GetWindow(const std::string& title);
 
  private:
   Application();
 
   nlohmann::json appConfig;
 
-  std::vector<std::shared_ptr<Window>> children;
+  std::list<std::shared_ptr<Window>> children;
 };
