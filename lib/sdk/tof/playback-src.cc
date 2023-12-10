@@ -46,9 +46,7 @@ bool PlaybackSource::InitializeSource() {
   fseek(file_, 0, SEEK_SET);
   logger_->info("File size: {} bytes", size);
 
-  // Disable next element format check. Temporary workaround. Until we have a
-  // real n-dim matrix class to replace OpenCV Mat.
-  // GetSourcePad()->SetFrameFormat({4, 480, 640}, CV_16SC1);
+  GetSourcePad()->SetFrameFormat(shape_, type_);
   return true;
 }
 
@@ -65,7 +63,6 @@ void PlaybackSource::SetFormat(const MatShape &shape, int type) {
                 shape[1], shape[2], type);
   shape_ = shape;
   type_ = type;
-  GetSourcePad()->SetFrameFormat(shape, type);
 }
 
 void PlaybackSource::SetFrameRate(float fps) {

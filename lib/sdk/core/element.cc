@@ -25,6 +25,8 @@ Pad *Element::GetPad(const string &name) {
   return nullptr;
 }
 
+list<Pad *> &Element::GetPads() { return pads_; }
+
 bool Element::AddPad(Pad *pad) {
   for (auto it = pads_.begin(); it != pads_.end(); it++) {
     if ((*it)->GetName() == pad->GetName()) {

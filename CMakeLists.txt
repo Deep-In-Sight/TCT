@@ -23,21 +23,6 @@ if(spdlog_NOTFOUND)
   message(FATAL "spdlog not found")
 endif()
 
-# gstreamer - To be removed!!
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(GST REQUIRED gstreamer-1.0)
-if(GST_NOTFOUND)
-  message(FATAL "gstreamer not found")
-endif()
-pkg_check_modules(GST_BASE REQUIRED gstreamer-base-1.0)
-if(GST_BASE_NOTFOUND)
-  message(FATAL "gstreamer base not found")
-endif()
-pkg_check_modules(GST_CHECK REQUIRED gstreamer-check-1.0)
-if(GST_CHECK_NOTFOUND)
-  message(FATAL "gstreamer check not found")
-endif()
-
 # Open3D
 set(Open3D_DIR /home/linh/Open3d/lib/cmake/Open3D)
 find_package(Open3D REQUIRED)

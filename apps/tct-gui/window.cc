@@ -6,11 +6,15 @@
 #include "imgui_impl_glfw.h"
 #include "utility.h"
 
+int Window::windowCount_ = 0;
+
 Window::Window(const std::string& title, int width, int height, int x, int y,
-               bool vsync) {
+               bool vsync)
+    : title_(title) {
   // Create a window
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+  glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
 
   // no exception
   glfwWindow_ =
@@ -18,10 +22,12 @@ Window::Window(const std::string& title, int width, int height, int x, int y,
   if (!glfwWindow_) {
     throw std::runtime_error("Failed to create GLFW window");
   }
-  glfwSwapInterval(vsync ? 1 : 0);
 
   glfwSetWindowPos(glfwWindow_, x, y);
   glfwMakeContextCurrent(glfwWindow_);
+  glfwShowWindow(glfwWindow_);
+
+  glfwSwapInterval(vsync ? 1 : 0);
 
   int display_w, display_h;
   ImVec4 cc = ImVec4(0.35f, 0.35f, 0.35f, 1.00f);
@@ -32,6 +38,7 @@ Window::Window(const std::string& title, int width, int height, int x, int y,
   // Initialize ImGui
   IMGUI_CHECKVERSION();
 
+  auto oldContext = ImGui::GetCurrentContext();
   imguiContext_ = ImGui::CreateContext();
   ImGui::SetCurrentContext(imguiContext_);
 
@@ -46,13 +53,21 @@ Window::Window(const std::string& title, int width, int height, int x, int y,
   ImGui_ImplOpenGL3_Init("#version 130");
 
   CreateFontAtlas();
+
+  ImGui::SetCurrentContext(oldContext);
+
+  windowCount_++;
 }
 
 Window::~Window() {
-  ImGui_ImplOpenGL3_Shutdown();
-  ImGui_ImplGlfw_Shutdown();
-  ImGui::DestroyContext();
+  windowCount_--;
 
+  if (windowCount_ == 0) {
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+  }
+
+  ImGui::DestroyContext(imguiContext_);
   glfwDestroyWindow(glfwWindow_);
 }
 
@@ -66,8 +81,8 @@ void Window::RemoveChild(std::shared_ptr<ImGuiWidget> child) {
 }
 
 bool Window::Render() {
-  ImGui::SetCurrentContext(imguiContext_);
   glfwMakeContextCurrent(glfwWindow_);
+  ImGui::SetCurrentContext(imguiContext_);
 
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplGlfw_NewFrame();

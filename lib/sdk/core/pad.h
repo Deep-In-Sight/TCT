@@ -112,7 +112,7 @@ class PadObserver {
   friend class Pad;
 
  public:
-  PadObserver();
+  PadObserver(const std::string &name = "");
   /**
    * @brief trigger the observer to process new frame.
    *
@@ -142,12 +142,14 @@ class PadObserver {
   void SelectChannel(DepthAmplitudeChannel channel);
 
   Pad *GetPad();
+  std::string GetName();
 
  protected:
   DepthAmplitudeChannel channel_;
   MatShape mat_shape_;
   int mat_type_;
   Pad *pad_;
+  std::string obsvName_;
 };
 
 /**

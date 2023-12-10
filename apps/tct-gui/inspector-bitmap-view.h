@@ -1,5 +1,4 @@
 #pragma once
-#define IMGUI_DEFINE_MATH_OPERATORS
 #include <implot.h>
 #include <sdk/inspector/inspector-bitmap.h>
 
@@ -15,7 +14,7 @@ struct ColormapConfig;
 struct PlotConfigWidget;
 
 struct InspectorBitmapView : public ImGuiWidget, public InspectorBitmap {
-  InspectorBitmapView();
+  InspectorBitmapView(const std::string& name = "");
   ~InspectorBitmapView();
 
   void ImGuiDraw() override;

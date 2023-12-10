@@ -288,6 +288,7 @@ void Pad::AddObserver(PadObserver *observer) {
       return;
     }
   }
+  logger_->info("Add observer {} to pad {}", observer->obsvName_, GetName());
   observers_.push_back(observer);
   observer->pad_ = this;
   observer->SetFrameFormat(mat_shape_, mat_type_);
@@ -297,6 +298,8 @@ void Pad::RemoveObserver(PadObserver *observer) {
   if (observer == nullptr) {
     return;
   }
+  logger_->info("Remove observer {} from pad {}", observer->obsvName_,
+                GetName());
   observers_.remove(observer);
 }
 
@@ -330,10 +333,11 @@ void Pad::GetFrameFormat(MatShape &shape, int &type) {
   type = mat_type_;
 }
 
-PadObserver::PadObserver()
+PadObserver::PadObserver(const std::string &name)
     : mat_shape_(DEFAULT_MAT_SHAPE),
       mat_type_(DEFAULT_MAT_TYPE),
-      channel_(kDepthChannel) {}
+      channel_(kDepthChannel),
+      obsvName_(name) {}
 
 void PadObserver::SetFrameFormat(const MatShape &shape, int type) {
   if (mat_shape_.dims() != 3) {
@@ -365,3 +369,5 @@ void PadObserver::SelectChannel(DepthAmplitudeChannel channel) {
 }
 
 Pad *PadObserver::GetPad() { return pad_; }
+
+std::string PadObserver::GetName() { return obsvName_; }

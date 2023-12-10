@@ -1,5 +1,4 @@
 #include <gmock/gmock.h>
-#include <gst/gst.h>
 #include <gtest/gtest.h>
 #include <sdk/inspector/inspector-histogram.h>
 

@@ -74,6 +74,7 @@ class Element {
    * @return Pad*
    */
   Pad *GetPad(const string &name);
+  list<Pad *> &GetPads();
 
   /**
    * @brief Push a frame to the element. The child class implement this method

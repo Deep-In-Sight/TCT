@@ -1,0 +1,478 @@
+#include "element-wrapper.h"
+
+#include <ImGuiFileDialog.h>
+#include <sdk/tof/depth-calc.h>
+#include <sdk/tof/moving-average.h>
+#include <sdk/tof/playback-src.h>
+
+#include <nlohmann/json.hpp>
+
+#include "IconsFontAwesome5.h"
+#include "application.h"
+#include "inspector-bitmap-view.h"
+#include "window.h"
+
+LinkInfo::LinkInfo(ed::PinId startPinId, ed::PinId endPinId)
+    : startPinId_(startPinId), endPinId_(endPinId) {}
+
+PadWrapper::PadWrapper(Pad* pad) : pad_(pad) {}
+
+ElementWrapper::ElementWrapper() : firstFrame(true), location_(20, 20) {}
+
+void ElementWrapper::BuildNode() {
+  for (Pad* p : element_->GetPads()) {
+    PadWrapper padWrapper(p);
+    padWrapper.node_ = this;
+    if (p->GetDirection() == PadDirection::kPadSink) {
+      inputPads_.push_back(padWrapper);
+    } else {
+      outputPads_.push_back(padWrapper);
+    }
+  }
+}
+
+void ElementWrapper::SaveState(){};
+void ElementWrapper::LoadState(std::string& savedData){};
+
+void ElementWrapper::Draw() {
+  ed::NodeId id = ed::NodeId(this);
+  ed::BeginNode(id);
+  DrawHeader();
+  DrawInputPads();
+  ImGui::SameLine();
+  DrawBody();
+  ImGui::SameLine();
+  DrawOutputPads();
+  ed::EndNode();
+
+  // the magical node editor does not allow combo box inside a node,
+  // so we are forced to change it to a button and popup drawn after EndNode()
+  ed::Suspend();
+  if (deferredDraw_) {
+    deferredDraw_();
+  }
+  ed::Resume();
+
+  if (firstFrame) {
+    ed::SetNodePosition(id, location_);
+    firstFrame = false;
+  }
+}
+
+void ElementWrapper::DrawHeader() {
+  ImGui::TextUnformatted(element_->GetName().c_str());
+  // other decorations
+}
+
+void ElementWrapper::DrawInputPads() {
+  ImGui::BeginGroup();
+
+  for (auto& padWrapper : inputPads_) {
+    ed::PinId pinId = ed::PinId(&padWrapper);
+    ed::BeginPin(pinId, ed::PinKind::Input);
+    ImGui::TextUnformatted(ICON_FA_ARROW_RIGHT);
+    ed::EndPin();
+    // ImGui::SameLine();
+    ImGui::TextUnformatted(padWrapper.pad_->GetName().c_str());
+  }
+
+  ImGui::EndGroup();
+}
+
+void ElementWrapper::DrawBody() {
+  ImGui::BeginGroup();
+
+  ImGui::TextUnformatted("Hello Node");
+
+  ImGui::EndGroup();
+}
+
+void ElementWrapper::DrawOutputPads() {
+  ImGui::BeginGroup();
+
+  for (auto& padWrapper : outputPads_) {
+    ed::PinId pinId = ed::PinId(&padWrapper);
+    // ImGui::SameLine();
+    ed::BeginPin(pinId, ed::PinKind::Output);
+    ImGui::TextUnformatted(ICON_FA_ARROW_RIGHT);
+    ed::EndPin();
+    ImGui::TextUnformatted(padWrapper.pad_->GetName().c_str());
+  }
+
+  ImGui::EndGroup();
+}
+
+void ElementWrapper::SetLocation(ImVec2 location) {
+  location_ = location;
+  firstFrame = true;
+}
+
+// there must be a way to do this smarter...
+
+PlayBackNode::PlayBackNode(const char* name, ImColor color) : ElementWrapper() {
+  element_ = std::make_shared<PlaybackSource>(name, false, true);
+  BuildNode();
+  fn_[0] = '\0';
+  showPresetPopup_ = false;
+  showTypePopup_ = false;
+  usePreset_ = true;
+  presetIdx_ = 0;
+  shape_ = MatShape(4, 480, 640);  // =.= hard initialize
+  typeId_ = CV_16SC1;
+  fps_ = 30;
+  loop_ = true;
+  changed = false;
+};
+
+void presetIdToFormat(int presetIdx, MatShape& shape, int& type) {
+  struct Format {
+    MatShape shape;
+    int type;
+  };
+  std::map<int, Format> presets = {{0, {{4, 480, 640}, CV_16SC1}},
+                                   {1, {{4, 240, 320}, CV_16SC1}}};
+  if (presets.count(presetIdx) > 0) {
+    shape = presets[presetIdx].shape;
+    type = presets[presetIdx].type;
+  }
+}
+
+int idToType(int id) {
+  std::map<int, int> idToType = {{0, CV_16SC1}, {1, CV_16UC1}};
+  if (idToType.count(id) > 0) {
+    return idToType[id];
+  } else {
+    return CV_16SC1;
+  }
+}
+
+void PlayBackNode::DrawBody() {
+  ImGui::BeginGroup();
+  ImGui::PushID(element_->GetName().c_str());
+
+  auto playback = dynamic_cast<PlaybackSource*>(element_.get());
+  if (ImGui::Button(ICON_FA_FILE "Open")) {
+    ImGuiFileDialog::Instance()->OpenDialog("ChooseFileDlgKey", "Choose File",
+                                            ".bin", ".");
+    deferredDraw_ = [this]() {
+      auto dialog = ImGuiFileDialog::Instance();
+      auto playback = dynamic_cast<PlaybackSource*>(element_.get());
+      if (dialog->Display("ChooseFileDlgKey")) {
+        if (dialog->IsOk()) {
+          std::string filePathName = dialog->GetFilePathName();
+          std::string fileName = dialog->GetCurrentFileName();
+          strcpy(fn_,
+                 &fileName[fileName.size() - 20]);  // copy last 20 chars only
+          playback->SetFilename(filePathName);
+          deferredDraw_ = nullptr;
+        }
+        ImGuiFileDialog::Instance()->Close();
+      }
+    };
+  };
+  ImGui::SameLine();
+  ImGui::PushItemWidth(150);
+  ImGui::TextWrapped("...%s", fn_);
+  ImGui::PopItemWidth();
+  ImGui::PushItemWidth(50);
+  ImGui::Checkbox("Use Preset", &usePreset_);
+  if (usePreset_) {
+    static const char* presets[] = {"4x480x640/CV_16SC1", "4x240x320/CV_16SC1"};
+    showPresetPopup_ = false;
+    ImGui::BeginGroup();
+    if (ImGui::Button(presets[presetIdx_])) {
+      showPresetPopup_ = true;
+      deferredDraw_ = [this]() {
+        if (showPresetPopup_) ImGui::OpenPopup("PresetPopup");
+        if (ImGui::BeginPopup("PresetPopup")) {
+          for (int i = 0; i < IM_ARRAYSIZE(presets); i++) {
+            if (ImGui::Selectable(presets[i])) {
+              presetIdx_ = i;
+              presetIdToFormat(presetIdx_, shape_, typeId_);
+              // playback->SetFormat(shape_, typeId_);
+              changed = true;
+            }
+          }
+          ImGui::EndPopup();
+        }
+      };
+    }
+  } else {
+    int channels, height, width;
+    channels = shape_[0];
+    height = shape_[1];
+    width = shape_[2];
+
+    ImGui::BeginGroup();
+    if (ImGui::DragInt("#Phase", &channels, 1, 1, 4) ||
+        ImGui::DragInt("Height", &height, 1, 1, 480) ||
+        ImGui::DragInt("Width", &width, 1, 1, 640)) {
+      shape_ = MatShape(channels, height, width);
+      // playback->SetFormat(MatShape(channels, height, width), typeId_);
+      changed = true;
+    }
+    ImGui::EndGroup();
+    ImGui::SameLine();
+    ImGui::BeginGroup();
+
+    showTypePopup_ = false;
+    if (ImGui::Button(cv::typeToString(typeId_).c_str())) {
+      showTypePopup_ = true;
+      deferredDraw_ = [&]() {
+        if (showTypePopup_) ImGui::OpenPopup("TypePopup");
+        if (ImGui::BeginPopup("TypePopup")) {
+          static const char* types[] = {"CV_16SC1", "CV_16UC1"};
+          for (int i = 0; i < IM_ARRAYSIZE(types); i++) {
+            if (ImGui::Selectable(types[i])) {
+              typeId_ = idToType(i);
+              // playback->SetFormat(shape_, typeId_);
+              changed = true;
+            }
+          }
+          ImGui::EndPopup();
+        }
+      };
+    }
+  }
+
+  if (changed) {
+    playback->SetFormat(shape_, typeId_);
+    changed = false;
+  }
+
+  if (ImGui::DragFloat("FPS", &fps_, 1, 1, 60, "%.2f")) {
+    playback->SetFrameRate(fps_);
+  }
+  if (ImGui::Checkbox("Loop", &loop_)) {
+    playback->SetLoop(loop_);
+  }
+
+  ImGui::PopItemWidth();
+  ImGui::EndGroup();
+
+  StreamState state = playback->GetState();
+  // TODO: probably some issues if user click too fast
+  if (state == StreamState::kStreamStateStopped) {
+    if (ImGui::Button(ICON_FA_PLAY "Play")) {
+      playback->Start();
+    }
+  } else if (state == StreamState::kStreamStatePlaying) {
+    if (ImGui::Button(ICON_FA_PAUSE "Pause")) {
+      playback->Pause();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button(ICON_FA_STOP "Stop")) {
+      playback->Stop();
+    }
+  } else if (state == StreamState::kStreamStatePaused) {
+    if (ImGui::Button(ICON_FA_PLAY "Resume")) {
+      playback->Resume();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button(ICON_FA_STOP "Stop")) {
+      playback->Stop();
+    }
+    ImGui::SameLine();
+    if (ImGui::Button(ICON_FA_STEP_FORWARD "Step")) {
+      playback->Step();
+    }
+  }
+  ImGui::PopID();
+
+  ImGui::EndGroup();
+};
+
+void PlayBackNode::SaveState() {
+  nlohmann::json nodeSettings;
+
+  nodeSettings["fn"] = fn_;
+  nodeSettings["usePreset"] = usePreset_;
+  nodeSettings["presetIdx"] = presetIdx_;
+  nodeSettings["phases"] = shape_[0];
+  nodeSettings["height"] = shape_[1];
+  nodeSettings["width"] = shape_[2];
+  nodeSettings["type"] = typeId_;
+  nodeSettings["fps"] = fps_;
+  nodeSettings["loop"] = loop_;
+
+  nodeSettings_ = nodeSettings.dump();
+};
+
+void PlayBackNode::LoadState(std::string& savedData) {
+  auto playback = dynamic_cast<PlaybackSource*>(element_.get());
+  nlohmann::json nodeSettings = nlohmann::json::parse(savedData);
+
+  auto filename = nodeSettings["fn"].get<std::string>();
+  strcpy(fn_, filename.c_str());
+  usePreset_ = nodeSettings["usePreset"].get<bool>();
+  presetIdx_ = nodeSettings["presetIdx"].get<int>();
+  shape_ = MatShape(nodeSettings["phases"].get<int>(),
+                    nodeSettings["height"].get<int>(),
+                    nodeSettings["width"].get<int>());
+  typeId_ = nodeSettings["type"].get<int>();
+  fps_ = nodeSettings["fps"].get<float>();
+  loop_ = nodeSettings["loop"].get<bool>();
+
+  playback->SetFilename(fn_);
+  playback->SetFormat(shape_, typeId_);
+  playback->SetFrameRate(fps_);
+  playback->SetLoop(loop_);
+};
+
+RawToDepthNode::RawToDepthNode(const char* name, ImColor color)
+    : ElementWrapper() {
+  element_ = std::make_shared<DepthCalc>(name);
+  BuildNode();
+  fmodMHz_ = 20;
+  offset_ = 0.0f;
+};
+
+void RawToDepthNode::DrawBody() {
+  auto depthCalc = dynamic_cast<DepthCalc*>(element_.get());
+  ImGui::BeginGroup();
+  ImGui::PushItemWidth(100);
+  ImGui::PushID(element_->GetName().c_str());
+  if (ImGui::DragInt("FmodMHz", &fmodMHz_, 1, 1, 100) ||
+      ImGui::DragFloat("Offset", &offset_, 0.01, -10, 10)) {
+    depthCalc->SetConfig(fmodMHz_ * 1e6, offset_);
+  }
+  ImGui::PopID();
+  ImGui::PopItemWidth();
+  ImGui::EndGroup();
+};
+
+void RawToDepthNode::SaveState() {
+  nlohmann::json nodeSettings;
+
+  nodeSettings["fmodMHz"] = fmodMHz_;
+  nodeSettings["offset"] = offset_;
+
+  nodeSettings_ = nodeSettings.dump();
+};
+
+void RawToDepthNode::LoadState(std::string& savedData) {
+  auto depthCalc = dynamic_cast<DepthCalc*>(element_.get());
+  nlohmann::json nodeSettings = nlohmann::json::parse(savedData);
+
+  fmodMHz_ = nodeSettings["fmodMHz"].get<int>();
+  offset_ = nodeSettings["offset"].get<float>();
+  depthCalc->SetConfig(fmodMHz_ * 1e6, offset_);
+};
+
+MovingAverageNode::MovingAverageNode(const char* name, ImColor color)
+    : ElementWrapper() {
+  element_ = std::make_shared<MovingAverage>(name);
+  BuildNode();
+  width = 32;
+};
+
+void MovingAverageNode::DrawBody() {
+  auto movingAverage = dynamic_cast<MovingAverage*>(element_.get());
+  ImGui::BeginGroup();
+  ImGui::PushItemWidth(50);
+  ImGui::PushID(element_->GetName().c_str());
+  if (ImGui::DragInt("Window Size", &width, 1, 1, 64)) {
+    movingAverage->SetWindowSize(width);
+  }
+  ImGui::PopID();
+  ImGui::PopItemWidth();
+  ImGui::EndGroup();
+};
+
+void MovingAverageNode::SaveState() {
+  nlohmann::json nodeSettings;
+
+  nodeSettings["width"] = width;
+
+  nodeSettings_ = nodeSettings.dump();
+};
+
+void MovingAverageNode::LoadState(std::string& savedData) {
+  nlohmann::json nodeSettings = nlohmann::json::parse(savedData);
+
+  auto movingAverage = dynamic_cast<MovingAverage*>(element_.get());
+  width = nodeSettings["width"].get<int>();
+  movingAverage->SetWindowSize(width);
+};
+
+VideoOutputNode::VideoOutputNode(const char* name, ImColor color)
+    : ElementWrapper() {
+  inputPads_.emplace_back(nullptr);
+  inputPads_.back().node_ = this;
+  inspector_ = std::make_shared<InspectorBitmapView>(name);
+  auto w =
+      std::make_shared<Window>(inspector_->GetName(), 1200, 720, 0, 0, false);
+  auto& app = Application::GetInstance();
+  app.AddWindow(w);
+  w->AddChild(inspector_);
+};
+
+void VideoOutputNode::DrawHeader() {
+  auto nodeName = inspector_->GetName();
+  ImGui::TextUnformatted(nodeName.c_str());
+}
+
+void VideoOutputNode::DrawInputPads() {
+  ImGui::BeginGroup();
+  ed::PinId pinId = ed::PinId(&inputPads_.front());
+  ed::BeginPin(pinId, ed::PinKind::Input);
+  ImGui::TextUnformatted(ICON_FA_EYE);
+  ed::EndPin();
+  ImGui::TextUnformatted("sink");
+  ImGui::EndGroup();
+}
+
+void VideoOutputNode::DrawBody(){
+    // float oldFontScale_ = ImGui::GetFont()->Scale;
+    // ImGui::GetFont()->Scale = 2.0f;
+    // ImGui::PushFont(ImGui::GetFont());
+    // ImGui::TextUnformatted(ICON_FA_SEARCH);
+    // ImGui::GetFont()->Scale = oldFontScale_;
+    // ImGui::PopFont();
+};
+
+void VideoOutputNode::SaveState(){};
+
+void VideoOutputNode::LoadState(std::string& savedData){};
+
+VideoOutputNode::~VideoOutputNode() {
+  auto& app = Application::GetInstance();
+  auto w = app.GetWindow(inspector_->GetName());
+  app.RemoveWindow(w);
+}
+
+std::shared_ptr<ElementWrapper> ElementFactory::CreateElement(
+    const std::string& nodeType, const std::string& nodeName) {
+  static std::map<std::string, int> counts = {{"Playback", 0},
+                                              {"RawToDepth", 0},
+                                              {"MovingAverage", 0},
+                                              {"VideoOutput", 0}};
+  static std::map<std::string,
+                  std::function<std::shared_ptr<ElementWrapper>(const char*)>>
+      creators = {{"Playback",
+                   [](const char* name) {
+                     return std::make_shared<PlayBackNode>(name);
+                   }},
+                  {"RawToDepth",
+                   [](const char* name) {
+                     return std::make_shared<RawToDepthNode>(name);
+                   }},
+                  {"MovingAverage",
+                   [](const char* name) {
+                     return std::make_shared<MovingAverageNode>(name);
+                   }},
+                  {"VideoOutput", [](const char* name) {
+                     return std::make_shared<VideoOutputNode>(name);
+                   }}};
+
+  std::string assignedName = nodeName;
+  if (nodeName.empty() && counts.count(nodeType) > 0) {
+    assignedName = nodeType + std::to_string(counts[nodeType]++);
+  }
+
+  if (creators.count(nodeType) > 0) {
+    return creators[nodeType](assignedName.c_str());
+  }
+
+  return nullptr;
+}

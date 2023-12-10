@@ -24,6 +24,7 @@
 
 class InspectorBitmap : public PadObserver {
  public:
+  InspectorBitmap(const std::string& name);
   /**
    * @brief Render the whole frame
    *

@@ -121,7 +121,7 @@ void CreateFontAtlas() {
                                &fontConfig);
 
   // for icons
-  float baseFontSize = 18.0f;  // 13.0f is the size of the default font. Change
+  float baseFontSize = 24.0f;  // 13.0f is the size of the default font. Change
                                // to the font size you use.
   float iconFontSize =
       baseFontSize * 2.0f /

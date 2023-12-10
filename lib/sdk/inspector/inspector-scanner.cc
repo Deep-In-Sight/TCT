@@ -92,10 +92,10 @@ void liang_barsky_clipper(int& x1, int& y1, int& x2, int& y2, int xmin,
   int dx = x2 - x1;
   int dy = y2 - y1;
 
-  double p[] = {-dx, dx, -dy, dy};
-  double q[] = {x1 - xmin, xmax - x1, y1 - ymin, ymax - y1};
+  int p[] = {-dx, dx, -dy, dy};
+  int q[] = {x1 - xmin, xmax - x1, y1 - ymin, ymax - y1};
 
-  double u1 = 0.0, u2 = 1.0;
+  float u1 = 0.0, u2 = 1.0;
 
   for (int i = 0; i < 4; i++) {
     if (p[i] == 0) {
@@ -104,7 +104,7 @@ void liang_barsky_clipper(int& x1, int& y1, int& x2, int& y2, int xmin,
         return;
       }
     } else {
-      double t = q[i] / p[i];
+      float t = q[i] * 1.0f / p[i];
       if (p[i] < 0 && u1 < t)
         u1 = t;
       else if (p[i] > 0 && u2 > t)

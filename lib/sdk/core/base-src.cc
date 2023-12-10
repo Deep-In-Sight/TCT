@@ -17,6 +17,7 @@ BaseSource::BaseSource(const string &name, bool is_async) : Element(name) {
     source_pad_ = queue_->GetSourcePad();
   }
   state_ = kStreamStateStopped;
+  stepCount_ = 0;
 }
 
 BaseSource::~BaseSource() {
@@ -48,7 +49,9 @@ void BaseSource::GenerateLoop() {
       } else if (state == kStreamStatePaused) {
         // state_, not state, by intention.
         logger_->info("Paused, taking a nap zzz...");
-        condvar_.wait(lock, [this] { return state_ != kStreamStatePaused; });
+        condvar_.wait(lock, [this] {
+          return ((state_ != kStreamStatePaused) || (stepCount_ > 0));
+        });
         logger_->info("Rising from under, get back to work!");
       }
     }
@@ -63,6 +66,7 @@ void BaseSource::GenerateLoop() {
     } else {
       source_pad_->PushFrame(frame);
     }
+    if (stepCount_ > 0) stepCount_--;
   } while (state != kStreamStateStopped);
   CleanupSource();
 
@@ -161,6 +165,7 @@ bool BaseSource::Step() {
     logger_->warn("Source is not paused.");
     return false;
   }
+  stepCount_++;
   condvar_.notify_one();
   return true;
 }

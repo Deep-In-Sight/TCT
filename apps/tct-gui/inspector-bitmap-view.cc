@@ -9,7 +9,8 @@
 #include "inspector-plot-view.h"
 #include "utility.h"
 
-InspectorBitmapView::InspectorBitmapView() {
+InspectorBitmapView::InspectorBitmapView(const std::string& name)
+    : InspectorBitmap(name) {
   scene_ = std::make_shared<GraphicsScene>();
   view_ = std::make_shared<InspectorGraphicsView>(scene_);
   view_->inspector_ = this;
@@ -91,9 +92,9 @@ void InspectorBitmapView::ImGuiDraw() {
     }
   }
 
-  ImPlot::ShowDemoWindow();
-  ImGui::ShowDemoWindow();
-  ImGui::ShowMetricsWindow();
+  // ImPlot::ShowDemoWindow();
+  // ImGui::ShowDemoWindow();
+  // ImGui::ShowMetricsWindow();
 }
 
 void InspectorBitmapView::ImGuiLayout() {

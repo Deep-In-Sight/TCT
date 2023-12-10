@@ -100,6 +100,7 @@ class BaseSource : public Element {
   Queue *queue_;
   thread *thread_;
   StreamState state_;
+  int stepCount_;
   mutex mutex_;
   condition_variable condvar_;
   float duration_;

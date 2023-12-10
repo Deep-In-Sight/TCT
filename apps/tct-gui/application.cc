@@ -43,47 +43,33 @@ void Application::Create() {
   auto nodeEditor = std::make_shared<NodeEditor>();
   mainWindow->AddChild(nodeEditor);
 
-  children.push_back(mainWindow);
+  AddWindow(mainWindow);
+}
+
+void Application::AddWindow(std::shared_ptr<Window> window) {
+  children.push_back(window);
+}
+
+void Application::RemoveWindow(std::shared_ptr<Window> window) {
+  children.remove(window);
+}
+
+std::shared_ptr<Window> Application::GetWindow(const std::string& title) {
+  for (auto window : children) {
+    if (window->title_ == title) {
+      return window;
+    }
+  }
+  return nullptr;
 }
 
 void Application::Run() {
   bool shouldClose = false;
-#define PIPELINE_TEST 1
-#if PIPELINE_TEST
-  // pipeline construct
-  auto src = new PlaybackSource("filesrc", false, false);
-  auto depthCalc = new DepthCalc("raw2depth");
-  auto ma = new MovingAverage("movingAverage");
-  auto inspector = new InspectorBitmapView();
-  src->GetSourcePad()->Link(depthCalc->GetSinkPad());
-  depthCalc->GetSourcePad()->Link(ma->GetSinkPad());
-  ma->GetSourcePad()->AddObserver(inspector);
-
-  // pipeline config
-  src->SetFilename("./data/videos/37MHz_1.4m_73x4x480x640_16SC1.bin");
-  src->SetLoop(true);
-  src->SetFrameRate(30);
-  src->SetFormat(MatShape(4, 480, 640), CV_16SC1);
-  int fmodMHz = 37;
-  float offset = 1.4;
-  depthCalc->SetConfig(fmodMHz * 1e6, offset);
-  int MAwidth = 32;
-  ma->SetWindowSize(MAwidth);
-
-  auto inspectorWindow = std::make_shared<Window>("Inspector", 1280, 600, 0, 0);
-  inspectorWindow->AddChild(std::shared_ptr<ImGuiWidget>(inspector));
-
-  children.push_back(inspectorWindow);
-
-  // start pipeline
-  src->Start();
-#endif
-
   while (!shouldClose) {
     glfwPollEvents();
 
-    for (auto window : children) {
-      shouldClose |= window->Render();
+    for (auto window = children.begin(); window != children.end(); ++window) {
+      shouldClose |= (*window)->Render();
     }
   }
 }

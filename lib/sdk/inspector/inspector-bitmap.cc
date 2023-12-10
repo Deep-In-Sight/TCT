@@ -24,6 +24,8 @@
 using namespace spdlog;
 static logger* logger_ = stdout_color_mt("InspectorBitmap").get();
 
+InspectorBitmap::InspectorBitmap(const std::string& name) : PadObserver(name) {}
+
 void InspectorBitmap::OnNewFrame(Mat& frame) {
   frame_ = frame;
   Render(frame);
