@@ -46,21 +46,23 @@ set(TCT_SRCS
     transform.cc
     inspector-graphics-view.cc
     inspector-plot-view.cc
-    pointcloud-view.cc)
+    open3d-visualizer.cc)
 
 add_executable(tct)
 
 target_sources(tct PRIVATE ${TCT_SRCS} ${IMGUI_SRCS} ${IMGUI_NODE_SRCS}
                            ${IMPLOT_SRCS} ${IMGUI_FILE_DIALOG_SRCS})
+
+# find_package(glfw3 REQUIRED)
 target_link_libraries(
   tct
-  sdk
-  nlohmann_json::nlohmann_json
-  glfw
-  dl
-  GL
-  ${OpenCV_LIBRARIES}
-  Open3D::Open3D)
+  PRIVATE sdk
+          glfw
+          nlohmann_json::nlohmann_json
+          dl
+          GL
+          ${OpenCV_LIBRARIES}
+          Open3D::Open3D)
 
 target_include_directories(
   tct
@@ -70,3 +72,6 @@ target_include_directories(
 
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/data
      DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/)
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../share)
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/resources
+     DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/../share)

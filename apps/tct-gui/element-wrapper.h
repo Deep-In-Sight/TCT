@@ -9,6 +9,7 @@
 
 struct PadWrapper;
 struct InspectorBitmapView;
+struct Open3DVisualizer;
 
 namespace ed = ax::NodeEditor;
 
@@ -37,6 +38,7 @@ struct ElementWrapper {
   bool firstFrame;
   ImVec2 location_;
   std::shared_ptr<Element> element_;
+  std::shared_ptr<PadObserver> observer_;
   std::function<void()> deferredDraw_;
 };
 
@@ -53,7 +55,7 @@ struct LinkInfo {
 };
 
 struct PlayBackNode : public ElementWrapper {
-  PlayBackNode(const char* name, ImColor color = ImColor(255, 255, 255));
+  PlayBackNode(const std::string& name, ImColor color = ImColor(255, 255, 255));
   void DrawBody() override;
   void SaveState() override;
   void LoadState(std::string& savedData) override;
@@ -70,7 +72,8 @@ struct PlayBackNode : public ElementWrapper {
 };
 
 struct RawToDepthNode : public ElementWrapper {
-  RawToDepthNode(const char* name, ImColor color = ImColor(255, 255, 255));
+  RawToDepthNode(const std::string& name,
+                 ImColor color = ImColor(255, 255, 255));
   void DrawBody() override;
   void SaveState() override;
   void LoadState(std::string& savedData) override;
@@ -79,7 +82,8 @@ struct RawToDepthNode : public ElementWrapper {
 };
 
 struct MovingAverageNode : public ElementWrapper {
-  MovingAverageNode(const char* name, ImColor color = ImColor(255, 255, 255));
+  MovingAverageNode(const std::string& name,
+                    ImColor color = ImColor(255, 255, 255));
   void DrawBody() override;
   void SaveState() override;
   void LoadState(std::string& savedData) override;
@@ -87,17 +91,27 @@ struct MovingAverageNode : public ElementWrapper {
 };
 
 struct VideoOutputNode : public ElementWrapper {
-  VideoOutputNode(const char* name, ImColor color = ImColor(255, 255, 255));
+  VideoOutputNode(const std::string& name,
+                  ImColor color = ImColor(255, 255, 255));
   ~VideoOutputNode();
-  void SaveState() override;
-  void LoadState(std::string& savedData) override;
-  void DrawBody() override;
   void DrawHeader() override;
   void DrawInputPads() override;
-  std::shared_ptr<InspectorBitmapView> inspector_;
+};
+
+struct Open3DVisualizerNode : public ElementWrapper {
+  Open3DVisualizerNode(const std::string& name,
+                       ImColor color = ImColor(255, 255, 255));
+  void DrawHeader() override;
+  void DrawInputPads() override;
 };
 
 struct ElementFactory {
   static std::shared_ptr<ElementWrapper> CreateElement(
       const std::string& nodeType, const std::string& nodeName = "");
 };
+
+std::map<std::string,
+         std::function<std::shared_ptr<ElementWrapper>(const std::string&)>>&
+GetNodeConstructors();
+const std::vector<std::string>& GetNodeTypes();
+std::map<std::string, int>& GetNodesCount();

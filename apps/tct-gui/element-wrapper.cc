@@ -10,6 +10,7 @@
 #include "IconsFontAwesome5.h"
 #include "application.h"
 #include "inspector-bitmap-view.h"
+#include "open3d-visualizer.h"
 #include "window.h"
 
 LinkInfo::LinkInfo(ed::PinId startPinId, ed::PinId endPinId)
@@ -79,13 +80,7 @@ void ElementWrapper::DrawInputPads() {
   ImGui::EndGroup();
 }
 
-void ElementWrapper::DrawBody() {
-  ImGui::BeginGroup();
-
-  ImGui::TextUnformatted("Hello Node");
-
-  ImGui::EndGroup();
-}
+void ElementWrapper::DrawBody() {}
 
 void ElementWrapper::DrawOutputPads() {
   ImGui::BeginGroup();
@@ -109,8 +104,10 @@ void ElementWrapper::SetLocation(ImVec2 location) {
 
 // there must be a way to do this smarter...
 
-PlayBackNode::PlayBackNode(const char* name, ImColor color) : ElementWrapper() {
-  element_ = std::make_shared<PlaybackSource>(name, false, true);
+PlayBackNode::PlayBackNode(const std::string& name, ImColor color)
+    : ElementWrapper() {
+  auto playback = std::make_shared<PlaybackSource>(name, false, true);
+  element_ = playback;
   BuildNode();
   fn_[0] = '\0';
   showPresetPopup_ = false;
@@ -319,12 +316,14 @@ void PlayBackNode::LoadState(std::string& savedData) {
   playback->SetLoop(loop_);
 };
 
-RawToDepthNode::RawToDepthNode(const char* name, ImColor color)
+RawToDepthNode::RawToDepthNode(const std::string& name, ImColor color)
     : ElementWrapper() {
-  element_ = std::make_shared<DepthCalc>(name);
+  auto depthCalc = std::make_shared<DepthCalc>(name);
+  element_ = depthCalc;
   BuildNode();
   fmodMHz_ = 20;
   offset_ = 0.0f;
+  depthCalc->SetConfig(fmodMHz_ * 1e6, offset_);
 };
 
 void RawToDepthNode::DrawBody() {
@@ -359,11 +358,13 @@ void RawToDepthNode::LoadState(std::string& savedData) {
   depthCalc->SetConfig(fmodMHz_ * 1e6, offset_);
 };
 
-MovingAverageNode::MovingAverageNode(const char* name, ImColor color)
+MovingAverageNode::MovingAverageNode(const std::string& name, ImColor color)
     : ElementWrapper() {
-  element_ = std::make_shared<MovingAverage>(name);
+  auto ma = std::make_shared<MovingAverage>(name);
+  element_ = ma;
   BuildNode();
   width = 32;
+  ma->SetWindowSize(width);
 };
 
 void MovingAverageNode::DrawBody() {
@@ -395,20 +396,21 @@ void MovingAverageNode::LoadState(std::string& savedData) {
   movingAverage->SetWindowSize(width);
 };
 
-VideoOutputNode::VideoOutputNode(const char* name, ImColor color)
+VideoOutputNode::VideoOutputNode(const std::string& name, ImColor color)
     : ElementWrapper() {
   inputPads_.emplace_back(nullptr);
   inputPads_.back().node_ = this;
-  inspector_ = std::make_shared<InspectorBitmapView>(name);
-  auto w =
-      std::make_shared<Window>(inspector_->GetName(), 1200, 720, 0, 0, false);
+  auto observerView_ = std::make_shared<InspectorBitmapView>(name);
+  observer_ = observerView_;
+  auto w = std::make_shared<GlfwWindow>(observer_->GetName(), 1200, 720, 0, 0,
+                                        false);
   auto& app = Application::GetInstance();
   app.AddWindow(w);
-  w->AddChild(inspector_);
+  w->AddChild(observerView_);
 };
 
 void VideoOutputNode::DrawHeader() {
-  auto nodeName = inspector_->GetName();
+  auto nodeName = observer_->GetName();
   ImGui::TextUnformatted(nodeName.c_str());
 }
 
@@ -422,56 +424,97 @@ void VideoOutputNode::DrawInputPads() {
   ImGui::EndGroup();
 }
 
-void VideoOutputNode::DrawBody(){
-    // float oldFontScale_ = ImGui::GetFont()->Scale;
-    // ImGui::GetFont()->Scale = 2.0f;
-    // ImGui::PushFont(ImGui::GetFont());
-    // ImGui::TextUnformatted(ICON_FA_SEARCH);
-    // ImGui::GetFont()->Scale = oldFontScale_;
-    // ImGui::PopFont();
-};
-
-void VideoOutputNode::SaveState(){};
-
-void VideoOutputNode::LoadState(std::string& savedData){};
-
 VideoOutputNode::~VideoOutputNode() {
   auto& app = Application::GetInstance();
-  auto w = app.GetWindow(inspector_->GetName());
+  auto w = app.GetWindow(observer_->GetName());
   app.RemoveWindow(w);
+}
+
+Open3DVisualizerNode::Open3DVisualizerNode(const std::string& name,
+                                           ImColor color)
+    : ElementWrapper() {
+  auto observerView_ = std::make_shared<Open3DVisualizer>(name);
+  observer_ = observerView_;
+  inputPads_.emplace_back(nullptr);
+  inputPads_.back().node_ = this;
+};
+
+void Open3DVisualizerNode::DrawHeader() {
+  auto nodeName = observer_->GetName();
+  ImGui::TextUnformatted(nodeName.c_str());
+}
+
+void Open3DVisualizerNode::DrawInputPads() {
+  ImGui::BeginGroup();
+  ed::PinId pinId = ed::PinId(&inputPads_.front());
+  ed::BeginPin(pinId, ed::PinKind::Input);
+  ImGui::TextUnformatted(ICON_FA_EYE);
+  ed::EndPin();
+  ImGui::TextUnformatted("sink");
+  ImGui::EndGroup();
+}
+using NodeConstructor =
+    std::function<std::shared_ptr<ElementWrapper>(const std::string& name)>;
+
+std::map<std::string, NodeConstructor>& GetNodeConstructors() {
+  static std::map<std::string, NodeConstructor> constructorMap = {
+      {"PlayBack",
+       [](const std::string& name) {
+         return std::make_shared<PlayBackNode>(name);
+       }},
+      {"RawToDepth",
+       [](const std::string& name) {
+         return std::make_shared<RawToDepthNode>(name);
+       }},
+      {"MovingAverage",
+       [](const std::string& name) {
+         return std::make_shared<MovingAverageNode>(name);
+       }},
+      {"VideoOutput",
+       [](const std::string& name) {
+         return std::make_shared<VideoOutputNode>(name);
+       }},
+      {"Open3DVisualizer", [](const std::string& name) {
+         return std::make_shared<Open3DVisualizerNode>(name);
+       }}};
+  return constructorMap;
+}
+
+const std::vector<string>& GetNodeTypes() {
+  static std::vector<string> nodeTypes;
+  auto& constructorMap = GetNodeConstructors();
+  if (nodeTypes.empty()) {
+    for (const auto& nodeConstructor : constructorMap) {
+      nodeTypes.push_back(nodeConstructor.first);
+    }
+    std::sort(nodeTypes.begin(), nodeTypes.end());
+  }
+  return nodeTypes;
+}
+
+std::map<std::string, int>& GetNodesCount() {
+  static std::map<std::string, int> nodeCounts;
+  const auto& types = GetNodeTypes();
+  if (nodeCounts.empty()) {
+    for (auto type : types) {
+      nodeCounts[type] = 0;
+    }
+  }
+  return nodeCounts;
 }
 
 std::shared_ptr<ElementWrapper> ElementFactory::CreateElement(
     const std::string& nodeType, const std::string& nodeName) {
-  static std::map<std::string, int> counts = {{"Playback", 0},
-                                              {"RawToDepth", 0},
-                                              {"MovingAverage", 0},
-                                              {"VideoOutput", 0}};
-  static std::map<std::string,
-                  std::function<std::shared_ptr<ElementWrapper>(const char*)>>
-      creators = {{"Playback",
-                   [](const char* name) {
-                     return std::make_shared<PlayBackNode>(name);
-                   }},
-                  {"RawToDepth",
-                   [](const char* name) {
-                     return std::make_shared<RawToDepthNode>(name);
-                   }},
-                  {"MovingAverage",
-                   [](const char* name) {
-                     return std::make_shared<MovingAverageNode>(name);
-                   }},
-                  {"VideoOutput", [](const char* name) {
-                     return std::make_shared<VideoOutputNode>(name);
-                   }}};
+  auto counts = GetNodesCount();
+  auto constructorMap = GetNodeConstructors();
 
   std::string assignedName = nodeName;
   if (nodeName.empty() && counts.count(nodeType) > 0) {
     assignedName = nodeType + std::to_string(counts[nodeType]++);
   }
 
-  if (creators.count(nodeType) > 0) {
-    return creators[nodeType](assignedName.c_str());
+  if (constructorMap.count(nodeType) > 0) {
+    return constructorMap[nodeType](assignedName);
   }
 
   return nullptr;

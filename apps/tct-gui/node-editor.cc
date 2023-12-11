@@ -109,7 +109,7 @@ void NodeEditor::HandleLinkCreation() {
   Pad* startPad = nullptr;
   Pad* endPad = nullptr;
   bool bothPads = false;
-  InspectorBitmapView* inspector = nullptr;
+  PadObserver* observer = nullptr;
 
   if (!ed::BeginCreate()) {
     return;
@@ -154,15 +154,9 @@ void NodeEditor::HandleLinkCreation() {
     if (!startPad) {
       std::swap(startId, endId);
       std::swap(startPad, endPad);
-      std::cout << "reversed" << std::endl;
     }
     auto endPadWrapper = (PadWrapper*)endId.AsPointer();
-    auto node = dynamic_cast<VideoOutputNode*>(endPadWrapper->node_);
-
-    // only the video output node can be used as observer
-    if (node) {
-      inspector = node->inspector_.get();
-    }
+    observer = endPadWrapper->node_->observer_.get();
     bothPads = false;
   }
 
@@ -172,7 +166,7 @@ void NodeEditor::HandleLinkCreation() {
     if (bothPads) {
       startPad->Link(endPad);
     } else {
-      startPad->AddObserver(inspector);
+      startPad->AddObserver(observer);
     }
   }
 
@@ -203,8 +197,8 @@ void NodeEditor::HandleLinkDeletion() {
           startPad->Unlink();
         } else {
           auto endPadWrapper = (PadWrapper*)endPin.AsPointer();
-          auto node = dynamic_cast<VideoOutputNode*>(endPadWrapper->node_);
-          startPad->RemoveObserver(node->inspector_.get());
+          auto observer = endPadWrapper->node_->observer_.get();
+          startPad->RemoveObserver(observer);
         }
         m_Links_.erase(iter);
         break;
@@ -233,17 +227,16 @@ void NodeEditor::HandleNodeDeletion() {
 }
 
 void NodeEditor::ShowCreateNodePopup() {
-  const char* nodeTypes[] = {"Playback", "RawToDepth", "MovingAverage",
-                             "VideoOutput"};
+  auto& nodeTypes = GetNodeTypes();
   static ImGuiTextFilter filter;
 
   if (ImGui::BeginPopupModal("Create New Node")) {
     filter.Draw("Enter node type", 180.0f);
     // static all we want because there will be only one node editor
 
-    for (int i = 0; i < IM_ARRAYSIZE(nodeTypes); i++) {
-      if (filter.PassFilter(nodeTypes[i])) {
-        if (ImGui::Selectable(nodeTypes[i])) {
+    for (int i = 0; i < nodeTypes.size(); i++) {
+      if (filter.PassFilter(nodeTypes[i].c_str())) {
+        if (ImGui::Selectable(nodeTypes[i].c_str())) {
           auto node = ElementFactory::CreateElement(nodeTypes[i]);
           AddNode(node);
           node->SetLocation(ImGui::GetMousePos());
