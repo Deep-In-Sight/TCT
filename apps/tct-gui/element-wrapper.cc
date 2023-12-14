@@ -402,8 +402,7 @@ VideoOutputNode::VideoOutputNode(const std::string& name, ImColor color)
   inputPads_.back().node_ = this;
   auto observerView_ = std::make_shared<InspectorBitmapView>(name);
   observer_ = observerView_;
-  auto w = std::make_shared<GlfwWindow>(observer_->GetName(), 1200, 720, 0, 0,
-                                        false);
+  auto w = BackEnd::CreateWindow(observer_->GetName(), 0, 0, 1200, 720);
   auto& app = Application::GetInstance();
   app.AddWindow(w);
   w->AddChild(observerView_);
