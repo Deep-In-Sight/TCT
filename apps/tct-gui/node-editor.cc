@@ -10,6 +10,7 @@
 #include <opencv2/imgcodecs/imgcodecs.hpp>
 
 #include "IconsFontAwesome5.h"
+#include "element-wrapper.h"
 #include "inspector-bitmap-view.h"
 #include "nlohmann/json.hpp"
 #include "utility.h"
@@ -35,6 +36,40 @@ NodeEditor::NodeEditor() {
                 ImGuiWindowFlags_NoScrollWithMouse |
                 ImGuiWindowFlags_NoSavedSettings |
                 ImGuiWindowFlags_NoBringToFrontOnFocus;
+
+  // create a initial pipeline
+  auto source = ElementFactory::CreateElement("PlayBack");
+  auto depth = ElementFactory::CreateElement("RawToDepth");
+  auto depthCalc = dynamic_cast<DepthCalc*>(depth->element_.get());
+  depthCalc->SetConfig(37e6, 1.4);
+  auto ma = ElementFactory::CreateElement("MovingAverage");
+  auto unprojection = ElementFactory::CreateElement("Unprojection");
+  auto vis = ElementFactory::CreateElement("Open3DVisualizer");
+  m_Nodes_.push_back(source);
+  m_Nodes_.push_back(depth);
+  m_Nodes_.push_back(ma);
+  m_Nodes_.push_back(unprojection);
+  m_Nodes_.push_back(vis);
+
+  source->SetLocation(ImVec2(100, 100));
+  depth->SetLocation(ImVec2(400, 100));
+  ma->SetLocation(ImVec2(700, 100));
+  unprojection->SetLocation(ImVec2(1000, 100));
+  vis->SetLocation(ImVec2(1300, 100));
+
+  auto sourceOutputPin = ed::PinId(&source->outputPads_.front());
+  auto depthInputPin = ed::PinId(&depth->inputPads_.front());
+  auto depthOutputPin = ed::PinId(&depth->outputPads_.front());
+  auto maInputPin = ed::PinId(&ma->inputPads_.front());
+  auto maOutputPin = ed::PinId(&ma->outputPads_.front());
+  auto unprojectionInputPin = ed::PinId(&unprojection->inputPads_.front());
+  auto unprojectionOutputPin = ed::PinId(&unprojection->outputPads_.front());
+  auto visInputPin = ed::PinId(&vis->inputPads_.front());
+
+  doLink(sourceOutputPin, depthInputPin);
+  doLink(depthOutputPin, maInputPin);
+  doLink(maOutputPin, unprojectionInputPin);
+  doLink(unprojectionOutputPin, visInputPin);
 }
 
 NodeEditor::~NodeEditor() { ed::DestroyEditor(m_Context); }
@@ -100,17 +135,12 @@ void NodeEditor::DrawNodes() {
 
 void NodeEditor::DrawLinks() {
   for (auto& linkInfo : m_Links_) {
-    ed::LinkId id = ed::LinkId(linkInfo.get());
-    ed::Link(id, linkInfo->startPinId_, linkInfo->endPinId_);
+    ed::LinkId id = ed::LinkId(&linkInfo);
+    ed::Link(id, linkInfo.startPinId_, linkInfo.endPinId_);
   }
 }
 
 void NodeEditor::HandleLinkCreation() {
-  Pad* startPad = nullptr;
-  Pad* endPad = nullptr;
-  bool bothPads = false;
-  PadObserver* observer = nullptr;
-
   if (!ed::BeginCreate()) {
     return;
   }
@@ -126,27 +156,35 @@ void NodeEditor::HandleLinkCreation() {
     return;
   }
 
+  bool linkRet = doLink(startId, endId);
+  if (!linkRet) {
+    ed::RejectNewItem(ImColor(255, 0, 0), 2.0f);
+  }
+  ed::EndCreate();
+}
+
+bool NodeEditor::doLink(ed::PinId startId, ed::PinId endId) {
+  Pad* startPad = nullptr;
+  Pad* endPad = nullptr;
+  bool bothPads = false;
+  PadObserver* observer = nullptr;
+
   startPad = ((PadWrapper*)startId.AsPointer())->pad_;
   endPad = ((PadWrapper*)endId.AsPointer())->pad_;
 
   // both nodes are observer
   if (!startPad && !endPad) {
-    ed::RejectNewItem(ImColor(255, 0, 0), 2.0f);
-    ed::EndCreate();
-    return;
+    return false;
   }
 
   // both nodes are not observer
   if (startPad && endPad) {
     if (startPad->GetDirection() == endPad->GetDirection()) {
-      ed::RejectNewItem(ImColor(255, 0, 0), 2.0f);
-      ed::EndCreate();
-      return;
+      return false;
     }
     if (startPad->GetDirection() == PadDirection::kPadSink) {
       std::swap(startId, endId);
       std::swap(startPad, endPad);
-      std::cout << "reversed" << std::endl;
     }
     bothPads = true;
   } else {
@@ -160,17 +198,16 @@ void NodeEditor::HandleLinkCreation() {
     bothPads = false;
   }
 
-  if (ed::AcceptNewItem()) {
-    auto link = std::make_shared<LinkInfo>(startId, endId);
-    m_Links_.push_back(link);
-    if (bothPads) {
-      startPad->Link(endPad);
-    } else {
-      startPad->AddObserver(observer);
-    }
+  // if (ed::AcceptNewItem()) {
+  m_Links_.emplace_back(startId, endId);
+  if (bothPads) {
+    startPad->Link(endPad);
+  } else {
+    startPad->AddObserver(observer);
   }
+  // }
 
-  ed::EndCreate();
+  return true;
 }
 
 void NodeEditor::HandleLinkDeletion() {
@@ -185,27 +222,34 @@ void NodeEditor::HandleLinkDeletion() {
       return;
     }
 
-    for (auto iter = m_Links_.begin(); iter != m_Links_.end(); iter++) {
-      ed::LinkId linkId = ed::LinkId((*iter).get());
+    for (auto linkInfo = m_Links_.begin(); linkInfo != m_Links_.end();
+         linkInfo++) {
+      ed::LinkId linkId = ed::LinkId(&(*linkInfo));
       if (linkId == deletedLinkId) {
-        ed::PinId startPin, endPin;
-        startPin = (*iter)->startPinId_;
-        endPin = (*iter)->endPinId_;
-        Pad* startPad = ((PadWrapper*)startPin.AsPointer())->pad_;
-        Pad* endPad = ((PadWrapper*)endPin.AsPointer())->pad_;
-        if (endPad) {
-          startPad->Unlink();
-        } else {
-          auto endPadWrapper = (PadWrapper*)endPin.AsPointer();
-          auto observer = endPadWrapper->node_->observer_.get();
-          startPad->RemoveObserver(observer);
-        }
-        m_Links_.erase(iter);
+        doUnlink(linkId);
         break;
       }
     }
   }
   ed::EndDelete();
+}
+
+bool NodeEditor::doUnlink(ed::LinkId linkId) {
+  ed::PinId startPin, endPin;
+  LinkInfo* linkInfo = (LinkInfo*)linkId.AsPointer();
+  startPin = linkInfo->startPinId_;
+  endPin = linkInfo->endPinId_;
+
+  Pad* startPad = ((PadWrapper*)startPin.AsPointer())->pad_;
+  Pad* endPad = ((PadWrapper*)endPin.AsPointer())->pad_;
+  if (endPad) {
+    startPad->Unlink();
+  } else {
+    auto endPadWrapper = (PadWrapper*)endPin.AsPointer();
+    auto observer = endPadWrapper->node_->observer_.get();
+    startPad->RemoveObserver(observer);
+  }
+  m_Links_.remove(*linkInfo);
 }
 
 void NodeEditor::HandleNodeDeletion() {

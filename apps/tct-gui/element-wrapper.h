@@ -2,6 +2,8 @@
 #include <imgui.h>
 #include <imgui_node_editor.h>
 #include <sdk/core/element.h>
+#include <sdk/tof/depth-calc.h>
+#include <sdk/tof/unprojection.h>
 
 #include <list>
 #include <memory>
@@ -52,6 +54,7 @@ struct LinkInfo {
   LinkInfo(ed::PinId startPinId, ed::PinId endPinId);
   ed::PinId startPinId_;
   ed::PinId endPinId_;
+  bool operator==(const LinkInfo& other) const;
 };
 
 struct PlayBackNode : public ElementWrapper {
@@ -77,7 +80,7 @@ struct RawToDepthNode : public ElementWrapper {
   void DrawBody() override;
   void SaveState() override;
   void LoadState(std::string& savedData) override;
-  int fmodMHz_;
+  float fmodMHz_;
   float offset_;
 };
 
@@ -88,6 +91,19 @@ struct MovingAverageNode : public ElementWrapper {
   void SaveState() override;
   void LoadState(std::string& savedData) override;
   int width;
+};
+
+struct UnprojectionNode : public ElementWrapper {
+  UnprojectionNode(const std::string& name,
+                   ImColor color = ImColor(255, 255, 255));
+  void DrawBody() override;
+  void SaveState() override;
+  void LoadState(std::string& savedData) override;
+  PinholeParams params_;
+  bool usePreset_;
+  int presetIdx_;
+  bool showPresetPopup_;
+  std::vector<std::string> presetNames_;
 };
 
 struct VideoOutputNode : public ElementWrapper {

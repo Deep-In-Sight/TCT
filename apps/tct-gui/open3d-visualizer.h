@@ -28,4 +28,6 @@ struct Open3DVisualizer : public PadObserver {
   static std::shared_ptr<open3d::visualization::gui::Window> currentWindow;
   std::shared_ptr<open3d::visualization::visualizer::O3DVisualizer> o3dVis_;
   bool firstFrame_;
+  Mat m_;
+  std::mutex renderMutex_;
 };

@@ -4,6 +4,7 @@
 #include <sdk/tof/depth-calc.h>
 #include <sdk/tof/moving-average.h>
 #include <sdk/tof/playback-src.h>
+#include <sdk/tof/unprojection.h>
 
 #include <nlohmann/json.hpp>
 
@@ -15,6 +16,9 @@
 
 LinkInfo::LinkInfo(ed::PinId startPinId, ed::PinId endPinId)
     : startPinId_(startPinId), endPinId_(endPinId) {}
+bool LinkInfo::operator==(const LinkInfo& other) const {
+  return startPinId_ == other.startPinId_ && endPinId_ == other.endPinId_;
+}
 
 PadWrapper::PadWrapper(Pad* pad) : pad_(pad) {}
 
@@ -321,9 +325,6 @@ RawToDepthNode::RawToDepthNode(const std::string& name, ImColor color)
   auto depthCalc = std::make_shared<DepthCalc>(name);
   element_ = depthCalc;
   BuildNode();
-  fmodMHz_ = 20;
-  offset_ = 0.0f;
-  depthCalc->SetConfig(fmodMHz_ * 1e6, offset_);
 };
 
 void RawToDepthNode::DrawBody() {
@@ -331,7 +332,9 @@ void RawToDepthNode::DrawBody() {
   ImGui::BeginGroup();
   ImGui::PushItemWidth(100);
   ImGui::PushID(element_->GetName().c_str());
-  if (ImGui::DragInt("FmodMHz", &fmodMHz_, 1, 1, 100) ||
+  depthCalc->GetConfig(fmodMHz_, offset_);
+  fmodMHz_ /= 1e6;
+  if (ImGui::DragFloat("FmodMHz", &fmodMHz_, 0.1, 1, 100) ||
       ImGui::DragFloat("Offset", &offset_, 0.01, -10, 10)) {
     depthCalc->SetConfig(fmodMHz_ * 1e6, offset_);
   }
@@ -395,6 +398,100 @@ void MovingAverageNode::LoadState(std::string& savedData) {
   width = nodeSettings["width"].get<int>();
   movingAverage->SetWindowSize(width);
 };
+
+UnprojectionNode::UnprojectionNode(const std::string& name, ImColor color)
+    : ElementWrapper() {
+  auto unprojection = std::make_shared<Unprojection>(name);
+  element_ = unprojection;
+  params_ = unprojection->GetParams();
+  usePreset_ = true;
+  presetNames_ = PinholeParams::GetPresetNames();
+  presetIdx_ = 0;
+  BuildNode();
+};
+
+void UnprojectionNode::DrawBody() {
+  auto unprojection = dynamic_cast<Unprojection*>(element_.get());
+  ImGui::BeginGroup();
+  ImGui::PushItemWidth(100);
+  ImGui::PushID(element_->GetName().c_str());
+  ImGui::TextUnformatted("Pinhole Parameters");
+  ImGui::Checkbox("Use Preset", &usePreset_);
+  if (usePreset_) {
+    showPresetPopup_ = false;
+    if (ImGui::Button(presetNames_[presetIdx_].c_str())) {
+      showPresetPopup_ = true;
+      deferredDraw_ = [this]() {
+        if (showPresetPopup_) ImGui::OpenPopup("PinholePresetPopup");
+        if (ImGui::BeginPopup("PinholePresetPopup")) {
+          for (int i = 0; i < presetNames_.size(); i++) {
+            if (ImGui::Selectable(presetNames_[i].c_str())) {
+              presetIdx_ = i;
+              auto unprojection = dynamic_cast<Unprojection*>(element_.get());
+              params_ = PinholeParams::GetPreset(presetNames_[presetIdx_]);
+              unprojection->SetParams(params_);
+            }
+          }
+          ImGui::EndPopup();
+        }
+      };
+    }
+  } else {
+    if (ImGui::DragFloat("focal x (mm)", &params_.fx_, 0.01, 0.0, 20.0,
+                         "%.2f") ||
+        ImGui::DragFloat("focal y (mm)", &params_.fy_, 0.01, 0.0, 20.0,
+                         "%.2f") ||
+        ImGui::DragFloat("Principal x (pixel)", &params_.cx_, 1, 0.0, 1000,
+                         "%.0f") ||
+        ImGui::DragFloat("Principal y (pixel)", &params_.cy_, 1, 0.0, 1000,
+                         "%.0f") ||
+        ImGui::DragFloat("Pixel width (um)", &params_.dx_, 0.01, 0.0, 100.0,
+                         "%.2f") ||
+        ImGui::DragFloat("Pixel height (um)", &params_.dy_, 0.01, 0.0, 100.0,
+                         "%.2f")) {
+      unprojection->SetParams(params_);
+    }
+  }
+
+  ImGui::PopID();
+  ImGui::PopItemWidth();
+  ImGui::EndGroup();
+}
+
+void UnprojectionNode::LoadState(std::string& savedData) {
+  auto unprojection = dynamic_cast<Unprojection*>(element_.get());
+  nlohmann::json nodeSettings = nlohmann::json::parse(savedData);
+
+  usePreset_ = nodeSettings["usePreset"].get<bool>();
+  presetIdx_ = nodeSettings["presetIdx"].get<int>();
+  float fx = nodeSettings["fx"].get<float>();
+  float fy = nodeSettings["fy"].get<float>();
+  float cx = nodeSettings["cx"].get<float>();
+  float cy = nodeSettings["cy"].get<float>();
+  float dx = nodeSettings["dx"].get<float>();
+  float dy = nodeSettings["dy"].get<float>();
+  if (usePreset_) {
+    params_ = PinholeParams::GetPreset(presetNames_[presetIdx_]);
+  } else {
+    params_ = PinholeParams(fx, fy, cx, cy, dx, dy);
+  }
+  unprojection->SetParams(params_);
+}
+
+void UnprojectionNode::SaveState() {
+  nlohmann::json nodeSettings;
+
+  nodeSettings["usePreset"] = usePreset_;
+  nodeSettings["presetIdx"] = presetIdx_;
+  nodeSettings["fx"] = params_.fx_;
+  nodeSettings["fy"] = params_.fy_;
+  nodeSettings["cx"] = params_.cx_;
+  nodeSettings["cy"] = params_.cy_;
+  nodeSettings["dx"] = params_.dx_;
+  nodeSettings["dy"] = params_.dy_;
+
+  nodeSettings_ = nodeSettings.dump();
+}
 
 VideoOutputNode::VideoOutputNode(const std::string& name, ImColor color)
     : ElementWrapper() {
@@ -468,6 +565,10 @@ std::map<std::string, NodeConstructor>& GetNodeConstructors() {
       {"MovingAverage",
        [](const std::string& name) {
          return std::make_shared<MovingAverageNode>(name);
+       }},
+      {"Unprojection",
+       [](const std::string& name) {
+         return std::make_shared<UnprojectionNode>(name);
        }},
       {"VideoOutput",
        [](const std::string& name) {

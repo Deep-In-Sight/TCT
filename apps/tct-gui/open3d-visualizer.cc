@@ -55,17 +55,24 @@ void Open3DVisualizer::OnNewFrame(cv::Mat& frame) {
   int h = frame.size[0];
   int w = frame.size[1];
 
-  core::Tensor points(frame.ptr<float>(), {h * w * 3}, Float32,
-                      Device("CPU:0"));
-  auto pcd = std::make_shared<t::geometry::PointCloud>(points);
-  if (firstFrame_) {
-    o3dVis_->AddGeometry("cloud", pcd);
-    o3dVis_->ShowGeometry("cloud", true);
-    o3dVis_->ResetCameraToDefault();
-    firstFrame_ = false;
-  } else {
-    o3dVis_->UpdateGeometry("cloud", pcd, Scene::kUpdatePointsFlag);
+  {
+    std::lock_guard<std::mutex> lock(renderMutex_);
+    m_ = frame;
   }
+  auto& app = open3d::visualization::gui::Application::GetInstance();
+  app.PostToMainThread(o3dVis_.get(), [this, h, w]() {
+    std::lock_guard<std::mutex> lock(renderMutex_);
+    core::Tensor points(m_.ptr<float>(), {h * w, 3}, Float32, Device("CPU:0"));
+    auto pcd = std::make_shared<t::geometry::PointCloud>(points);
+    if (firstFrame_) {
+      o3dVis_->AddGeometry("cloud", pcd);
+      o3dVis_->ShowGeometry("cloud", true);
+      o3dVis_->ResetCameraToDefault();
+      firstFrame_ = false;
+    } else {
+      o3dVis_->UpdateGeometry("cloud", pcd, Scene::kUpdatePointsFlag);
+    }
+  });
 }
 
 void Open3DVisualizer::OnFrameFormatChanged(const MatShape& shape, int type) {}
