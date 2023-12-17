@@ -2,6 +2,8 @@
 #include <imgui.h>
 #include <imgui_node_editor.h>
 #include <sdk/core/element.h>
+#include <sdk/tof/depth-calc.h>
+#include <sdk/tof/unprojection.h>
 
 #include <list>
 #include <memory>
@@ -9,6 +11,7 @@
 
 struct PadWrapper;
 struct InspectorBitmapView;
+struct Open3DVisualizer;
 
 namespace ed = ax::NodeEditor;
 
@@ -37,6 +40,7 @@ struct ElementWrapper {
   bool firstFrame;
   ImVec2 location_;
   std::shared_ptr<Element> element_;
+  std::shared_ptr<PadObserver> observer_;
   std::function<void()> deferredDraw_;
 };
 
@@ -50,10 +54,11 @@ struct LinkInfo {
   LinkInfo(ed::PinId startPinId, ed::PinId endPinId);
   ed::PinId startPinId_;
   ed::PinId endPinId_;
+  bool operator==(const LinkInfo& other) const;
 };
 
 struct PlayBackNode : public ElementWrapper {
-  PlayBackNode(const char* name, ImColor color = ImColor(255, 255, 255));
+  PlayBackNode(const std::string& name, ImColor color = ImColor(255, 255, 255));
   void DrawBody() override;
   void SaveState() override;
   void LoadState(std::string& savedData) override;
@@ -70,34 +75,61 @@ struct PlayBackNode : public ElementWrapper {
 };
 
 struct RawToDepthNode : public ElementWrapper {
-  RawToDepthNode(const char* name, ImColor color = ImColor(255, 255, 255));
+  RawToDepthNode(const std::string& name,
+                 ImColor color = ImColor(255, 255, 255));
   void DrawBody() override;
   void SaveState() override;
   void LoadState(std::string& savedData) override;
-  int fmodMHz_;
+  float fmodMHz_;
   float offset_;
 };
 
 struct MovingAverageNode : public ElementWrapper {
-  MovingAverageNode(const char* name, ImColor color = ImColor(255, 255, 255));
+  MovingAverageNode(const std::string& name,
+                    ImColor color = ImColor(255, 255, 255));
   void DrawBody() override;
   void SaveState() override;
   void LoadState(std::string& savedData) override;
   int width;
 };
 
-struct VideoOutputNode : public ElementWrapper {
-  VideoOutputNode(const char* name, ImColor color = ImColor(255, 255, 255));
-  ~VideoOutputNode();
+struct UnprojectionNode : public ElementWrapper {
+  UnprojectionNode(const std::string& name,
+                   ImColor color = ImColor(255, 255, 255));
+  void DrawBody() override;
   void SaveState() override;
   void LoadState(std::string& savedData) override;
-  void DrawBody() override;
+  PinholeParams params_;
+  bool usePreset_;
+  int presetIdx_;
+  bool showPresetPopup_;
+  std::vector<std::string> presetNames_;
+};
+
+struct VideoOutputNode : public ElementWrapper {
+  VideoOutputNode(const std::string& name,
+                  ImColor color = ImColor(255, 255, 255));
+  ~VideoOutputNode();
   void DrawHeader() override;
   void DrawInputPads() override;
-  std::shared_ptr<InspectorBitmapView> inspector_;
+};
+
+struct Open3DVisualizerNode : public ElementWrapper {
+  Open3DVisualizerNode(const std::string& name,
+                       ImColor color = ImColor(255, 255, 255));
+  void DrawHeader() override;
+  void DrawInputPads() override;
+  void DrawBody() override;
+  bool showIntrinsics;
 };
 
 struct ElementFactory {
   static std::shared_ptr<ElementWrapper> CreateElement(
       const std::string& nodeType, const std::string& nodeName = "");
 };
+
+std::map<std::string,
+         std::function<std::shared_ptr<ElementWrapper>(const std::string&)>>&
+GetNodeConstructors();
+const std::vector<std::string>& GetNodeTypes();
+std::map<std::string, int>& GetNodesCount();

@@ -5,9 +5,11 @@
 #include <memory>
 #include <vector>
 
-#include "element-wrapper.h"
 #include "imgui-widget.h"
 #include "utility.h"
+
+struct ElementWrapper;
+struct LinkInfo;
 
 namespace ed = ax::NodeEditor;
 struct NodeEditor : public ImGuiWidget {
@@ -26,11 +28,13 @@ struct NodeEditor : public ImGuiWidget {
   void HandleNodeDeletion();
 
   void ShowCreateNodePopup();
+  bool doLink(ed::PinId startPinId, ed::PinId endPinId);
+  bool doUnlink(ed::LinkId linkId);
 
   ed::EditorContext* m_Context;
 
   int windowFlags;
 
   std::list<std::shared_ptr<ElementWrapper>> m_Nodes_;
-  std::list<std::shared_ptr<LinkInfo>> m_Links_;
+  std::list<LinkInfo> m_Links_;
 };

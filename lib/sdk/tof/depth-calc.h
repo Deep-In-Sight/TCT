@@ -27,6 +27,7 @@ class DepthCalc : public BaseTransform {
   ~DepthCalc();
 
   void SetConfig(float fmod, float offset);
+  void GetConfig(float &fmod, float &offset);
 
  private:
   void TransformFrame(Mat &frame) override;

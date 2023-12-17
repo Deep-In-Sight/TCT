@@ -22,13 +22,10 @@ Application::Application() {
   std::ifstream configFile("data/appconfig.json");
   appConfig = nlohmann::json::parse(configFile);
 
-  // Initialize GLFW
-  if (!glfwInit()) {
-    throw std::runtime_error("Failed to initialize GLFW");
-  }
+  BackEnd::Initialize(BACKEND_SDL2);
 }
 
-Application::~Application() { glfwTerminate(); }
+Application::~Application() { BackEnd::Destroy(); }
 
 void Application::Create() {
   // Create main window
@@ -39,7 +36,8 @@ void Application::Create() {
   auto x = mainWindowConfig["x"].get<int>();
   auto y = mainWindowConfig["y"].get<int>();
 
-  auto mainWindow = std::make_shared<Window>(title, width, height, x, y, true);
+  auto mainWindow =
+      BackEnd::CreateWindow(title, x, y, width, height, WindowFlags_VSYNC);
   auto nodeEditor = std::make_shared<NodeEditor>();
   mainWindow->AddChild(nodeEditor);
 
@@ -66,7 +64,7 @@ std::shared_ptr<Window> Application::GetWindow(const std::string& title) {
 void Application::Run() {
   bool shouldClose = false;
   while (!shouldClose) {
-    glfwPollEvents();
+    BackEnd::ProcessEvents();
 
     for (auto window = children.begin(); window != children.end(); ++window) {
       shouldClose |= (*window)->Render();
