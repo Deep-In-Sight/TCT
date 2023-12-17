@@ -119,6 +119,8 @@ struct Open3DVisualizerNode : public ElementWrapper {
                        ImColor color = ImColor(255, 255, 255));
   void DrawHeader() override;
   void DrawInputPads() override;
+  void DrawBody() override;
+  bool showIntrinsics;
 };
 
 struct ElementFactory {

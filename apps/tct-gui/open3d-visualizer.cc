@@ -47,32 +47,87 @@ Open3DVisualizer::Open3DVisualizer(const std::string& name)
     }
     currentWindow = o3dVis_;
   });
+
+  pcd = std::make_shared<t::geometry::PointCloud>();
 }
 
 Open3DVisualizer::~Open3DVisualizer() {}
 
 void Open3DVisualizer::OnNewFrame(cv::Mat& frame) {
-  int h = frame.size[0];
-  int w = frame.size[1];
+  MatShape shape(frame.size);
+  int channels = (shape.dims() == 3) ? shape[0] : 1;
+  int height = (shape.dims() == 3) ? shape[1] : shape[0];
+  int width = (shape.dims() == 3) ? shape[2] : shape[1];
 
+  cv::Mat depth, color;
+  depth = (channels == 1)
+              ? frame
+              : cv::Mat(height, width, CV_32FC1, frame.ptr<float>());
+  cv::normalize(depth, color, 0, 255, cv::NORM_MINMAX, CV_8UC1);
+  cv::applyColorMap(color, color, cv::COLORMAP_JET);
+  cv::cvtColor(color, color, cv::COLOR_BGR2RGB);
+
+  // data is copied to tensor buffer
+  core::Tensor depthTensor(depth.ptr<float>(), {height, width}, Float32);
+  core::Tensor colorTensor(color.ptr<uint8_t>(), {height, width, 3}, UInt8);
+
+  t::geometry::Image depthImage(depthTensor);
+  t::geometry::Image colorImage(colorTensor);
+  t::geometry::RGBDImage rgbdImage(colorImage, depthImage);
   {
     std::lock_guard<std::mutex> lock(renderMutex_);
-    m_ = frame;
+    // the geomeotries' underlying memory is shared_ptr<Blob> so it's ok for
+    // them to go out of scope, won't be deallocated as long as something is
+    // still referring to it
+    *pcd = t::geometry::PointCloud::CreateFromRGBDImage(
+        rgbdImage, intrinsics_.ToTensor(),
+        core::Tensor::Eye(4, core::Float32, core::Device("CPU:0")),
+        /*depth_scale=*/1.0f,
+        /*depth_max=*/10.0f);
   }
+
   auto& app = open3d::visualization::gui::Application::GetInstance();
-  app.PostToMainThread(o3dVis_.get(), [this, h, w]() {
-    std::lock_guard<std::mutex> lock(renderMutex_);
-    core::Tensor points(m_.ptr<float>(), {h * w, 3}, Float32, Device("CPU:0"));
-    auto pcd = std::make_shared<t::geometry::PointCloud>(points);
+  app.PostToMainThread(o3dVis_.get(), [this]() {
+    // The mutex is to prevent frame being changed while rendering
+    auto renderPcd = std::make_shared<t::geometry::PointCloud>();
+    {
+      std::lock_guard<std::mutex> lock(renderMutex_);
+      *renderPcd = (*pcd).Clone();
+    }
+
     if (firstFrame_) {
-      o3dVis_->AddGeometry("cloud", pcd);
+      o3dVis_->AddGeometry("cloud", renderPcd);
       o3dVis_->ShowGeometry("cloud", true);
       o3dVis_->ResetCameraToDefault();
+      auto camera = o3dVis_->GetScene()->GetCamera();
+      // center to [0,0,1], put eye at [0,0,0], up direction is [0,-1,0]
+      camera->LookAt({0, 0, 1}, {0, 0, 0}, {0, -1, 0});
       firstFrame_ = false;
     } else {
-      o3dVis_->UpdateGeometry("cloud", pcd, Scene::kUpdatePointsFlag);
+      o3dVis_->UpdateGeometry(
+          "cloud", renderPcd,
+          Scene::kUpdatePointsFlag | Scene::kUpdateColorsFlag);
     }
   });
 }
 
 void Open3DVisualizer::OnFrameFormatChanged(const MatShape& shape, int type) {}
+
+void Open3DVisualizer::GetIntrinsics(CameraIntrinsics& intrinsics) {
+  intrinsics = intrinsics_;
+}
+void Open3DVisualizer::SetIntrinsics(const CameraIntrinsics& intrinsics) {
+  intrinsics_ = intrinsics;
+}
+
+CameraIntrinsics::CameraIntrinsics()
+    : fx(7.3), fy(7.3), cx(320), cy(240), dx(10), dy(10){};
+CameraIntrinsics::CameraIntrinsics(float fx, float fy, float cx, float cy,
+                                   float dx, float dy)
+    : fx(fx), fy(fy), cx(cx), cy(cy), dx(dx), dy(dy){};
+
+core::Tensor CameraIntrinsics::ToTensor() const {
+  std::vector<float> mat = {
+      fx * 1e3f / dx, 0, cx, 0, fy * 1e3f / dy, cy, 0, 0, 1};
+  return core::Tensor(mat, {3, 3}, core::Float32);
+}

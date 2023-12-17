@@ -43,33 +43,40 @@ NodeEditor::NodeEditor() {
   auto depthCalc = dynamic_cast<DepthCalc*>(depth->element_.get());
   depthCalc->SetConfig(37e6, 1.4);
   auto ma = ElementFactory::CreateElement("MovingAverage");
-  auto unprojection = ElementFactory::CreateElement("Unprojection");
+  // auto unprojection = ElementFactory::CreateElement("Unprojection");
   auto vis = ElementFactory::CreateElement("Open3DVisualizer");
   m_Nodes_.push_back(source);
   m_Nodes_.push_back(depth);
   m_Nodes_.push_back(ma);
-  m_Nodes_.push_back(unprojection);
+  // m_Nodes_.push_back(unprojection);
   m_Nodes_.push_back(vis);
 
   source->SetLocation(ImVec2(100, 100));
   depth->SetLocation(ImVec2(400, 100));
   ma->SetLocation(ImVec2(700, 100));
-  unprojection->SetLocation(ImVec2(1000, 100));
-  vis->SetLocation(ImVec2(1300, 100));
+  // unprojection->SetLocation(ImVec2(1000, 100));
+  // vis->SetLocation(ImVec2(1300, 100));
+  vis->SetLocation(ImVec2(1000, 100));
 
   auto sourceOutputPin = ed::PinId(&source->outputPads_.front());
   auto depthInputPin = ed::PinId(&depth->inputPads_.front());
   auto depthOutputPin = ed::PinId(&depth->outputPads_.front());
   auto maInputPin = ed::PinId(&ma->inputPads_.front());
   auto maOutputPin = ed::PinId(&ma->outputPads_.front());
-  auto unprojectionInputPin = ed::PinId(&unprojection->inputPads_.front());
-  auto unprojectionOutputPin = ed::PinId(&unprojection->outputPads_.front());
+  // auto unprojectionInputPin = ed::PinId(&unprojection->inputPads_.front());
+  // auto unprojectionOutputPin = ed::PinId(&unprojection->outputPads_.front());
   auto visInputPin = ed::PinId(&vis->inputPads_.front());
 
   doLink(sourceOutputPin, depthInputPin);
   doLink(depthOutputPin, maInputPin);
-  doLink(maOutputPin, unprojectionInputPin);
-  doLink(unprojectionOutputPin, visInputPin);
+  // doLink(maOutputPin, unprojectionInputPin);
+  // doLink(unprojectionOutputPin, visInputPin);
+  doLink(maOutputPin, visInputPin);
+  m_Links_.emplace_back(sourceOutputPin, depthInputPin);
+  m_Links_.emplace_back(depthOutputPin, maInputPin);
+  // m_Links_.emplace_back(maOutputPin, unprojectionInputPin);
+  // m_Links_.emplace_back(unprojectionOutputPin, visInputPin);
+  m_Links_.emplace_back(maOutputPin, visInputPin);
 }
 
 NodeEditor::~NodeEditor() { ed::DestroyEditor(m_Context); }
@@ -91,6 +98,11 @@ void NodeEditor::ImGuiDraw() {
   ed::SetCurrentEditor(m_Context);
 
   ed::Begin("My Editor", ImVec2(0.0, 0.0f));
+
+  if (firstframe) {
+    ed::NavigateToContent();
+    firstframe = false;
+  }
 
   DrawNodes();
 
@@ -156,10 +168,14 @@ void NodeEditor::HandleLinkCreation() {
     return;
   }
 
-  bool linkRet = doLink(startId, endId);
-  if (!linkRet) {
-    ed::RejectNewItem(ImColor(255, 0, 0), 2.0f);
+  if (ed::AcceptNewItem()) {
+    if (doLink(startId, endId)) {
+      m_Links_.emplace_back(startId, endId);
+    } else {
+      ed::RejectNewItem();
+    }
   }
+
   ed::EndCreate();
 }
 
@@ -198,14 +214,11 @@ bool NodeEditor::doLink(ed::PinId startId, ed::PinId endId) {
     bothPads = false;
   }
 
-  // if (ed::AcceptNewItem()) {
-  m_Links_.emplace_back(startId, endId);
   if (bothPads) {
     startPad->Link(endPad);
   } else {
     startPad->AddObserver(observer);
   }
-  // }
 
   return true;
 }
@@ -250,6 +263,7 @@ bool NodeEditor::doUnlink(ed::LinkId linkId) {
     startPad->RemoveObserver(observer);
   }
   m_Links_.remove(*linkInfo);
+  return true;
 }
 
 void NodeEditor::HandleNodeDeletion() {
@@ -283,7 +297,7 @@ void NodeEditor::ShowCreateNodePopup() {
         if (ImGui::Selectable(nodeTypes[i].c_str())) {
           auto node = ElementFactory::CreateElement(nodeTypes[i]);
           AddNode(node);
-          node->SetLocation(ImGui::GetMousePos());
+          node->SetLocation(ed::ScreenToCanvas(ImGui::GetMousePos()));
         }
       }
     }

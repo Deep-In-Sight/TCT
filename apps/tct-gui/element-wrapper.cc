@@ -533,6 +533,7 @@ Open3DVisualizerNode::Open3DVisualizerNode(const std::string& name,
   observer_ = observerView_;
   inputPads_.emplace_back(nullptr);
   inputPads_.back().node_ = this;
+  showIntrinsics = false;
 };
 
 void Open3DVisualizerNode::DrawHeader() {
@@ -549,6 +550,39 @@ void Open3DVisualizerNode::DrawInputPads() {
   ImGui::TextUnformatted("sink");
   ImGui::EndGroup();
 }
+
+void Open3DVisualizerNode::DrawBody() {
+  auto observer = std::dynamic_pointer_cast<Open3DVisualizer>(observer_);
+  auto name = observer_->GetName();
+  CameraIntrinsics intrinsics;
+  observer->GetIntrinsics(intrinsics);
+  ImGui::BeginGroup();
+  ImGui::PushID(name.c_str());
+
+  ImGui::Checkbox("Show Intrinsics", &showIntrinsics);
+  if (showIntrinsics) {
+    ImGui::PushItemWidth(100);
+    if (ImGui::DragFloat("focal x (mm)", &intrinsics.fx, 0.01, 0.0, 20.0,
+                         "%.2f") ||
+        ImGui::DragFloat("focal y (mm)", &intrinsics.fy, 0.01, 0.0, 20.0,
+                         "%.2f") ||
+        ImGui::DragFloat("Principal x (pixel)", &intrinsics.cx, 1, -1000, 1000,
+                         "%.0f") ||
+        ImGui::DragFloat("Principal y (pixel)", &intrinsics.cy, 1, -1000, 1000,
+                         "%.0f") ||
+        ImGui::DragFloat("Pixel width (um)", &intrinsics.dx, 0.01, 0.0, 100.0,
+                         "%.2f") ||
+        ImGui::DragFloat("Pixel height (um)", &intrinsics.dy, 0.01, 0.0, 100.0,
+                         "%.2f")) {
+      observer->SetIntrinsics(intrinsics);
+    }
+    ImGui::PopItemWidth();
+  }
+
+  ImGui::PopID();
+  ImGui::EndGroup();
+}
+
 using NodeConstructor =
     std::function<std::shared_ptr<ElementWrapper>(const std::string& name)>;
 

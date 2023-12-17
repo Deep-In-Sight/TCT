@@ -25,18 +25,20 @@ class PinholeParams {
  public:
   PinholeParams();
   PinholeParams(float fx, float fy, float cx, float cy, float dx, float dy);
+  static PinholeParams GetPreset(const string &presetName);
+  static std::vector<std::string> GetPresetNames();
   static PinholeParams DefaultParams();
-  // focal length x (unit: mm)
+  // focal length x (unit: milimeter)
   float fx_;
-  // focal length y (unit: mm)
+  // focal length y (unit: milimeter)
   float fy_;
   // optical center x (unit: pixel)
   float cx_;
   // optical center y (unit: pixel)
   float cy_;
-  // pixel size x (unit: mm)
+  // pixel size x (unit: micrometer)
   float dx_;
-  // pixel size y (unit: mm)
+  // pixel size y (unit: micrometer)
   float dy_;
   static const float default_fx;
   static const float default_fy;

@@ -16,14 +16,19 @@ void DepthCalc::SetConfig(float fmod, float offset) {
   offset_ = offset;
 }
 
+void DepthCalc::GetConfig(float &fmod, float &offset) {
+  fmod = fmod_;
+  offset = offset_;
+}
+
 void DepthCalc::TransformFrame(Mat &frame) {
   int height = frame.size[1];
   int width = frame.size[2];
   Mat m({2, height, width}, CV_32FC1);
 
   int16_t *p0 = (int16_t *)frame.data;
-  int16_t *p1 = (int16_t *)frame.data + height * width;
-  int16_t *p2 = (int16_t *)frame.data + height * width * 2;
+  int16_t *p2 = (int16_t *)frame.data + height * width;
+  int16_t *p1 = (int16_t *)frame.data + height * width * 2;
   int16_t *p3 = (int16_t *)frame.data + height * width * 3;
 
   float *depth = (float *)m.data;
@@ -36,13 +41,10 @@ void DepthCalc::TransformFrame(Mat &frame) {
     float q = p3[p] - p1[p];
     float i = p2[p] - p0[p];
 
-    float d = (atan2f(-q, i) + M_PI) * phase2depth_scale;
-    d = d + offset_;
-    if (d < 0) {
-      d = d + range;
-    } else if (d > range) {
-      d = d - range * floor(d / range);
-    }
+    float d = (atan2f(q, i) + M_PI) * phase2depth_scale;
+    d = std::fmod(d + offset_, range);
+    d = (d < 0) ? (d + range) : d;
+
     float a = 0.5 * sqrtf(q * q + i * i);
     depth[p] = d;
     amplitude[p] = a;

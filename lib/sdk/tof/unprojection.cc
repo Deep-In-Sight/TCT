@@ -24,12 +24,32 @@ PinholeParams PinholeParams::DefaultParams() {
                        default_dx, default_dy);
 }
 
-const float PinholeParams::default_fx = 7.3e-3;
-const float PinholeParams::default_fy = 7.3e-3;
+std::map<string, PinholeParams> presetList = {
+    {"ek640", PinholeParams(7.3f, 7.3f, 320, 240, 10.0f, 10.0f)},
+    {"default", PinholeParams::DefaultParams()}};
+
+PinholeParams PinholeParams::GetPreset(const string& presetName) {
+  if (presetList.count(presetName) > 0) {
+    return presetList[presetName];
+  } else {
+    return DefaultParams();
+  }
+}
+
+std::vector<string> PinholeParams::GetPresetNames() {
+  std::vector<string> presetNames;
+  for (auto& preset : presetList) {
+    presetNames.push_back(preset.first);
+  }
+  return presetNames;
+}
+
+const float PinholeParams::default_fx = 7.3f;
+const float PinholeParams::default_fy = 7.3f;
 const float PinholeParams::default_cx = 320;
 const float PinholeParams::default_cy = 240;
-const float PinholeParams::default_dx = 10e-6;
-const float PinholeParams::default_dy = 10e-6;
+const float PinholeParams::default_dx = 10.0f;
+const float PinholeParams::default_dy = 10.0f;
 
 Unprojection::Unprojection(const string& name) : BaseTransform(name) {
   params_ = PinholeParams::DefaultParams();
@@ -52,10 +72,13 @@ void Unprojection::TransformFrame(Mat& frame) {
   float* z = (float*)frame.data;
   // TODO: cache the xyz coefficients into another Mat to avoid repetitive
   // calculation also cache the cloud Mat to avoid repetitive allocation
+  float fx_pixel = params_.fx_ * 1e-3 / (params_.dx_ * 1e-6);
+  float fy_pixel = params_.fy_ * 1e-3 / (params_.dy_ * 1e-6);
+
   for (int y = 0; y < height; y++) {
     for (int x = 0; x < width; x++, cloudPtr += 3, z++) {
-      cloudPtr[0] = (*z) * (x - params_.cx_) * params_.dx_ / params_.fx_;
-      cloudPtr[1] = (*z) * (y - params_.cy_) * params_.dy_ / params_.fy_;
+      cloudPtr[0] = (*z) * (x - params_.cx_) / fx_pixel;
+      cloudPtr[1] = (*z) * (y - params_.cy_) / fy_pixel;
       cloudPtr[2] = (*z);
     }
   }
