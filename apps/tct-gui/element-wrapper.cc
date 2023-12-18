@@ -639,8 +639,8 @@ std::map<std::string, int>& GetNodesCount() {
 
 std::shared_ptr<ElementWrapper> ElementFactory::CreateElement(
     const std::string& nodeType, const std::string& nodeName) {
-  auto counts = GetNodesCount();
-  auto constructorMap = GetNodeConstructors();
+  auto& counts = GetNodesCount();
+  auto& constructorMap = GetNodeConstructors();
 
   std::string assignedName = nodeName;
   if (nodeName.empty() && counts.count(nodeType) > 0) {
