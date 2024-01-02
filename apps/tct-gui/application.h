@@ -7,6 +7,7 @@
 #include "nlohmann/json.hpp"
 
 struct Window;
+struct NodeEditor;
 
 struct Application {
   static Application& GetInstance();
@@ -18,6 +19,8 @@ struct Application {
   void AddWindow(std::shared_ptr<Window> window);
   void RemoveWindow(std::shared_ptr<Window> window);
   std::shared_ptr<Window> GetWindow(const std::string& title);
+
+  NodeEditor* nodeEditor;
 
  private:
   Application();

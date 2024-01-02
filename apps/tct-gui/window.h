@@ -65,8 +65,7 @@ struct SdlWindow : public Window {
   bool done_;
   SDL_Window* sdlWindow_;
   SDL_GLContext glContext_;
-  int x_, y_;
-  bool firstRender_;
   static int windowCount_;
   static std::map<uint32_t, SdlWindow*> windowList_;
+  SDL_Surface* windowIcon_;
 };

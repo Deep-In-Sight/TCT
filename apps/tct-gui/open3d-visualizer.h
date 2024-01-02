@@ -47,6 +47,17 @@ struct CameraIntrinsics {
   float dy;  // micrometer
 };
 
+struct CameraExtrinsics {
+  CameraExtrinsics();
+  float tx;
+  float ty;
+  float tz;
+  float rx;
+  float ry;
+  float rz;
+  open3d::core::Tensor ToTensor() const;
+};
+
 struct Open3DVisualizer : public PadObserver {
   Open3DVisualizer(const std::string& name);
   ~Open3DVisualizer();
@@ -57,6 +68,7 @@ struct Open3DVisualizer : public PadObserver {
   void GetIntrinsics(CameraIntrinsics& intrinsics);
 
   CameraIntrinsics intrinsics_;
+  CameraExtrinsics extrinsics_;
 
   static std::thread* o3dApplicationThread;
   static bool appInitialized;
@@ -68,4 +80,5 @@ struct Open3DVisualizer : public PadObserver {
   static std::shared_ptr<open3d::visualization::gui::Window> currentWindow;
   std::shared_ptr<open3d::visualization::visualizer::O3DVisualizer> o3dVis_;
   std::shared_ptr<open3d::t::geometry::PointCloud> pcd;
+  // open3d::t::geometry::TriangleMesh car;
 };

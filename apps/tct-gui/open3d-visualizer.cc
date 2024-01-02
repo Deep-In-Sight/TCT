@@ -46,6 +46,19 @@ Open3DVisualizer::Open3DVisualizer(const std::string& name)
       app.RemoveWindow(currentWindow.get());
     }
     currentWindow = o3dVis_;
+    auto car = std::make_shared<geometry::TriangleMesh>();
+    io::ReadTriangleMesh("./data/Mercedes.obj", *car);
+    o3dVis_->AddGeometry("car", car);
+    o3dVis_->ShowGeometry("car", false);
+
+    auto dentum = std::make_shared<geometry::TriangleMesh>();
+    io::ReadTriangleMesh("./data/dentum.ply", *dentum);
+    o3dVis_->AddGeometry("dentum", dentum);
+    o3dVis_->ShowGeometry("dentum", true);
+
+    auto matRecord = o3dVis_->GetGeometryMaterial("dentum");
+    matRecord.shader = "defaultLit";
+    o3dVis_->ModifyGeometryMaterial("dentum", &matRecord);
   });
 
   pcd = std::make_shared<t::geometry::PointCloud>();
@@ -79,9 +92,13 @@ void Open3DVisualizer::OnNewFrame(cv::Mat& frame) {
     // the geomeotries' underlying memory is shared_ptr<Blob> so it's ok for
     // them to go out of scope, won't be deallocated as long as something is
     // still referring to it
+    // *pcd = t::geometry::PointCloud::CreateFromRGBDImage(
+    //     rgbdImage, intrinsics_.ToTensor(),
+    //     core::Tensor::Eye(4, core::Float32, core::Device("CPU:0")),
+    //     /*depth_scale=*/1.0f,
+    //     /*depth_max=*/10.0f);
     *pcd = t::geometry::PointCloud::CreateFromRGBDImage(
-        rgbdImage, intrinsics_.ToTensor(),
-        core::Tensor::Eye(4, core::Float32, core::Device("CPU:0")),
+        rgbdImage, intrinsics_.ToTensor(), extrinsics_.ToTensor(),
         /*depth_scale=*/1.0f,
         /*depth_max=*/10.0f);
   }
@@ -122,6 +139,7 @@ void Open3DVisualizer::SetIntrinsics(const CameraIntrinsics& intrinsics) {
 
 CameraIntrinsics::CameraIntrinsics()
     : fx(7.3), fy(7.3), cx(320), cy(240), dx(10), dy(10){};
+
 CameraIntrinsics::CameraIntrinsics(float fx, float fy, float cx, float cy,
                                    float dx, float dy)
     : fx(fx), fy(fy), cx(cx), cy(cy), dx(dx), dy(dy){};
@@ -130,4 +148,26 @@ core::Tensor CameraIntrinsics::ToTensor() const {
   std::vector<float> mat = {
       fx * 1e3f / dx, 0, cx, 0, fy * 1e3f / dy, cy, 0, 0, 1};
   return core::Tensor(mat, {3, 3}, core::Float32);
+}
+
+CameraExtrinsics::CameraExtrinsics()
+    : tx(0), ty(0), tz(0), rx(0), ry(0), rz(0){};
+
+core::Tensor CameraExtrinsics::ToTensor() const {
+  using namespace std;
+  float a = rx / 180.0 * M_PI;
+  float b = ry / 180.0 * M_PI;
+  float g = rz / 180.0 * M_PI;
+  float r00 = cos(b) * cos(g);
+  float r01 = sin(a) * sin(b) * cos(g) - cos(a) * sin(g);
+  float r02 = cos(a) * sin(b) * cos(g) + sin(a) * sin(g);
+  float r10 = cos(b) * sin(g);
+  float r11 = sin(a) * sin(b) * sin(g) + cos(a) * cos(g);
+  float r12 = cos(a) * sin(b) * sin(g) - sin(a) * cos(g);
+  float r20 = -sin(b);
+  float r21 = sin(a) * cos(b);
+  float r22 = cos(a) * cos(b);
+  std::vector<float> mat = {r00, r01, r02, tx, r10, r11, r12, ty,
+                            r20, r21, r22, tz, 0,   0,   0,   1};
+  return core::Tensor(mat, {4, 4}, core::Float32);
 }

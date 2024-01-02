@@ -10,6 +10,7 @@
 #include <opencv2/imgcodecs/imgcodecs.hpp>
 
 #include "IconsFontAwesome5.h"
+#include "application.h"
 #include "element-wrapper.h"
 #include "inspector-bitmap-view.h"
 #include "nlohmann/json.hpp"
@@ -37,6 +38,10 @@ NodeEditor::NodeEditor() {
                 ImGuiWindowFlags_NoSavedSettings |
                 ImGuiWindowFlags_NoBringToFrontOnFocus;
 
+  flowing_ = false;
+  auto& app = Application::GetInstance();
+  app.nodeEditor = this;
+
   // create a initial pipeline
   auto source = ElementFactory::CreateElement("PlayBack");
   auto depth = ElementFactory::CreateElement("RawToDepth");
@@ -44,19 +49,19 @@ NodeEditor::NodeEditor() {
   depthCalc->SetConfig(37e6, 1.4);
   auto ma = ElementFactory::CreateElement("MovingAverage");
   // auto unprojection = ElementFactory::CreateElement("Unprojection");
-  auto vis = ElementFactory::CreateElement("Open3DVisualizer");
+  // auto vis = ElementFactory::CreateElement("Open3DVisualizer");
   m_Nodes_.push_back(source);
   m_Nodes_.push_back(depth);
   m_Nodes_.push_back(ma);
   // m_Nodes_.push_back(unprojection);
-  m_Nodes_.push_back(vis);
+  // m_Nodes_.push_back(vis);
 
   source->SetLocation(ImVec2(100, 100));
   depth->SetLocation(ImVec2(400, 100));
   ma->SetLocation(ImVec2(700, 100));
   // unprojection->SetLocation(ImVec2(1000, 100));
   // vis->SetLocation(ImVec2(1300, 100));
-  vis->SetLocation(ImVec2(1000, 100));
+  // vis->SetLocation(ImVec2(1000, 100));
 
   auto sourceOutputPin = ed::PinId(&source->outputPads_.front());
   auto depthInputPin = ed::PinId(&depth->inputPads_.front());
@@ -65,18 +70,18 @@ NodeEditor::NodeEditor() {
   auto maOutputPin = ed::PinId(&ma->outputPads_.front());
   // auto unprojectionInputPin = ed::PinId(&unprojection->inputPads_.front());
   // auto unprojectionOutputPin = ed::PinId(&unprojection->outputPads_.front());
-  auto visInputPin = ed::PinId(&vis->inputPads_.front());
+  // auto visInputPin = ed::PinId(&vis->inputPads_.front());
 
   doLink(sourceOutputPin, depthInputPin);
   doLink(depthOutputPin, maInputPin);
   // doLink(maOutputPin, unprojectionInputPin);
   // doLink(unprojectionOutputPin, visInputPin);
-  doLink(maOutputPin, visInputPin);
+  // doLink(maOutputPin, visInputPin);
   m_Links_.emplace_back(sourceOutputPin, depthInputPin);
   m_Links_.emplace_back(depthOutputPin, maInputPin);
   // m_Links_.emplace_back(maOutputPin, unprojectionInputPin);
   // m_Links_.emplace_back(unprojectionOutputPin, visInputPin);
-  m_Links_.emplace_back(maOutputPin, visInputPin);
+  // m_Links_.emplace_back(maOutputPin, visInputPin);
 }
 
 NodeEditor::~NodeEditor() { ed::DestroyEditor(m_Context); }
@@ -113,6 +118,13 @@ void NodeEditor::ImGuiDraw() {
   HandleLinkDeletion();
 
   HandleNodeDeletion();
+
+  if (flowing_) {
+    for (auto& link : m_Links_) {
+      ed::LinkId id = ed::LinkId(&link);
+      ed::Flow(id);
+    }
+  }
 
   ed::Suspend();
   if (ed::ShowBackgroundContextMenu()) {

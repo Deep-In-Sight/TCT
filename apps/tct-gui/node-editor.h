@@ -37,4 +37,5 @@ struct NodeEditor : public ImGuiWidget {
 
   std::list<std::shared_ptr<ElementWrapper>> m_Nodes_;
   std::list<LinkInfo> m_Links_;
+  bool flowing_;
 };

@@ -222,9 +222,12 @@ SdlWindow::SdlWindow(const std::string& title, int x, int y, int width,
   int vsync = (flags & WindowFlags_VSYNC) ? 1 : 0;
   SDL_GL_SetSwapInterval(vsync);  // Enable vsync
 
-  firstRender_ = true;
-  x_ = x;
-  y_ = y;
+  windowIcon_ = SDL_LoadBMP("./data/icons/appicon.bmp");
+  if (windowIcon_ == nullptr) {
+    throw std::runtime_error(std::string("Error: SDL_LoadBMP(): ") +
+                             SDL_GetError());
+  }
+  SDL_SetWindowIcon(sdlWindow_, windowIcon_);
 
   auto oldContext = ImGui::GetCurrentContext();
   imguiContext_ = ImGui::CreateContext();
@@ -268,16 +271,6 @@ SdlWindow::~SdlWindow() {
 bool SdlWindow::Render() {
   SDL_GL_MakeCurrent(sdlWindow_, glContext_);
   ImGui::SetCurrentContext(imguiContext_);
-
-  // if (firstRender_) {
-  //   std::cout << "setting window position to " << x_ << ", " << y_ <<
-  //   std::endl; std::cout << "current window flags: " <<
-  //   SDL_GetWindowFlags(sdlWindow_)
-  //             << std::endl;
-  //   SDL_SetWindowPosition(sdlWindow_, x_, y_);
-  //   SDL_SyncWindow(sdlWindow_);
-  //   firstRender_ = false;
-  // }
 
   ImGui_ImplOpenGL3_NewFrame();
   ImGui_ImplSDL2_NewFrame();

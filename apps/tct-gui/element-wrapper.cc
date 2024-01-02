@@ -11,6 +11,7 @@
 #include "IconsFontAwesome5.h"
 #include "application.h"
 #include "inspector-bitmap-view.h"
+#include "node-editor.h"
 #include "open3d-visualizer.h"
 #include "window.h"
 
@@ -112,6 +113,8 @@ PlayBackNode::PlayBackNode(const std::string& name, ImColor color)
     : ElementWrapper() {
   auto playback = std::make_shared<PlaybackSource>(name, false, true);
   element_ = playback;
+  auto& app = Application::GetInstance();
+  nodeEditor_ = app.nodeEditor;
   BuildNode();
   fn_[0] = '\0';
   showPresetPopup_ = false;
@@ -256,26 +259,32 @@ void PlayBackNode::DrawBody() {
   if (state == StreamState::kStreamStateStopped) {
     if (ImGui::Button(ICON_FA_PLAY "Play")) {
       playback->Start();
+      nodeEditor_->flowing_ = true;
     }
   } else if (state == StreamState::kStreamStatePlaying) {
     if (ImGui::Button(ICON_FA_PAUSE "Pause")) {
       playback->Pause();
+      nodeEditor_->flowing_ = false;
     }
     ImGui::SameLine();
     if (ImGui::Button(ICON_FA_STOP "Stop")) {
       playback->Stop();
+      nodeEditor_->flowing_ = false;
     }
   } else if (state == StreamState::kStreamStatePaused) {
     if (ImGui::Button(ICON_FA_PLAY "Resume")) {
       playback->Resume();
+      nodeEditor_->flowing_ = true;
     }
     ImGui::SameLine();
     if (ImGui::Button(ICON_FA_STOP "Stop")) {
       playback->Stop();
+      nodeEditor_->flowing_ = false;
     }
     ImGui::SameLine();
     if (ImGui::Button(ICON_FA_STEP_FORWARD "Step")) {
       playback->Step();
+      nodeEditor_->flowing_ = false;
     }
   }
   ImGui::PopID();
@@ -534,6 +543,7 @@ Open3DVisualizerNode::Open3DVisualizerNode(const std::string& name,
   inputPads_.emplace_back(nullptr);
   inputPads_.back().node_ = this;
   showIntrinsics = false;
+  showExtrinsics = false;
 };
 
 void Open3DVisualizerNode::DrawHeader() {
@@ -554,28 +564,38 @@ void Open3DVisualizerNode::DrawInputPads() {
 void Open3DVisualizerNode::DrawBody() {
   auto observer = std::dynamic_pointer_cast<Open3DVisualizer>(observer_);
   auto name = observer_->GetName();
-  CameraIntrinsics intrinsics;
-  observer->GetIntrinsics(intrinsics);
+  CameraIntrinsics& intrinsics = observer->intrinsics_;
+  CameraExtrinsics& extrinsics = observer->extrinsics_;
+
   ImGui::BeginGroup();
   ImGui::PushID(name.c_str());
 
   ImGui::Checkbox("Show Intrinsics", &showIntrinsics);
   if (showIntrinsics) {
     ImGui::PushItemWidth(100);
-    if (ImGui::DragFloat("focal x (mm)", &intrinsics.fx, 0.01, 0.0, 20.0,
-                         "%.2f") ||
-        ImGui::DragFloat("focal y (mm)", &intrinsics.fy, 0.01, 0.0, 20.0,
-                         "%.2f") ||
-        ImGui::DragFloat("Principal x (pixel)", &intrinsics.cx, 1, -1000, 1000,
-                         "%.0f") ||
-        ImGui::DragFloat("Principal y (pixel)", &intrinsics.cy, 1, -1000, 1000,
-                         "%.0f") ||
-        ImGui::DragFloat("Pixel width (um)", &intrinsics.dx, 0.01, 0.0, 100.0,
-                         "%.2f") ||
-        ImGui::DragFloat("Pixel height (um)", &intrinsics.dy, 0.01, 0.0, 100.0,
-                         "%.2f")) {
-      observer->SetIntrinsics(intrinsics);
-    }
+    ImGui::DragFloat("focal x (mm)", &intrinsics.fx, 0.01, 0.0, 20.0, "%.2f");
+    ImGui::DragFloat("focal y (mm)", &intrinsics.fy, 0.01, 0.0, 20.0, "%.2f");
+    ImGui::DragFloat("Principal x (pixel)", &intrinsics.cx, 1, -1000, 1000,
+                     "%.0f");
+    ImGui::DragFloat("Principal y (pixel)", &intrinsics.cy, 1, -1000, 1000,
+                     "%.0f");
+    ImGui::DragFloat("Pixel width (um)", &intrinsics.dx, 0.01, 0.0, 100.0,
+                     "%.2f");
+    ImGui::DragFloat("Pixel height (um)", &intrinsics.dy, 0.01, 0.0, 100.0,
+                     "%.2f");
+
+    ImGui::PopItemWidth();
+  }
+
+  ImGui::Checkbox("Show Extrinsics", &showExtrinsics);
+  if (showExtrinsics) {
+    ImGui::PushItemWidth(100);
+    ImGui::DragFloat("tx (mm)", &extrinsics.tx, 1, -1000, 1000, "%.2f");
+    ImGui::DragFloat("ty (mm)", &extrinsics.ty, 1, -1000, 1000, "%.2f");
+    ImGui::DragFloat("tz (mm)", &extrinsics.tz, 1, -1000, 1000, "%.2f");
+    ImGui::DragFloat("rx (deg)", &extrinsics.rx, 1, -180, 180, "%.2f");
+    ImGui::DragFloat("ry (deg)", &extrinsics.ry, 1, -180, 180, "%.2f");
+    ImGui::DragFloat("rz (deg)", &extrinsics.rz, 1, -180, 180, "%.2f");
     ImGui::PopItemWidth();
   }
 

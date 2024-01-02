@@ -12,6 +12,7 @@
 struct PadWrapper;
 struct InspectorBitmapView;
 struct Open3DVisualizer;
+struct NodeEditor;
 
 namespace ed = ax::NodeEditor;
 
@@ -62,6 +63,7 @@ struct PlayBackNode : public ElementWrapper {
   void DrawBody() override;
   void SaveState() override;
   void LoadState(std::string& savedData) override;
+  NodeEditor* nodeEditor_;
   bool showPresetPopup_;
   bool showTypePopup_;
   char fn_[256];
@@ -121,6 +123,7 @@ struct Open3DVisualizerNode : public ElementWrapper {
   void DrawInputPads() override;
   void DrawBody() override;
   bool showIntrinsics;
+  bool showExtrinsics;
 };
 
 struct ElementFactory {
